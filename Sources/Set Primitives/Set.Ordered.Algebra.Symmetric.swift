@@ -1,22 +1,22 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-standards open source project
+// This source file is part of the swift-primitives open source project
 //
-// Copyright (c) 2024-2025 Coen ten Thije Boonkkamp and the swift-standards project authors
+// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information
 //
 // ===----------------------------------------------------------------------===//
 
-extension Set.Ordered.Algebra {
+extension Set_Primitives.Set.Ordered.Algebra {
     /// Namespace for symmetric set operations.
     public struct Symmetric {
         @usableFromInline
-        let set: Set<Element>.Ordered
+        let set: Set_Primitives.Set<Element>.Ordered
 
         @usableFromInline
-        init(set: Set<Element>.Ordered) {
+        init(set: Set_Primitives.Set<Element>.Ordered) {
             self.set = set
         }
     }
@@ -24,7 +24,7 @@ extension Set.Ordered.Algebra {
 
 // MARK: - Symmetric Operations
 
-extension Set.Ordered.Algebra.Symmetric {
+extension Set_Primitives.Set.Ordered.Algebra.Symmetric {
     /// Returns a new set with elements in either set, but not both.
     ///
     /// Elements from `self` come first in their original order,
@@ -34,8 +34,8 @@ extension Set.Ordered.Algebra.Symmetric {
     /// - Returns: A new set with elements in exactly one of the sets.
     /// - Complexity: O(n + m) where n and m are the sizes of the sets.
     @inlinable
-    public func difference(_ other: Set<Element>.Ordered) -> Set<Element>.Ordered {
-        var result = Set<Element>.Ordered()
+    public func difference(_ other: Set_Primitives.Set<Element>.Ordered) -> Set_Primitives.Set<Element>.Ordered {
+        var result = Set_Primitives.Set<Element>.Ordered()
 
         // Elements in self but not in other
         for element in set {

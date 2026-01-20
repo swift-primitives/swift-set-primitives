@@ -1,8 +1,8 @@
 // ===----------------------------------------------------------------------===//
 //
-// This source file is part of the swift-standards open source project
+// This source file is part of the swift-primitives open source project
 //
-// Copyright (c) 2024-2025 Coen ten Thije Boonkkamp and the swift-standards project authors
+// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE for license information
@@ -11,7 +11,7 @@
 
 // MARK: - Algebra Accessor
 
-extension Set.Ordered {
+extension Set_Primitives.Set.Ordered {
     /// Nested accessor for set algebra operations.
     ///
     /// ```swift
@@ -28,14 +28,14 @@ extension Set.Ordered {
 
 // MARK: - Algebra Type
 
-extension Set.Ordered {
+extension Set_Primitives.Set.Ordered {
     /// Namespace for set algebra operations.
     public struct Algebra {
         @usableFromInline
-        let set: Set<Element>.Ordered
+        let set: Set_Primitives.Set<Element>.Ordered
 
         @usableFromInline
-        init(set: Set<Element>.Ordered) {
+        init(set: Set_Primitives.Set<Element>.Ordered) {
             self.set = set
         }
     }
@@ -43,7 +43,7 @@ extension Set.Ordered {
 
 // MARK: - Algebra Operations
 
-extension Set.Ordered.Algebra {
+extension Set_Primitives.Set.Ordered.Algebra {
     /// Returns a new set with elements from both sets.
     ///
     /// Elements from `self` come first in their original order,
@@ -53,7 +53,7 @@ extension Set.Ordered.Algebra {
     /// - Returns: A new set containing all elements from both sets.
     /// - Complexity: O(n + m) where n and m are the sizes of the sets.
     @inlinable
-    public func union(_ other: Set<Element>.Ordered) -> Set<Element>.Ordered {
+    public func union(_ other: Set_Primitives.Set<Element>.Ordered) -> Set_Primitives.Set<Element>.Ordered {
         var result = set
         for element in other {
             result.insert(element)
@@ -69,8 +69,8 @@ extension Set.Ordered.Algebra {
     /// - Returns: A new set containing only elements present in both sets.
     /// - Complexity: O(n) where n is the size of `self`.
     @inlinable
-    public func intersection(_ other: Set<Element>.Ordered) -> Set<Element>.Ordered {
-        var result = Set<Element>.Ordered()
+    public func intersection(_ other: Set_Primitives.Set<Element>.Ordered) -> Set_Primitives.Set<Element>.Ordered {
+        var result = Set_Primitives.Set<Element>.Ordered()
         for element in set {
             if other.contains(element) {
                 result.insert(element)
@@ -87,8 +87,8 @@ extension Set.Ordered.Algebra {
     /// - Returns: A new set with elements not in `other`.
     /// - Complexity: O(n) where n is the size of `self`.
     @inlinable
-    public func subtract(_ other: Set<Element>.Ordered) -> Set<Element>.Ordered {
-        var result = Set<Element>.Ordered()
+    public func subtract(_ other: Set_Primitives.Set<Element>.Ordered) -> Set_Primitives.Set<Element>.Ordered {
+        var result = Set_Primitives.Set<Element>.Ordered()
         for element in set {
             if !other.contains(element) {
                 result.insert(element)
@@ -106,12 +106,12 @@ extension Set.Ordered.Algebra {
 
 // MARK: - Mutating Algebra Operations
 
-extension Set.Ordered {
+extension Set_Primitives.Set.Ordered {
     /// Adds elements from another set.
     ///
     /// - Parameter other: The set to form a union with.
     @inlinable
-    public mutating func form(_ operation: (Algebra) -> Set<Element>.Ordered) {
+    public mutating func form(_ operation: (Algebra) -> Set_Primitives.Set<Element>.Ordered) {
         self = operation(algebra)
     }
 }

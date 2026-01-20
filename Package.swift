@@ -17,9 +17,15 @@ let package = Package(
             targets: ["Set Primitives"]
         )
     ],
+    dependencies: [
+        .package(path: "../swift-standard-library-extensions")
+    ],
     targets: [
         .target(
-            name: "Set Primitives"
+            name: "Set Primitives",
+            dependencies: [
+                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions")
+            ]
         ),
         .testTarget(
             name: "Set Primitives Tests",
