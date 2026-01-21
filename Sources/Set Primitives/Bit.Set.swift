@@ -16,7 +16,7 @@ public import Bit_Primitives
 extension Bit {
     /// Packed bit set using word-sized storage.
     ///
-    /// `Bit.Set` stores integer indices as individual bits, providing O(1)
+    /// `Bit.Set` stores `Bit.Index` values as individual bits, providing O(1)
     /// membership testing and efficient set algebra operations. Space usage
     /// is proportional to the maximum index stored, not the number of elements.
     ///
@@ -24,11 +24,11 @@ extension Bit {
     ///
     /// ```swift
     /// var set = Bit.Set(capacity: 100)
-    /// try set.insert(42)
-    /// set.contains(42)        // true
-    /// set.count               // 1
-    /// try set.remove(42)
-    /// set.contains(42)        // false
+    /// try set.insert(Bit.Index(__unchecked: 42))
+    /// set.contains(Bit.Index(__unchecked: 42))  // true
+    /// set.count                                  // 1
+    /// try set.remove(Bit.Index(__unchecked: 42))
+    /// set.contains(Bit.Index(__unchecked: 42))  // false
     /// ```
     ///
     /// ## Variants
@@ -95,10 +95,11 @@ extension Bit.Set {
 
 extension Bit.Set {
     @inlinable
-    public func contains(_ index: Int) -> Bool {
-        guard index >= 0 && index < _capacity else { return false }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+    public func contains(_ index: Bit.Index) -> Bool {
+        let i = index.position.rawValue
+        guard i >= 0 && i < _capacity else { return false }
+        let wordIndex = i / Self._bitsPerWord
+        let bitIndex = i % Self._bitsPerWord
         let mask: UInt = 1 << bitIndex
         return (_storage[wordIndex] & mask) != 0
     }
@@ -109,17 +110,18 @@ extension Bit.Set {
 extension Bit.Set {
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__BitSetError) -> Bool {
-        guard index >= 0 else {
-            throw .bounds(index: index, capacity: _capacity)
+    public mutating func insert(_ index: Bit.Index) throws(__BitSetError) -> Bool {
+        let i = index.position.rawValue
+        guard i >= 0 else {
+            throw .bounds(index: i, capacity: _capacity)
         }
 
-        if index >= _capacity {
-            try _grow(toInclude: index)
+        if i >= _capacity {
+            try _grow(toInclude: i)
         }
 
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = i / Self._bitsPerWord
+        let bitIndex = i % Self._bitsPerWord
         let mask: UInt = 1 << bitIndex
         let wasSet = (_storage[wordIndex] & mask) != 0
         _storage[wordIndex] |= mask
@@ -128,12 +130,13 @@ extension Bit.Set {
 
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__BitSetError) -> Bool {
-        guard index >= 0 && index < _capacity else {
-            throw .bounds(index: index, capacity: _capacity)
+    public mutating func remove(_ index: Bit.Index) throws(__BitSetError) -> Bool {
+        let i = index.position.rawValue
+        guard i >= 0 && i < _capacity else {
+            throw .bounds(index: i, capacity: _capacity)
         }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = i / Self._bitsPerWord
+        let bitIndex = i % Self._bitsPerWord
         let mask: UInt = 1 << bitIndex
         let wasSet = (_storage[wordIndex] & mask) != 0
         _storage[wordIndex] &= ~mask
@@ -272,13 +275,13 @@ extension Bit.Set {
 
 extension Bit.Set {
     @inlinable
-    public func forEach(_ body: (Int) -> Void) {
+    public func forEach(_ body: (Bit.Index) -> Void) {
         for (wordIndex, var word) in _storage.enumerated() {
             while word != 0 {
                 let bitIndex = word.trailingZeroBitCount
                 let globalIndex = wordIndex * Self._bitsPerWord + bitIndex
                 if globalIndex < _capacity {
-                    body(globalIndex)
+                    body(Bit.Index(__unchecked: (), position: globalIndex))
                 }
                 word &= word - 1
             }
@@ -293,13 +296,13 @@ extension Bit.Set {
     ///
     /// - Complexity: O(n/w) where w is word bit width
     @inlinable
-    public var min: Int? {
+    public var min: Bit.Index? {
         for wordIndex in _storage.indices {
             let word = _storage[wordIndex]
             if word != 0 {
                 let lowestBit = word.trailingZeroBitCount
                 let element = wordIndex * Self._bitsPerWord + lowestBit
-                return element < _capacity ? element : nil
+                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -309,13 +312,13 @@ extension Bit.Set {
     ///
     /// - Complexity: O(n/w) where w is word bit width
     @inlinable
-    public var max: Int? {
+    public var max: Bit.Index? {
         for wordIndex in _storage.indices.reversed() {
             let word = _storage[wordIndex]
             if word != 0 {
                 let highestBit = UInt.bitWidth - 1 - word.leadingZeroBitCount
                 let element = wordIndex * Self._bitsPerWord + highestBit
-                return element < _capacity ? element : nil
+                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -333,14 +336,13 @@ extension Bit.Set {
 // MARK: - Additional Initializers
 
 extension Bit.Set {
-    /// Creates a bit set from a sequence of integers.
+    /// Creates a bit set from a sequence of bit indices.
     ///
     /// - Parameter elements: The elements to include.
-    /// - Note: Negative elements are ignored.
     @inlinable
-    public init<S: Sequence>(_ elements: S) where S.Element == Int {
+    public init<S: Sequence>(_ elements: S) where S.Element == Bit.Index {
         self.init()
-        for element in elements where element >= 0 {
+        for element in elements {
             try! insert(element)
         }
     }
@@ -374,7 +376,7 @@ extension Bit.Set: Sequence {
         }
 
         @inlinable
-        public mutating func next() -> Int? {
+        public mutating func next() -> Bit.Index? {
             while currentWord == 0 {
                 wordIndex += 1
                 guard wordIndex < storage.count else { return nil }
@@ -384,7 +386,7 @@ extension Bit.Set: Sequence {
             let bit = currentWord.trailingZeroBitCount
             currentWord &= currentWord &- 1  // Clear lowest set bit
             let element = wordIndex * UInt.bitWidth + bit
-            return element < capacity ? element : nil
+            return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
         }
     }
 
@@ -408,6 +410,6 @@ extension Bit.Set: CustomStringConvertible {
     public var description: String {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
-        return "Bit.Set(\(elements.map(String.init).joined(separator: ", "))\(suffix))"
+        return "Bit.Set(\(elements.map { String($0.position.rawValue) }.joined(separator: ", "))\(suffix))"
     }
 }

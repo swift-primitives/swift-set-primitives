@@ -15,57 +15,62 @@ import Testing
 @Suite("Bit.Set")
 struct BitSetTests {
 
+    // Helper to create Bit.Index from Int
+    func idx(_ n: Int) -> Bit.Index {
+        Bit.Index(__unchecked: (), position: n)
+    }
+
     // MARK: - Basic Operations
 
     @Test("Insert and contains")
     func insertAndContains() throws {
         var set = Bit.Set()
 
-        #expect(try set.insert(0) == true)
-        #expect(try set.insert(1) == true)
-        #expect(try set.insert(63) == true)
-        #expect(try set.insert(64) == true)
-        #expect(try set.insert(127) == true)
+        #expect(try set.insert(idx(0)) == true)
+        #expect(try set.insert(idx(1)) == true)
+        #expect(try set.insert(idx(63)) == true)
+        #expect(try set.insert(idx(64)) == true)
+        #expect(try set.insert(idx(127)) == true)
 
-        #expect(set.contains(0))
-        #expect(set.contains(1))
-        #expect(set.contains(63))
-        #expect(set.contains(64))
-        #expect(set.contains(127))
+        #expect(set.contains(idx(0)))
+        #expect(set.contains(idx(1)))
+        #expect(set.contains(idx(63)))
+        #expect(set.contains(idx(64)))
+        #expect(set.contains(idx(127)))
 
-        #expect(!set.contains(2))
-        #expect(!set.contains(65))
-        #expect(!set.contains(1000))
+        #expect(!set.contains(idx(2)))
+        #expect(!set.contains(idx(65)))
+        #expect(!set.contains(idx(1000)))
     }
 
     @Test("Insert returns false for existing")
     func insertReturnsFalse() throws {
         var set = Bit.Set()
 
-        #expect(try set.insert(42) == true)
-        #expect(try set.insert(42) == false)
+        #expect(try set.insert(idx(42)) == true)
+        #expect(try set.insert(idx(42)) == false)
     }
 
     @Test("Remove")
     func remove() throws {
         var set = Bit.Set()
-        try set.insert(10)
-        try set.insert(20)
-        try set.insert(30)
+        try set.insert(idx(10))
+        try set.insert(idx(20))
+        try set.insert(idx(30))
 
-        #expect(try set.remove(20) == true)
-        #expect(!set.contains(20))
-        #expect(set.contains(10))
-        #expect(set.contains(30))
+        #expect(try set.remove(idx(20)) == true)
+        #expect(!set.contains(idx(20)))
+        #expect(set.contains(idx(10)))
+        #expect(set.contains(idx(30)))
 
-        #expect(try set.remove(20) == false)
+        #expect(try set.remove(idx(20)) == false)
     }
 
     @Test("Negative element not contained")
     func negativeNotContained() {
         let set = Bit.Set()
-        #expect(!set.contains(-1))
-        #expect(!set.contains(-100))
+        #expect(!set.contains(idx(-1)))
+        #expect(!set.contains(idx(-100)))
     }
 
     // MARK: - Word Boundaries
@@ -73,37 +78,37 @@ struct BitSetTests {
     @Test("Word boundary: 63 and 64")
     func wordBoundary63And64() throws {
         var set = Bit.Set()
-        try set.insert(63)
-        try set.insert(64)
+        try set.insert(idx(63))
+        try set.insert(idx(64))
 
-        #expect(set.contains(63))
-        #expect(set.contains(64))
-        #expect(!set.contains(62))
-        #expect(!set.contains(65))
+        #expect(set.contains(idx(63)))
+        #expect(set.contains(idx(64)))
+        #expect(!set.contains(idx(62)))
+        #expect(!set.contains(idx(65)))
     }
 
     @Test("Word boundary: 127 and 128")
     func wordBoundary127And128() throws {
         var set = Bit.Set()
-        try set.insert(127)
-        try set.insert(128)
+        try set.insert(idx(127))
+        try set.insert(idx(128))
 
-        #expect(set.contains(127))
-        #expect(set.contains(128))
-        #expect(!set.contains(126))
-        #expect(!set.contains(129))
+        #expect(set.contains(idx(127)))
+        #expect(set.contains(idx(128)))
+        #expect(!set.contains(idx(126)))
+        #expect(!set.contains(idx(129)))
     }
 
     @Test("Large elements")
     func largeElements() throws {
         var set = Bit.Set()
-        try set.insert(1000)
-        try set.insert(10000)
-        try set.insert(100000)
+        try set.insert(idx(1000))
+        try set.insert(idx(10000))
+        try set.insert(idx(100000))
 
-        #expect(set.contains(1000))
-        #expect(set.contains(10000))
-        #expect(set.contains(100000))
+        #expect(set.contains(idx(1000)))
+        #expect(set.contains(idx(10000)))
+        #expect(set.contains(idx(100000)))
         #expect(set.count == 3)
     }
 
@@ -114,16 +119,16 @@ struct BitSetTests {
         var set = Bit.Set()
         #expect(set.isEmpty)
 
-        try set.insert(0)
+        try set.insert(idx(0))
         #expect(set.count == 1)
 
-        try set.insert(64)
+        try set.insert(idx(64))
         #expect(set.count == 2)
 
-        try set.insert(128)
+        try set.insert(idx(128))
         #expect(set.count == 3)
 
-        try set.remove(64)
+        try set.remove(idx(64))
         #expect(set.count == 2)
     }
 
@@ -132,10 +137,10 @@ struct BitSetTests {
         var set = Bit.Set()
         #expect(set.isEmpty)
 
-        try set.insert(42)
+        try set.insert(idx(42))
         #expect(!set.isEmpty)
 
-        try set.remove(42)
+        try set.remove(idx(42))
         #expect(set.isEmpty)
     }
 
@@ -145,27 +150,27 @@ struct BitSetTests {
         #expect(set.min == nil)
         #expect(set.max == nil)
 
-        try set.insert(50)
-        #expect(set.min == 50)
-        #expect(set.max == 50)
+        try set.insert(idx(50))
+        #expect(set.min == idx(50))
+        #expect(set.max == idx(50))
 
-        try set.insert(10)
-        try set.insert(90)
-        #expect(set.min == 10)
-        #expect(set.max == 90)
+        try set.insert(idx(10))
+        try set.insert(idx(90))
+        #expect(set.min == idx(10))
+        #expect(set.max == idx(90))
 
-        try set.insert(0)
-        try set.insert(200)
-        #expect(set.min == 0)
-        #expect(set.max == 200)
+        try set.insert(idx(0))
+        try set.insert(idx(200))
+        #expect(set.min == idx(0))
+        #expect(set.max == idx(200))
     }
 
     @Test("Clear")
     func clear() throws {
         var set = Bit.Set()
-        try set.insert(1)
-        try set.insert(2)
-        try set.insert(3)
+        try set.insert(idx(1))
+        try set.insert(idx(2))
+        try set.insert(idx(3))
 
         set.clear()
         #expect(set.isEmpty)
@@ -175,20 +180,20 @@ struct BitSetTests {
 
     @Test("Init from sequence")
     func initFromSequence() {
-        let set = Bit.Set([1, 2, 3, 64, 65, 66])
+        let set = Bit.Set([idx(1), idx(2), idx(3), idx(64), idx(65), idx(66)])
 
         #expect(set.count == 6)
-        #expect(set.contains(1))
-        #expect(set.contains(2))
-        #expect(set.contains(3))
-        #expect(set.contains(64))
-        #expect(set.contains(65))
-        #expect(set.contains(66))
+        #expect(set.contains(idx(1)))
+        #expect(set.contains(idx(2)))
+        #expect(set.contains(idx(3)))
+        #expect(set.contains(idx(64)))
+        #expect(set.contains(idx(65)))
+        #expect(set.contains(idx(66)))
     }
 
     @Test("Init with duplicates")
     func initWithDuplicates() {
-        let set = Bit.Set([1, 2, 1, 3, 2, 1])
+        let set = Bit.Set([idx(1), idx(2), idx(1), idx(3), idx(2), idx(1)])
         #expect(set.count == 3)
     }
 
@@ -197,107 +202,107 @@ struct BitSetTests {
     @Test("Iteration order")
     func iterationOrder() throws {
         var set = Bit.Set()
-        try set.insert(100)
-        try set.insert(10)
-        try set.insert(50)
-        try set.insert(1)
+        try set.insert(idx(100))
+        try set.insert(idx(10))
+        try set.insert(idx(50))
+        try set.insert(idx(1))
 
         let elements = Swift.Array(set)
-        #expect(elements == [1, 10, 50, 100])
+        #expect(elements == [idx(1), idx(10), idx(50), idx(100)])
     }
 
     @Test("Iteration across word boundaries")
     func iterationAcrossWordBoundaries() throws {
         var set = Bit.Set()
-        try set.insert(0)
-        try set.insert(63)
-        try set.insert(64)
-        try set.insert(127)
-        try set.insert(128)
+        try set.insert(idx(0))
+        try set.insert(idx(63))
+        try set.insert(idx(64))
+        try set.insert(idx(127))
+        try set.insert(idx(128))
 
         let elements = Swift.Array(set)
-        #expect(elements == [0, 63, 64, 127, 128])
+        #expect(elements == [idx(0), idx(63), idx(64), idx(127), idx(128)])
     }
 
     // MARK: - Set Algebra
 
     @Test("Union")
     func union() {
-        let a = Bit.Set([1, 2, 3])
-        let b = Bit.Set([3, 4, 5])
+        let a = Bit.Set([idx(1), idx(2), idx(3)])
+        let b = Bit.Set([idx(3), idx(4), idx(5)])
 
         let result = a.union(b)
 
         #expect(result.count == 5)
         for i in 1...5 {
-            #expect(result.contains(i))
+            #expect(result.contains(idx(i)))
         }
     }
 
     @Test("Intersection")
     func intersection() {
-        let a = Bit.Set([1, 2, 3, 4])
-        let b = Bit.Set([3, 4, 5, 6])
+        let a = Bit.Set([idx(1), idx(2), idx(3), idx(4)])
+        let b = Bit.Set([idx(3), idx(4), idx(5), idx(6)])
 
         let result = a.intersection(b)
 
         #expect(result.count == 2)
-        #expect(result.contains(3))
-        #expect(result.contains(4))
-        #expect(!result.contains(1))
-        #expect(!result.contains(5))
+        #expect(result.contains(idx(3)))
+        #expect(result.contains(idx(4)))
+        #expect(!result.contains(idx(1)))
+        #expect(!result.contains(idx(5)))
     }
 
     @Test("Subtracting")
     func subtracting() {
-        let a = Bit.Set([1, 2, 3, 4, 5])
-        let b = Bit.Set([2, 4])
+        let a = Bit.Set([idx(1), idx(2), idx(3), idx(4), idx(5)])
+        let b = Bit.Set([idx(2), idx(4)])
 
         let result = a.subtracting(b)
 
         #expect(result.count == 3)
-        #expect(result.contains(1))
-        #expect(result.contains(3))
-        #expect(result.contains(5))
-        #expect(!result.contains(2))
-        #expect(!result.contains(4))
+        #expect(result.contains(idx(1)))
+        #expect(result.contains(idx(3)))
+        #expect(result.contains(idx(5)))
+        #expect(!result.contains(idx(2)))
+        #expect(!result.contains(idx(4)))
     }
 
     @Test("Symmetric difference")
     func symmetricDifference() {
-        let a = Bit.Set([1, 2, 3])
-        let b = Bit.Set([2, 3, 4])
+        let a = Bit.Set([idx(1), idx(2), idx(3)])
+        let b = Bit.Set([idx(2), idx(3), idx(4)])
 
         let result = a.symmetricDifference(b)
 
         #expect(result.count == 2)
-        #expect(result.contains(1))
-        #expect(result.contains(4))
-        #expect(!result.contains(2))
-        #expect(!result.contains(3))
+        #expect(result.contains(idx(1)))
+        #expect(result.contains(idx(4)))
+        #expect(!result.contains(idx(2)))
+        #expect(!result.contains(idx(3)))
     }
 
     @Test("Union across word boundaries")
     func unionAcrossWordBoundaries() {
-        let a = Bit.Set([0, 63])
-        let b = Bit.Set([64, 127])
+        let a = Bit.Set([idx(0), idx(63)])
+        let b = Bit.Set([idx(64), idx(127)])
 
         let result = a.union(b)
 
         #expect(result.count == 4)
-        #expect(result.contains(0))
-        #expect(result.contains(63))
-        #expect(result.contains(64))
-        #expect(result.contains(127))
+        #expect(result.contains(idx(0)))
+        #expect(result.contains(idx(63)))
+        #expect(result.contains(idx(64)))
+        #expect(result.contains(idx(127)))
     }
 
     // MARK: - Predicates
 
     @Test("isSubset")
     func isSubset() {
-        let small = Bit.Set([1, 2, 3])
-        let large = Bit.Set([1, 2, 3, 4, 5])
-        let disjoint = Bit.Set([10, 11, 12])
+        let small = Bit.Set([idx(1), idx(2), idx(3)])
+        let large = Bit.Set([idx(1), idx(2), idx(3), idx(4), idx(5)])
+        let disjoint = Bit.Set([idx(10), idx(11), idx(12)])
 
         #expect(small.isSubset(of: large))
         #expect(!large.isSubset(of: small))
@@ -307,8 +312,8 @@ struct BitSetTests {
 
     @Test("isSuperset")
     func isSuperset() {
-        let small = Bit.Set([1, 2, 3])
-        let large = Bit.Set([1, 2, 3, 4, 5])
+        let small = Bit.Set([idx(1), idx(2), idx(3)])
+        let large = Bit.Set([idx(1), idx(2), idx(3), idx(4), idx(5)])
 
         #expect(large.isSuperset(of: small))
         #expect(!small.isSuperset(of: large))
@@ -317,9 +322,9 @@ struct BitSetTests {
 
     @Test("isDisjoint")
     func isDisjoint() {
-        let a = Bit.Set([1, 2, 3])
-        let b = Bit.Set([4, 5, 6])
-        let c = Bit.Set([3, 4, 5])
+        let a = Bit.Set([idx(1), idx(2), idx(3)])
+        let b = Bit.Set([idx(4), idx(5), idx(6)])
+        let c = Bit.Set([idx(3), idx(4), idx(5)])
 
         #expect(a.isDisjoint(with: b))
         #expect(!a.isDisjoint(with: c))
@@ -329,9 +334,9 @@ struct BitSetTests {
 
     @Test("Equality")
     func equality() {
-        let a = Bit.Set([1, 2, 3])
-        let b = Bit.Set([1, 2, 3])
-        let c = Bit.Set([1, 2, 4])
+        let a = Bit.Set([idx(1), idx(2), idx(3)])
+        let b = Bit.Set([idx(1), idx(2), idx(3)])
+        let c = Bit.Set([idx(1), idx(2), idx(4)])
 
         #expect(a == b)
         #expect(a != c)
@@ -348,7 +353,7 @@ struct BitSetTests {
 
     @Test("Description")
     func description() {
-        let set = Bit.Set([1, 2, 3])
+        let set = Bit.Set([idx(1), idx(2), idx(3)])
         let desc = set.description
         #expect(desc.contains("Bit.Set"))
         #expect(desc.contains("1"))

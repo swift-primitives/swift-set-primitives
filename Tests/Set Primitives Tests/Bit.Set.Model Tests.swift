@@ -32,6 +32,20 @@ struct BitSetModelTests {
     /// Reference model using Swift.Set<Int> for comparison.
     typealias SetModel = Swift.Set<Int>
 
+    // Helper to create Bit.Index from Int
+    func idx(_ n: Int) -> Bit.Index {
+        Bit.Index(__unchecked: (), position: n)
+    }
+
+    // Helper to convert Bit.Set to Set<Int> for comparison
+    func toIntSet(_ bitSet: Bit.Set) -> SetModel {
+        var result = SetModel()
+        for index in bitSet {
+            result.insert(index.position.rawValue)
+        }
+        return result
+    }
+
     @Test("Random operations match Swift.Set model")
     func randomOperationsMatchModel() throws {
         var rng = LCG(seed: 12345)
@@ -44,17 +58,17 @@ struct BitSetModelTests {
 
             switch op {
             case 0:  // insert
-                let bitResult = try bitSet.insert(value)
+                let bitResult = try bitSet.insert(idx(value))
                 let modelResult = model.insert(value).inserted
                 #expect(bitResult == modelResult)
 
             case 1:  // remove
-                let bitResult = bitSet.contains(value) ? (try? bitSet.remove(value)) != nil : false
+                let bitResult = bitSet.contains(idx(value)) ? (try? bitSet.remove(idx(value))) != nil : false
                 let modelResult = model.remove(value) != nil
                 #expect(bitResult == modelResult)
 
             case 2:  // contains
-                #expect(bitSet.contains(value) == model.contains(value))
+                #expect(bitSet.contains(idx(value)) == model.contains(value))
 
             default:
                 break
@@ -66,7 +80,7 @@ struct BitSetModelTests {
         }
 
         // Final verification
-        #expect(Swift.Set(bitSet) == model)
+        #expect(toIntSet(bitSet) == model)
     }
 
     @Test("Word boundary operations match model")
@@ -78,23 +92,23 @@ struct BitSetModelTests {
         let boundaryValues = [0, 1, 62, 63, 64, 65, 126, 127, 128, 129, 191, 192]
 
         for value in boundaryValues {
-            #expect(try bitSet.insert(value) == true)
+            #expect(try bitSet.insert(idx(value)) == true)
             model.insert(value)
         }
 
         #expect(bitSet.count == model.count)
 
         for value in boundaryValues {
-            #expect(bitSet.contains(value) == model.contains(value))
+            #expect(bitSet.contains(idx(value)) == model.contains(value))
         }
 
         // Remove every other
         for (index, value) in boundaryValues.enumerated() where index % 2 == 0 {
-            #expect((try? bitSet.remove(value)) != nil)
+            #expect((try? bitSet.remove(idx(value))) != nil)
             model.remove(value)
         }
 
-        #expect(Swift.Set(bitSet) == model)
+        #expect(toIntSet(bitSet) == model)
     }
 
     @Test("Union matches model")
@@ -109,8 +123,8 @@ struct BitSetModelTests {
         for _ in 0..<100 {
             let valueA = Int(rng.next() % 200)
             let valueB = Int(rng.next() % 200)
-            try bitSetA.insert(valueA)
-            try bitSetB.insert(valueB)
+            try bitSetA.insert(idx(valueA))
+            try bitSetB.insert(idx(valueB))
             modelA.insert(valueA)
             modelB.insert(valueB)
         }
@@ -118,7 +132,7 @@ struct BitSetModelTests {
         let bitUnion = bitSetA.union(bitSetB)
         let modelUnion = modelA.union(modelB)
 
-        #expect(Swift.Set(bitUnion) == modelUnion)
+        #expect(toIntSet(bitUnion) == modelUnion)
     }
 
     @Test("Intersection matches model")
@@ -133,8 +147,8 @@ struct BitSetModelTests {
         for _ in 0..<100 {
             let valueA = Int(rng.next() % 100)
             let valueB = Int(rng.next() % 100)
-            try bitSetA.insert(valueA)
-            try bitSetB.insert(valueB)
+            try bitSetA.insert(idx(valueA))
+            try bitSetB.insert(idx(valueB))
             modelA.insert(valueA)
             modelB.insert(valueB)
         }
@@ -142,7 +156,7 @@ struct BitSetModelTests {
         let bitIntersection = bitSetA.intersection(bitSetB)
         let modelIntersection = modelA.intersection(modelB)
 
-        #expect(Swift.Set(bitIntersection) == modelIntersection)
+        #expect(toIntSet(bitIntersection) == modelIntersection)
     }
 
     @Test("Subtracting matches model")
@@ -157,8 +171,8 @@ struct BitSetModelTests {
         for _ in 0..<100 {
             let valueA = Int(rng.next() % 100)
             let valueB = Int(rng.next() % 100)
-            try bitSetA.insert(valueA)
-            try bitSetB.insert(valueB)
+            try bitSetA.insert(idx(valueA))
+            try bitSetB.insert(idx(valueB))
             modelA.insert(valueA)
             modelB.insert(valueB)
         }
@@ -166,7 +180,7 @@ struct BitSetModelTests {
         let bitDifference = bitSetA.subtracting(bitSetB)
         let modelDifference = modelA.subtracting(modelB)
 
-        #expect(Swift.Set(bitDifference) == modelDifference)
+        #expect(toIntSet(bitDifference) == modelDifference)
     }
 
     @Test("Symmetric difference matches model")
@@ -181,8 +195,8 @@ struct BitSetModelTests {
         for _ in 0..<100 {
             let valueA = Int(rng.next() % 100)
             let valueB = Int(rng.next() % 100)
-            try bitSetA.insert(valueA)
-            try bitSetB.insert(valueB)
+            try bitSetA.insert(idx(valueA))
+            try bitSetB.insert(idx(valueB))
             modelA.insert(valueA)
             modelB.insert(valueB)
         }
@@ -190,7 +204,7 @@ struct BitSetModelTests {
         let bitSymmetric = bitSetA.symmetricDifference(bitSetB)
         let modelSymmetric = modelA.symmetricDifference(modelB)
 
-        #expect(Swift.Set(bitSymmetric) == modelSymmetric)
+        #expect(toIntSet(bitSymmetric) == modelSymmetric)
     }
 
     @Test("isSubset matches model")
@@ -202,11 +216,11 @@ struct BitSetModelTests {
 
         // A is subset of B
         for i in 0..<10 {
-            try bitSetA.insert(i)
+            try bitSetA.insert(idx(i))
             modelA.insert(i)
         }
         for i in 0..<20 {
-            try bitSetB.insert(i)
+            try bitSetB.insert(idx(i))
             modelB.insert(i)
         }
 
@@ -214,7 +228,7 @@ struct BitSetModelTests {
         #expect(bitSetB.isSubset(of: bitSetA) == modelB.isSubset(of: modelA))
 
         // Add element not in B
-        try bitSetA.insert(100)
+        try bitSetA.insert(idx(100))
         modelA.insert(100)
         #expect(bitSetA.isSubset(of: bitSetB) == modelA.isSubset(of: modelB))
     }
@@ -227,11 +241,11 @@ struct BitSetModelTests {
         var modelB = SetModel()
 
         for i in 0..<20 {
-            try bitSetA.insert(i)
+            try bitSetA.insert(idx(i))
             modelA.insert(i)
         }
         for i in 0..<10 {
-            try bitSetB.insert(i)
+            try bitSetB.insert(idx(i))
             modelB.insert(i)
         }
 
@@ -248,18 +262,18 @@ struct BitSetModelTests {
 
         // Disjoint
         for i in 0..<10 {
-            try bitSetA.insert(i)
+            try bitSetA.insert(idx(i))
             modelA.insert(i)
         }
         for i in 10..<20 {
-            try bitSetB.insert(i)
+            try bitSetB.insert(idx(i))
             modelB.insert(i)
         }
 
         #expect(bitSetA.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
 
         // Not disjoint
-        try bitSetA.insert(15)
+        try bitSetA.insert(idx(15))
         modelA.insert(15)
         #expect(bitSetA.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
     }
@@ -272,12 +286,12 @@ struct BitSetModelTests {
 
         for _ in 0..<100 {
             let value = Int(rng.next() % 1000)
-            try bitSet.insert(value)
+            try bitSet.insert(idx(value))
             model.insert(value)
         }
 
-        #expect(bitSet.min == model.min())
-        #expect(bitSet.max == model.max())
+        #expect(bitSet.min?.position.rawValue == model.min())
+        #expect(bitSet.max?.position.rawValue == model.max())
     }
 
     @Test("Iteration produces sorted elements")
@@ -286,10 +300,10 @@ struct BitSetModelTests {
         var bitSet = Bit.Set()
 
         for _ in 0..<100 {
-            try bitSet.insert(Int(rng.next() % 500))
+            try bitSet.insert(idx(Int(rng.next() % 500)))
         }
 
-        let elements = Swift.Array(bitSet)
+        let elements = Swift.Array(bitSet).map { $0.position.rawValue }
 
         // Should be sorted
         #expect(elements == elements.sorted())
@@ -307,23 +321,23 @@ struct BitSetModelTests {
         // Insert sparse values across a wide range
         for _ in 0..<50 {
             let value = Int(rng.next() % 100000)
-            try bitSet.insert(value)
+            try bitSet.insert(idx(value))
             model.insert(value)
         }
 
         #expect(bitSet.count == model.count)
-        #expect(Swift.Set(bitSet) == model)
+        #expect(toIntSet(bitSet) == model)
 
         // Remove some
         for _ in 0..<25 {
             let value = Int(rng.next() % 100000)
-            if bitSet.contains(value) {
-                try bitSet.remove(value)
+            if bitSet.contains(idx(value)) {
+                try bitSet.remove(idx(value))
             }
             model.remove(value)
         }
 
-        #expect(Swift.Set(bitSet) == model)
+        #expect(toIntSet(bitSet) == model)
     }
 
     @Test("Heavy insert/remove cycles")
@@ -336,22 +350,22 @@ struct BitSetModelTests {
             // Insert phase
             for _ in 0..<100 {
                 let value = Int(rng.next() % 200)
-                try bitSet.insert(value)
+                try bitSet.insert(idx(value))
                 model.insert(value)
             }
 
-            #expect(Swift.Set(bitSet) == model, "Mismatch after insert phase \(cycle)")
+            #expect(toIntSet(bitSet) == model, "Mismatch after insert phase \(cycle)")
 
             // Remove phase
             for _ in 0..<50 {
                 let value = Int(rng.next() % 200)
-                if bitSet.contains(value) {
-                    try bitSet.remove(value)
+                if bitSet.contains(idx(value)) {
+                    try bitSet.remove(idx(value))
                 }
                 model.remove(value)
             }
 
-            #expect(Swift.Set(bitSet) == model, "Mismatch after remove phase \(cycle)")
+            #expect(toIntSet(bitSet) == model, "Mismatch after remove phase \(cycle)")
         }
     }
 }
