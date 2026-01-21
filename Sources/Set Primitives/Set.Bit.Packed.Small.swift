@@ -45,6 +45,13 @@ extension Set<Bit>.Packed {
     /// - Spill occurs when inserting an index >= `inlineCapacity`
     /// - Once spilled, the set remains heap-allocated
     /// - `clear()` resets to inline mode
+    ///
+    /// ## Copyable
+    ///
+    /// Unlike `Stack.Small<Element>` which is `~Copyable` because it stores
+    /// potentially move-only elements, `Set<Bit>.Packed.Small` stores only `UInt`
+    /// words (always trivial) and has no generic element type. Therefore it is
+    /// unconditionally `Copyable`, enabling `Sequence`, `Equatable`, and `Hashable`.
     public struct Small<let inlineWordCount: Int>: Sendable {
         @usableFromInline
         static var _bitsPerWord: Int { UInt.bitWidth }
