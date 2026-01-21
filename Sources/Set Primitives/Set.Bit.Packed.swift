@@ -11,19 +11,19 @@
 
 public import Bit_Primitives
 
-// MARK: - Bit.Set
+// MARK: - Set<Bit>.Packed
 
-extension Bit {
+extension Set where Element == Bit {
     /// Packed bit set using word-sized storage.
     ///
-    /// `Bit.Set` stores `Bit.Index` values as individual bits, providing O(1)
+    /// `Set<Bit>.Packed` stores `Bit.Index` values as individual bits, providing O(1)
     /// membership testing and efficient set algebra operations. Space usage
     /// is proportional to the maximum index stored, not the number of elements.
     ///
     /// ## Example
     ///
     /// ```swift
-    /// var set = Bit.Set(capacity: 100)
+    /// var set = Set<Bit>.Packed(capacity: 100)
     /// try set.insert(Bit.Index(__unchecked: 42))
     /// set.contains(Bit.Index(__unchecked: 42))  // true
     /// set.count                                  // 1
@@ -33,10 +33,11 @@ extension Bit {
     ///
     /// ## Variants
     ///
-    /// - ``Bit/Set``: Dynamically-growing storage (this type)
-    /// - ``Bit/Set/Bounded``: Fixed-capacity, throws on overflow
-    /// - ``Bit/Set/Inline``: Zero-allocation inline storage with compile-time capacity
-    public struct Set: Sendable {
+    /// - ``Set/Packed-swift.struct``: Dynamically-growing storage (this type)
+    /// - ``Set/Packed-swift.struct/Bounded``: Fixed-capacity, throws on overflow
+    /// - ``Set/Packed-swift.struct/Inline``: Zero-allocation inline storage with compile-time capacity
+    /// - ``Set/Packed-swift.struct/Small``: Inline storage with automatic spill to heap
+    public struct Packed: Sendable {
         @usableFromInline
         static var _bitsPerWord: Int { UInt.bitWidth }
 
@@ -53,7 +54,7 @@ extension Bit {
         }
 
         @inlinable
-        public init(capacity: Int) throws(__BitSetError) {
+        public init(capacity: Int) throws(__SetBitPackedError) {
             guard capacity >= 0 else {
                 throw .invalidCapacity
             }
@@ -66,7 +67,7 @@ extension Bit {
 
 // MARK: - Properties
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     public var capacity: Int { _capacity }
 
@@ -93,7 +94,7 @@ extension Bit.Set {
 
 // MARK: - Membership
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
         let i = index.position.rawValue
@@ -107,10 +108,10 @@ extension Bit.Set {
 
 // MARK: - Mutation
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Bit.Index) throws(__BitSetError) -> Bool {
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 else {
             throw .bounds(index: i, capacity: _capacity)
@@ -130,7 +131,7 @@ extension Bit.Set {
 
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Bit.Index) throws(__BitSetError) -> Bool {
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 && i < _capacity else {
             throw .bounds(index: i, capacity: _capacity)
@@ -151,7 +152,7 @@ extension Bit.Set {
     }
 
     @usableFromInline
-    mutating func _grow(toInclude index: Int) throws(__BitSetError) {
+    mutating func _grow(toInclude index: Int) throws(__SetBitPackedError) {
         let newCapacity = index + 1
         let newWordCount = (newCapacity + Self._bitsPerWord - 1) / Self._bitsPerWord
         let oldWordCount = _storage.count
@@ -168,7 +169,7 @@ extension Bit.Set {
 
 // MARK: - Set Algebra
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     public func union(_ other: Self) -> Self {
         var result = self
@@ -241,7 +242,7 @@ extension Bit.Set {
 
 // MARK: - Set Relations
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
         for i in 0..<_storage.count {
@@ -273,7 +274,7 @@ extension Bit.Set {
 
 // MARK: - Iteration
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     @inlinable
     public func forEach(_ body: (Bit.Index) -> Void) {
         for (wordIndex, var word) in _storage.enumerated() {
@@ -291,7 +292,7 @@ extension Bit.Set {
 
 // MARK: - Additional Properties
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     /// The smallest element in the set, or `nil` if empty.
     ///
     /// - Complexity: O(n/w) where w is word bit width
@@ -335,7 +336,7 @@ extension Bit.Set {
 
 // MARK: - Additional Initializers
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     /// Creates a bit set from a sequence of bit indices.
     ///
     /// - Parameter elements: The elements to include.
@@ -350,7 +351,7 @@ extension Bit.Set {
 
 // MARK: - Sequence
 
-extension Bit.Set: Sequence {
+extension Set<Bit>.Packed: Sequence {
     /// An iterator over the elements of a bit set.
     ///
     /// Elements are yielded in ascending order.
@@ -398,18 +399,18 @@ extension Bit.Set: Sequence {
 
 // MARK: - Equatable
 
-extension Bit.Set: Equatable {}
+extension Set<Bit>.Packed: Equatable {}
 
 // MARK: - Hashable
 
-extension Bit.Set: Hashable {}
+extension Set<Bit>.Packed: Hashable {}
 
 // MARK: - CustomStringConvertible
 
-extension Bit.Set: CustomStringConvertible {
+extension Set<Bit>.Packed: CustomStringConvertible {
     public var description: String {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
-        return "Bit.Set(\(elements.map { String($0.position.rawValue) }.joined(separator: ", "))\(suffix))"
+        return "Set<Bit>.Packed(\(elements.map { String($0.position.rawValue) }.joined(separator: ", "))\(suffix))"
     }
 }

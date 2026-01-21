@@ -11,12 +11,12 @@
 
 public import Bit_Primitives
 
-// MARK: - Bit.Set.Inline
+// MARK: - Set<Bit>.Packed.Inline
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     /// Fixed-capacity packed bit set with inline storage.
     ///
-    /// `Bit.Set.Inline` uses zero-allocation inline storage with compile-time
+    /// `Set<Bit>.Packed.Inline` uses zero-allocation inline storage with compile-time
     /// capacity. Ideal for small bit sets where heap allocation is unnecessary.
     public struct Inline<let wordCount: Int>: Sendable {
         @usableFromInline
@@ -37,7 +37,7 @@ extension Bit.Set {
 
 // MARK: - Properties
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     public var capacity: Int { Self.capacity }
 
@@ -61,7 +61,7 @@ extension Bit.Set.Inline {
 
 // MARK: - Membership
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < Self.capacity else { return false }
@@ -74,10 +74,10 @@ extension Bit.Set.Inline {
 
 // MARK: - Mutation
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__BitSetInlineError) -> Bool {
+    public mutating func insert(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
             if index >= Self.capacity {
                 throw .overflow
@@ -94,7 +94,7 @@ extension Bit.Set.Inline {
 
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__BitSetInlineError) -> Bool {
+    public mutating func remove(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
             throw .bounds(index: index, capacity: Self.capacity)
         }
@@ -116,7 +116,7 @@ extension Bit.Set.Inline {
 
 // MARK: - Set Algebra
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     public func union(_ other: Self) -> Self {
         var result = self
@@ -176,7 +176,7 @@ extension Bit.Set.Inline {
 
 // MARK: - Set Relations
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
         for i in 0..<wordCount {
@@ -205,7 +205,7 @@ extension Bit.Set.Inline {
 
 // MARK: - Iteration
 
-extension Bit.Set.Inline {
+extension Set<Bit>.Packed.Inline {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for wordIndex in 0..<wordCount {
@@ -222,7 +222,7 @@ extension Bit.Set.Inline {
 
 // MARK: - Equatable
 
-extension Bit.Set.Inline: Equatable {
+extension Set<Bit>.Packed.Inline: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         for i in 0..<wordCount {
@@ -234,7 +234,7 @@ extension Bit.Set.Inline: Equatable {
 
 // MARK: - Hashable
 
-extension Bit.Set.Inline: Hashable {
+extension Set<Bit>.Packed.Inline: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         for i in 0..<wordCount {

@@ -11,12 +11,12 @@
 
 public import Bit_Primitives
 
-// MARK: - Bit.Set.Bounded
+// MARK: - Set<Bit>.Packed.Bounded
 
-extension Bit.Set {
+extension Set<Bit>.Packed {
     /// Fixed-capacity packed bit set.
     ///
-    /// `Bit.Set.Bounded` allocates storage upfront and throws on overflow.
+    /// `Set<Bit>.Packed.Bounded` allocates storage upfront and throws on overflow.
     /// Use this variant when capacity is known or in contexts requiring
     /// predictable memory behavior.
     public struct Bounded: Sendable {
@@ -29,7 +29,7 @@ extension Bit.Set {
         public let capacity: Int
 
         @inlinable
-        public init(capacity: Int) throws(__BitSetBoundedError) {
+        public init(capacity: Int) throws(__SetBitPackedBoundedError) {
             guard capacity >= 0 else {
                 throw .invalidCapacity
             }
@@ -42,7 +42,7 @@ extension Bit.Set {
 
 // MARK: - Properties
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     public var count: Int {
         var total = 0
@@ -63,7 +63,7 @@ extension Bit.Set.Bounded {
 
 // MARK: - Membership
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < capacity else { return false }
@@ -76,10 +76,10 @@ extension Bit.Set.Bounded {
 
 // MARK: - Mutation
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__BitSetBoundedError) -> Bool {
+    public mutating func insert(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
         guard index >= 0 && index < capacity else {
             if index >= capacity {
                 throw .overflow
@@ -96,7 +96,7 @@ extension Bit.Set.Bounded {
 
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__BitSetBoundedError) -> Bool {
+    public mutating func remove(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
         guard index >= 0 && index < capacity else {
             throw .bounds(index: index, capacity: capacity)
         }
@@ -118,7 +118,7 @@ extension Bit.Set.Bounded {
 
 // MARK: - Set Algebra
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func union(_ other: Self) -> Self {
         precondition(capacity == other.capacity, "Capacities must match")
@@ -186,7 +186,7 @@ extension Bit.Set.Bounded {
 
 // MARK: - Set Relations
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
         precondition(capacity == other.capacity, "Capacities must match")
@@ -217,7 +217,7 @@ extension Bit.Set.Bounded {
 
 // MARK: - Iteration
 
-extension Bit.Set.Bounded {
+extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for (wordIndex, var word) in _storage.enumerated() {
@@ -235,8 +235,8 @@ extension Bit.Set.Bounded {
 
 // MARK: - Equatable
 
-extension Bit.Set.Bounded: Equatable {}
+extension Set<Bit>.Packed.Bounded: Equatable {}
 
 // MARK: - Hashable
 
-extension Bit.Set.Bounded: Hashable {}
+extension Set<Bit>.Packed.Bounded: Hashable {}
