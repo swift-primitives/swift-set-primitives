@@ -235,8 +235,21 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Packed.Bounded: Equatable {}
+extension Set<Bit>.Packed.Bounded: Equatable {
+    /// Explicit implementation to avoid compiler crash in synthesized __derived_struct_equals.
+    @inlinable
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.capacity == rhs.capacity && lhs._storage == rhs._storage
+    }
+}
 
 // MARK: - Hashable
 
-extension Set<Bit>.Packed.Bounded: Hashable {}
+extension Set<Bit>.Packed.Bounded: Hashable {
+    /// Explicit implementation to match explicit Equatable.
+    @inlinable
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(capacity)
+        hasher.combine(_storage)
+    }
+}
