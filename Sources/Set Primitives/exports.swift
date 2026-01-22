@@ -1,7 +1,6 @@
 // exports.swift
-// Re-export dependencies for consumers.
+// Re-export internal modules for consumers.
+// Users import Set_Primitives and get everything.
 
-@_exported import Standard_Library_Extensions
-@_exported import Bit_Primitives
-@_exported import Index_Primitives
-@_exported import Collection_Primitives
+@_exported public import Set_Primitives_Core
+@_exported public import Set_Primitives_Sequence
