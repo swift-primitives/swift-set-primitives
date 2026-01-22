@@ -104,7 +104,7 @@ extension Set_Primitives_Core.Set {
     /// - ``Set/Ordered/Inline``: Zero-allocation inline storage with compile-time capacity
     /// - ``Set/Ordered/Small``: Inline storage with automatic spill to heap
     @safe
-    public struct Ordered: ~Copyable {
+    public struct Ordered {
 
         // MARK: - ElementStorage (nested to support future ~Copyable container)
 
@@ -268,7 +268,7 @@ extension Set_Primitives_Core.Set {
         /// `Set.Ordered.Bounded` allocates storage upfront and throws when
         /// inserting an element would exceed the capacity.
         @safe
-        public struct Bounded: ~Copyable {
+        public struct Bounded {
             @usableFromInline
             var _elementStorage: ElementStorage
 
@@ -478,10 +478,30 @@ extension Set_Primitives_Core.Set {
     }
 }
 
-// MARK: - ~Copyable
+// MARK: - Conditional Copyable
 
-// Note: Set.Ordered and all variants are UNCONDITIONALLY ~Copyable because they contain Hash.Table
-// which requires deinit for storage cleanup. This enables proper support for ~Copyable elements.
+/// `Set.Ordered` is `Copyable` when its element type is `Copyable`.
+///
+/// This enables value semantics with copy-on-write optimization:
+/// copies share storage until mutation.
+extension Set_Primitives_Core.Set.Ordered: Copyable where Element: Copyable {}
+
+/// `Set.Ordered.Bounded` is `Copyable` when its element type is `Copyable`.
+extension Set_Primitives_Core.Set.Ordered.Bounded: Copyable where Element: Copyable {}
+
+// Note: Set.Ordered.Inline and Set.Ordered.Small are UNCONDITIONALLY ~Copyable
+// because they have deinit for inline storage cleanup.
+
+// MARK: - Conditional Sequence
+
+/// `Set.Ordered` conforms to `Swift.Sequence` when `Element` is `Copyable`.
+///
+/// This enables `for-in` loops, `map`, `filter`, and other sequence operations.
+/// For iteration without Copyable, use ``forEach(_:)`` instead.
+extension Set_Primitives_Core.Set.Ordered: Swift.Sequence where Element: Copyable {
+    // Note: Iterator is already defined below in the Iterator section.
+    // Sequence conformance uses the existing makeIterator() method.
+}
 
 // MARK: - Initialization
 
@@ -549,17 +569,38 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 }
 
-// MARK: - Storage Uniqueness
+// MARK: - Storage Uniqueness (CoW)
 
 extension Set_Primitives_Core.Set.Ordered {
-    /// Ensures element storage is uniquely owned.
+    /// Ensures element storage is uniquely owned (copy-on-write).
     ///
-    /// Since `Set.Ordered` is `~Copyable`, storage is always unique.
-    /// This method exists for symmetry with other variants.
+    /// When `Element` is `Copyable`, `Set.Ordered` supports copy-on-write semantics.
+    /// This method copies storage if it's shared.
+    ///
+    /// When `Element` is `~Copyable`, `Set.Ordered` is also `~Copyable` and storage
+    /// is always unique (the check will always pass).
     @usableFromInline
     @inline(__always)
     mutating func makeUnique() {
-        // No-op: ~Copyable struct always has unique storage
+        if !isKnownUniquelyReferenced(&_elementStorage) {
+            _elementStorage = _elementStorage.copy()
+            unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
+            // Hash.Table uses class storage, so copying Set.Ordered shares it.
+            // We need to rebuild the hash table after copying element storage.
+            _indices = _rebuildIndices()
+        }
+    }
+
+    /// Rebuilds hash table indices from current element storage.
+    @usableFromInline
+    func _rebuildIndices() -> Hash.Table<Element> {
+        var newIndices = Hash.Table<Element>(minimumCapacity: count)
+        for i in 0..<count {
+            let element = _elementStorage._readElement(at: i)
+            let position = Index_Primitives.Index<Element>(__unchecked: (), position: i)
+            newIndices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+        }
+        return newIndices
     }
 }
 
@@ -830,10 +871,9 @@ extension Set_Primitives_Core.Set.Ordered.Small: @unchecked Sendable where Eleme
 
 // MARK: - Iterator (Copyable elements only)
 
-// Note: Set.Ordered is ~Copyable, so it cannot conform to Swift.Sequence
-// (which requires Copyable). Instead, we provide Iterator and makeIterator()
-// directly, allowing `for element in set` syntax via the compiler's built-in
-// support for types with makeIterator() methods.
+// When Element: Copyable, Set.Ordered conforms to Swift.Sequence, enabling
+// for-in loops, map, filter, and other sequence operations.
+// For ~Copyable elements, use forEach() or index-based iteration instead.
 
 extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Iterator for Set.Ordered that copies elements for safe iteration.
