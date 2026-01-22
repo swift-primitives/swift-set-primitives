@@ -35,8 +35,9 @@
 //
 // ## Key Constraint
 //
-// - Elements are always Copyable (Hashable implies Copyable)
-// - The container itself supports ~Copyable for storage in move-only contexts
+// - Elements can be ~Copyable (using Hash.Protocol, not Hashable)
+// - Container is conditionally Copyable when Element is Copyable
+// - Operations use consuming/borrowing semantics for ~Copyable support
 //
 // ===----------------------------------------------------------------------===//
 
@@ -137,16 +138,16 @@ extension Set_Primitives_Core.Set {
 
             /// Initializes element at the given index.
             @usableFromInline
-            func _initializeElement(at index: Int, to element: Element) {
+            func _initializeElement(at index: Int, to element: consuming Element) {
                 let ptr = unsafe withUnsafeMutablePointerToElements { unsafe $0 + index }
                 unsafe ptr.initialize(to: element)
             }
 
-            /// Reads element at the given index.
+            /// Provides borrowing access to the element at the given index.
             @usableFromInline
-            func _readElement(at index: Int) -> Element {
+            func withElement<R>(at index: Int, _ body: (borrowing Element) -> R) -> R {
                 unsafe withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[index]
+                    body(unsafe (elements + index).pointee)
                 }
             }
 
@@ -185,34 +186,6 @@ extension Set_Primitives_Core.Set {
                         }
                     }
                 }
-            }
-
-            /// Copies all elements to new storage.
-            @usableFromInline
-            func _copyAllElements(to newStorage: ElementStorage) {
-                let count = header
-                guard count > 0 else { return }
-                _ = unsafe withUnsafeMutablePointerToElements { src in
-                    unsafe newStorage.withUnsafeMutablePointerToElements { dst in
-                        for i in 0..<count {
-                            unsafe (dst + i).initialize(to: src[i])
-                        }
-                    }
-                }
-            }
-
-            /// Creates a copy of this storage.
-            @usableFromInline
-            func copy() -> ElementStorage {
-                let count = header
-                guard count > 0 else {
-                    return ElementStorage.create(minimumCapacity: 0)
-                }
-
-                let new = ElementStorage.create(minimumCapacity: capacity)
-                new.header = count
-                _copyAllElements(to: new)
-                return new
             }
 
             /// Deinitializes all elements.
@@ -569,16 +542,12 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 }
 
-// MARK: - Storage Uniqueness (CoW)
+// MARK: - Storage Uniqueness (CoW) - Copyable elements only
 
-extension Set_Primitives_Core.Set.Ordered {
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Ensures element storage is uniquely owned (copy-on-write).
     ///
-    /// When `Element` is `Copyable`, `Set.Ordered` supports copy-on-write semantics.
     /// This method copies storage if it's shared.
-    ///
-    /// When `Element` is `~Copyable`, `Set.Ordered` is also `~Copyable` and storage
-    /// is always unique (the check will always pass).
     @usableFromInline
     @inline(__always)
     mutating func makeUnique() {
@@ -604,10 +573,102 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 }
 
-// MARK: - Core Operations
+// MARK: - Core Operations (Base - for ~Copyable elements)
 
-extension Set_Primitives_Core.Set.Ordered {
+extension Set_Primitives_Core.Set.Ordered where Element: ~Copyable {
     /// Returns the index of the given element, or `nil` if not present.
+    ///
+    /// For `~Copyable` elements, this uses borrowing comparison.
+    @inlinable
+    public func index(_ element: borrowing Element) -> Int? {
+        let position = _indices.position(
+            forHash: element.hashValue,
+            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
+        )
+        return position?.position.rawValue
+    }
+
+    /// Inserts an element into the set.
+    ///
+    /// For `~Copyable` elements, ownership is transferred to the set.
+    @inlinable
+    @discardableResult
+    public mutating func insert(_ element: consuming Element) -> (inserted: Bool, index: Int) {
+        // Check for existing element using borrowing comparison
+        if let existing = _indices.position(
+            forHash: element.hashValue,
+            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
+        ) {
+            // Element exists - it will be discarded since we consumed it
+            // Note: For ~Copyable this means the duplicate is dropped
+            return (false, existing.position.rawValue)
+        }
+
+        let index = _elementStorage.header
+        ensureCapacity(index + 1)
+        _elementStorage._initializeElement(at: index, to: element)
+        _elementStorage.header = index + 1
+
+        // Insert position into hash table
+        let position = Index_Primitives.Index<Element>(__unchecked: (), position: index)
+        _indices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+
+        return (true, index)
+    }
+
+    /// Removes an element from the set.
+    ///
+    /// For `~Copyable` elements, ownership is transferred out if found.
+    @inlinable
+    @discardableResult
+    public mutating func remove(_ element: borrowing Element) -> Element? {
+        guard let removedPosition = _indices.remove(
+            hashValue: element.hashValue,
+            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
+        ) else {
+            return nil
+        }
+
+        let removedIndex = removedPosition.position.rawValue
+        let count = _elementStorage.header
+        let removed = _elementStorage._moveElement(at: removedIndex)
+        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedIndex, count: count)
+
+        // Update hash table positions after removal
+        _indices.decrementPositions(after: removedPosition)
+
+        return removed
+    }
+
+    /// Returns whether the set contains the given element.
+    ///
+    /// For `~Copyable` elements, this uses borrowing comparison.
+    @inlinable
+    public func contains(_ element: borrowing Element) -> Bool {
+        _indices.position(
+            forHash: element.hashValue,
+            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
+        ) != nil
+    }
+
+    /// Removes all elements from the set.
+    @inlinable
+    public mutating func clear(keepingCapacity: Bool = false) {
+        _elementStorage._deinitializeAllElements()
+        _indices.removeAll(keepingCapacity: keepingCapacity)
+        if !keepingCapacity {
+            _elementStorage = ElementStorage.create(minimumCapacity: 0)
+            unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
+        }
+    }
+}
+
+// MARK: - Core Operations (Copyable - with CoW)
+
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
+    /// Returns the index of the given element, or `nil` if not present.
+    ///
+    /// For `Copyable` elements, this uses copy-based comparison.
     @inlinable
     public func index(_ element: Element) -> Int? {
         let position = _indices.position(
@@ -617,7 +678,9 @@ extension Set_Primitives_Core.Set.Ordered {
         return position?.position.rawValue
     }
 
-    /// Inserts an element into the set.
+    /// Inserts an element into the set (CoW-aware).
+    ///
+    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     @discardableResult
     public mutating func insert(_ element: Element) -> (inserted: Bool, index: Int) {
@@ -642,7 +705,9 @@ extension Set_Primitives_Core.Set.Ordered {
         return (true, index)
     }
 
-    /// Removes an element from the set.
+    /// Removes an element from the set (CoW-aware).
+    ///
+    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
@@ -666,6 +731,8 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 
     /// Returns whether the set contains the given element.
+    ///
+    /// For `Copyable` elements, this uses copy-based comparison.
     @inlinable
     public func contains(_ element: Element) -> Bool {
         _indices.position(
@@ -674,7 +741,9 @@ extension Set_Primitives_Core.Set.Ordered {
         ) != nil
     }
 
-    /// Removes all elements from the set.
+    /// Removes all elements from the set (CoW-aware).
+    ///
+    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
@@ -687,10 +756,12 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 }
 
-// MARK: - Element Access
+// MARK: - Element Access (Copyable only - returns copies)
 
-extension Set_Primitives_Core.Set.Ordered {
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Accesses the element at the specified index.
+    ///
+    /// Returns a copy of the element. For `~Copyable` elements, use ``withElement(at:_:)`` instead.
     @inlinable
     public func element(at index: Int) throws(__SetOrderedError) -> Element {
         guard index >= 0 && index < count else {
@@ -700,6 +771,8 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 
     /// Subscript access to elements by index.
+    ///
+    /// Returns a copy of the element. For `~Copyable` elements, use ``withElement(at:_:)`` instead.
     @inlinable
     public subscript(index: Int) -> Element {
         precondition(index >= 0 && index < count, "Index out of bounds")
@@ -707,16 +780,20 @@ extension Set_Primitives_Core.Set.Ordered {
     }
 }
 
-// MARK: - First/Last Accessors
+// MARK: - First/Last Accessors (Copyable only - returns copies)
 
-extension Set_Primitives_Core.Set.Ordered {
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
+    ///
+    /// Returns a copy. For `~Copyable` elements, use `withElement(at: 0, _:)`.
     @inlinable
     public var first: Element? {
         count > 0 ? _elementStorage._readElement(at: 0) : nil
     }
 
     /// The last element, or `nil` if the set is empty.
+    ///
+    /// Returns a copy. For `~Copyable` elements, use `withElement(at: count - 1, _:)`.
     @inlinable
     public var last: Element? {
         count > 0 ? _elementStorage._readElement(at: count - 1) : nil
@@ -925,11 +1002,17 @@ extension Set_Primitives_Core.Set.Ordered: Hash.`Protocol` {
     /// Compares two ordered sets for element-wise equality.
     ///
     /// Two ordered sets are equal if they contain the same elements in the same order.
+    /// Uses borrowing comparison to support `~Copyable` elements.
     @inlinable
     public static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         guard lhs.count == rhs.count else { return false }
         for i in 0..<lhs.count {
-            if lhs._elementStorage._readElement(at: i) != rhs._elementStorage._readElement(at: i) {
+            let matches = lhs._elementStorage.withElement(at: i) { lhsElem in
+                rhs._elementStorage.withElement(at: i) { rhsElem in
+                    lhsElem == rhsElem
+                }
+            }
+            if !matches {
                 return false
             }
         }
@@ -937,13 +1020,17 @@ extension Set_Primitives_Core.Set.Ordered: Hash.`Protocol` {
     }
 
     /// Hashes the essential components of this set by feeding them into the given hasher.
+    ///
+    /// Uses borrowing access to support `~Copyable` elements.
     @inlinable
     public borrowing func hash(into hasher: inout Hasher) {
         hasher.combine(count)
         for i in 0..<count {
             // Use Hash.Protocol's hash(into:) directly instead of hasher.combine()
             // which requires Swift.Hashable
-            _elementStorage._readElement(at: i).hash(into: &hasher)
+            _elementStorage.withElement(at: i) { elem in
+                elem.hash(into: &hasher)
+            }
         }
     }
 }
@@ -953,11 +1040,13 @@ extension Set_Primitives_Core.Set.Ordered: Hash.`Protocol` {
 // is ~Copyable, we cannot conform to these protocols. Use Hash.Protocol's
 // ==, !=, and hashValue instead.
 
-// MARK: - Description (non-protocol)
+// MARK: - Description (non-protocol, Copyable only)
 
 #if !hasFeature(Embedded)
-extension Set_Primitives_Core.Set.Ordered {
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// A textual representation of the set.
+    ///
+    /// Only available when `Element: Copyable` since elements are copied for description.
     public var description: String {
         var result = "Set.Ordered(["
         var first = true
@@ -978,5 +1067,45 @@ extension Set_Primitives_Core.Set.Ordered {
     @usableFromInline
     internal var _identity: ObjectIdentifier {
         ObjectIdentifier(_elementStorage)
+    }
+}
+
+// MARK: - ElementStorage Copyable Helpers
+
+extension Set_Primitives_Core.Set.Ordered.ElementStorage where Element: Copyable {
+    /// Reads element at the given index (returns a copy).
+    @usableFromInline
+    func _readElement(at index: Int) -> Element {
+        unsafe withUnsafeMutablePointerToElements { elements in
+            unsafe elements[index]
+        }
+    }
+
+    /// Copies all elements to new storage.
+    @usableFromInline
+    func _copyAllElements(to newStorage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage) {
+        let count = header
+        guard count > 0 else { return }
+        _ = unsafe withUnsafeMutablePointerToElements { src in
+            unsafe newStorage.withUnsafeMutablePointerToElements { dst in
+                for i in 0..<count {
+                    unsafe (dst + i).initialize(to: src[i])
+                }
+            }
+        }
+    }
+
+    /// Creates a copy of this storage.
+    @usableFromInline
+    func copy() -> Set_Primitives_Core.Set<Element>.Ordered.ElementStorage {
+        let count = header
+        guard count > 0 else {
+            return Set_Primitives_Core.Set<Element>.Ordered.ElementStorage.create(minimumCapacity: 0)
+        }
+
+        let new = Set_Primitives_Core.Set<Element>.Ordered.ElementStorage.create(minimumCapacity: capacity)
+        new.header = count
+        _copyAllElements(to: new)
+        return new
     }
 }
