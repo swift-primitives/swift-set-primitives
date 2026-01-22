@@ -348,4 +348,340 @@ struct OrderedSetTests {
         // Original should be unaffected due to CoW
         #expect(Array(original) == [1, 2, 3])
     }
+
+    // MARK: - Bounded Consuming Iteration
+
+    @Test("Bounded: makeConsumingIterator yields all elements")
+    func boundedMakeConsumingIterator() throws {
+        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+        try set.insert(10)
+        try set.insert(20)
+        try set.insert(30)
+
+        var iterator = set.makeConsumingIterator()
+        var result: [Int] = []
+
+        while let element = iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == [10, 20, 30])
+    }
+
+    @Test("Bounded: consumingForEach processes all elements")
+    func boundedConsumingForEach() throws {
+        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+        try set.insert(1)
+        try set.insert(2)
+        try set.insert(3)
+
+        var sum = 0
+        set.consumingForEach { element in
+            sum += element
+        }
+
+        #expect(sum == 6)
+    }
+
+    @Test("Bounded: consumingCount returns correct count")
+    func boundedConsumingCount() throws {
+        var set = try Set<String>.Ordered.Bounded(capacity: 10)
+        try set.insert("a")
+        try set.insert("b")
+
+        var counted = set.consumingCount()
+        #expect(counted.count == 2)
+
+        var result: [String] = []
+        while let element = counted.iterator.next() {
+            result.append(element)
+        }
+        #expect(result == ["a", "b"])
+    }
+
+    @Test("Bounded: consuming iterator handles empty set")
+    func boundedConsumingIteratorEmpty() throws {
+        let set = try Set<Int>.Ordered.Bounded(capacity: 10)
+        var iterator = set.makeConsumingIterator()
+        #expect(iterator.next() == nil)
+    }
+
+    @Test("Bounded: consuming with CoW copy")
+    func boundedConsumingWithCoWCopy() throws {
+        var original = try Set<Int>.Ordered.Bounded(capacity: 10)
+        try original.insert(1)
+        try original.insert(2)
+        let copy = original
+
+        var result: [Int] = []
+        copy.consumingForEach { element in
+            result.append(element)
+        }
+
+        #expect(result == [1, 2])
+        // Verify original is unaffected
+        #expect(original.count == 2)
+        #expect(original[0] == 1)
+        #expect(original[1] == 2)
+    }
+
+    // MARK: - Inline Consuming Iteration
+
+    @Test("Inline: makeConsumingIterator yields all elements")
+    func inlineMakeConsumingIterator() throws {
+        var set = Set<Int>.Ordered.Inline<8>()
+        try set.insert(10)
+        try set.insert(20)
+        try set.insert(30)
+
+        var iterator = set.makeConsumingIterator()
+        var result: [Int] = []
+
+        while let element = iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == [10, 20, 30])
+    }
+
+    @Test("Inline: consumingForEach processes all elements")
+    func inlineConsumingForEach() throws {
+        var set = Set<Int>.Ordered.Inline<8>()
+        try set.insert(1)
+        try set.insert(2)
+        try set.insert(3)
+
+        var sum = 0
+        set.consumingForEach { element in
+            sum += element
+        }
+
+        #expect(sum == 6)
+    }
+
+    @Test("Inline: consumingCount returns correct count")
+    func inlineConsumingCount() throws {
+        var set = Set<String>.Ordered.Inline<8>()
+        try set.insert("a")
+        try set.insert("b")
+
+        var counted = set.consumingCount()
+        #expect(counted.count == 2)
+
+        var result: [String] = []
+        while let element = counted.iterator.next() {
+            result.append(element)
+        }
+        #expect(result == ["a", "b"])
+    }
+
+    @Test("Inline: consuming iterator handles empty set")
+    func inlineConsumingIteratorEmpty() {
+        let set = Set<Int>.Ordered.Inline<8>()
+        var iterator = set.makeConsumingIterator()
+        #expect(iterator.next() == nil)
+    }
+
+    @Test("Inline: consuming full capacity set")
+    func inlineConsumingFullCapacity() throws {
+        var set = Set<Int>.Ordered.Inline<4>()
+        try set.insert(1)
+        try set.insert(2)
+        try set.insert(3)
+        try set.insert(4)
+        precondition(set.isFull, "Should be at full capacity")
+
+        var result: [Int] = []
+        set.consumingForEach { element in
+            result.append(element)
+        }
+
+        #expect(result == [1, 2, 3, 4])
+    }
+
+    // MARK: - Small Consuming Iteration
+
+    @Test("Small: makeConsumingIterator yields all elements (inline mode)")
+    func smallMakeConsumingIteratorInline() {
+        var set = Set<Int>.Ordered.Small<4>()
+        set.insert(10)
+        set.insert(20)
+        set.insert(30)
+        precondition(!set.isSpilled, "Should be in inline mode")
+
+        var iterator = set.makeConsumingIterator()
+        var result: [Int] = []
+
+        while let element = iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == [10, 20, 30])
+    }
+
+    @Test("Small: makeConsumingIterator yields all elements (heap mode)")
+    func smallMakeConsumingIteratorHeap() {
+        var set = Set<Int>.Ordered.Small<2>()
+        set.insert(1)
+        set.insert(2)
+        set.insert(3) // Triggers spill
+        set.insert(4)
+        precondition(set.isSpilled, "Should be in heap mode")
+
+        var iterator = set.makeConsumingIterator()
+        var result: [Int] = []
+
+        while let element = iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == [1, 2, 3, 4])
+    }
+
+    @Test("Small: consumingForEach processes all elements")
+    func smallConsumingForEach() {
+        var set = Set<Int>.Ordered.Small<4>()
+        set.insert(1)
+        set.insert(2)
+        set.insert(3)
+
+        var sum = 0
+        set.consumingForEach { element in
+            sum += element
+        }
+
+        #expect(sum == 6)
+    }
+
+    @Test("Small: consumingCount returns correct count")
+    func smallConsumingCount() {
+        var set = Set<String>.Ordered.Small<4>()
+        set.insert("a")
+        set.insert("b")
+
+        var counted = set.consumingCount()
+        #expect(counted.count == 2)
+
+        var result: [String] = []
+        while let element = counted.iterator.next() {
+            result.append(element)
+        }
+        #expect(result == ["a", "b"])
+    }
+
+    @Test("Small: consuming iterator handles empty set")
+    func smallConsumingIteratorEmpty() {
+        let set = Set<Int>.Ordered.Small<4>()
+        var iterator = set.makeConsumingIterator()
+        #expect(iterator.next() == nil)
+    }
+
+    @Test("Small: consuming after spill to heap")
+    func smallConsumingAfterSpill() {
+        var set = Set<Int>.Ordered.Small<2>()
+        set.insert(1)
+        set.insert(2)
+        precondition(!set.isSpilled, "Should start in inline mode")
+
+        set.insert(3)
+        set.insert(4)
+        set.insert(5)
+        precondition(set.isSpilled, "Should be in heap mode after spill")
+
+        var result: [Int] = []
+        set.consumingForEach { element in
+            result.append(element)
+        }
+
+        #expect(result == [1, 2, 3, 4, 5])
+    }
+
+    // MARK: - Partial Consumption Tests (Double-Free Prevention)
+
+    @Test("Ordered: partial consumption cleans up remaining")
+    func orderedPartialConsumption() {
+        let set: Set<Int>.Ordered = [1, 2, 3, 4, 5]
+        var iterator = set.makeConsumingIterator()
+
+        // Only consume first 2
+        _ = iterator.next()
+        _ = iterator.next()
+
+        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // If double-free occurred, this would crash
+    }
+
+    @Test("Bounded: partial consumption cleans up remaining")
+    func boundedPartialConsumption() throws {
+        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+        try set.insert(1)
+        try set.insert(2)
+        try set.insert(3)
+        try set.insert(4)
+        try set.insert(5)
+
+        var iterator = set.makeConsumingIterator()
+
+        // Only consume first 2
+        _ = iterator.next()
+        _ = iterator.next()
+
+        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+    }
+
+    @Test("Inline: partial consumption cleans up remaining")
+    func inlinePartialConsumption() throws {
+        var set = Set<Int>.Ordered.Inline<8>()
+        try set.insert(1)
+        try set.insert(2)
+        try set.insert(3)
+        try set.insert(4)
+        try set.insert(5)
+
+        var iterator = set.makeConsumingIterator()
+
+        // Only consume first 2
+        _ = iterator.next()
+        _ = iterator.next()
+
+        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+    }
+
+    @Test("Small: partial consumption cleans up remaining (inline mode)")
+    func smallPartialConsumptionInline() {
+        var set = Set<Int>.Ordered.Small<8>()
+        set.insert(1)
+        set.insert(2)
+        set.insert(3)
+        set.insert(4)
+        set.insert(5)
+        precondition(!set.isSpilled, "Should be in inline mode")
+
+        var iterator = set.makeConsumingIterator()
+
+        // Only consume first 2
+        _ = iterator.next()
+        _ = iterator.next()
+
+        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+    }
+
+    @Test("Small: partial consumption cleans up remaining (heap mode)")
+    func smallPartialConsumptionHeap() {
+        var set = Set<Int>.Ordered.Small<2>()
+        set.insert(1)
+        set.insert(2)
+        set.insert(3)
+        set.insert(4)
+        set.insert(5)
+        precondition(set.isSpilled, "Should be in heap mode")
+
+        var iterator = set.makeConsumingIterator()
+
+        // Only consume first 2
+        _ = iterator.next()
+        _ = iterator.next()
+
+        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+    }
 }
