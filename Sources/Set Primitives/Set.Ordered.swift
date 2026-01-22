@@ -227,6 +227,19 @@ extension Set_Primitives.Set {
                 }
                 header = 0
             }
+
+            /// Deinitializes elements in a range.
+            ///
+            /// Used by consuming iterator to clean up remaining elements.
+            @usableFromInline
+            func _deinitializeElements(from startIndex: Int, count: Int) {
+                guard count > 0 else { return }
+                _ = unsafe withUnsafeMutablePointerToElements { elements in
+                    for i in startIndex..<(startIndex + count) {
+                        unsafe (elements + i).deinitialize(count: 1)
+                    }
+                }
+            }
         }
 
         @usableFromInline

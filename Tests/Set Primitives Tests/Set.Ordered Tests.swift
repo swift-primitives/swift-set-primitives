@@ -264,4 +264,88 @@ struct OrderedSetTests {
             _ = try set.element(at: -1)
         }
     }
+
+    // MARK: - Consuming Iteration
+
+    @Test("makeConsumingIterator yields all elements")
+    func makeConsumingIteratorYieldsAllElements() {
+        let set: Set<Int>.Ordered = [10, 20, 30, 40, 50]
+
+        var iterator = set.makeConsumingIterator()
+        var result: [Int] = []
+
+        while let element = iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == [10, 20, 30, 40, 50])
+    }
+
+    @Test("consumingForEach processes all elements")
+    func consumingForEachProcessesAllElements() {
+        let set: Set<Int>.Ordered = [1, 2, 3, 4, 5]
+
+        var sum = 0
+        set.consumingForEach { element in
+            sum += element
+        }
+
+        #expect(sum == 15)
+    }
+
+    @Test("consumingCount returns correct count and iterator")
+    func consumingCountReturnsCorrectCountAndIterator() {
+        let set: Set<String>.Ordered = ["a", "b", "c", "d"]
+
+        var counted = set.consumingCount()
+        #expect(counted.count == 4)
+
+        var result: [String] = []
+        result.reserveCapacity(counted.count)
+
+        while let element = counted.iterator.next() {
+            result.append(element)
+        }
+
+        #expect(result == ["a", "b", "c", "d"])
+    }
+
+    @Test("Consuming iterator handles empty set")
+    func consumingIteratorHandlesEmptySet() {
+        let set = Set<Int>.Ordered()
+
+        var iterator = set.makeConsumingIterator()
+        #expect(iterator.next() == nil)
+    }
+
+    @Test("Consuming iteration preserves order")
+    func consumingIterationPreservesOrder() {
+        var set = Set<String>.Ordered()
+        set.insert("charlie")
+        set.insert("alpha")
+        set.insert("bravo")
+
+        var result: [String] = []
+        set.consumingForEach { element in
+            result.append(element)
+        }
+
+        #expect(result == ["charlie", "alpha", "bravo"])
+    }
+
+    @Test("Consuming iteration with CoW copy")
+    func consumingIterationWithCoWCopy() {
+        let original: Set<Int>.Ordered = [1, 2, 3]
+        let copy = original
+
+        // Consume the copy
+        var result: [Int] = []
+        copy.consumingForEach { element in
+            result.append(element)
+        }
+
+        #expect(result == [1, 2, 3])
+        // Original should be unaffected due to CoW
+        #expect(Array(original) == [1, 2, 3])
+    }
 }
