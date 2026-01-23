@@ -235,7 +235,7 @@ struct SetBitPackedSmallTests {
         try b.insert(idx(2))
         try b.insert(idx(3))
 
-        let result = a.union(b)
+        let result = a.algebra.union(b)
         #expect(result.count == 3)
         #expect(result.contains(idx(1)))
         #expect(result.contains(idx(2)))
@@ -250,7 +250,7 @@ struct SetBitPackedSmallTests {
         var b = Set<Bit>.Packed.Small<2>()
         try b.insert(idx(200))  // Beyond inline capacity
 
-        let result = a.union(b)
+        let result = a.algebra.union(b)
         #expect(result.isSpilled)
         #expect(result.count == 2)
         #expect(result.contains(idx(1)))
@@ -269,7 +269,7 @@ struct SetBitPackedSmallTests {
         try b.insert(idx(3))
         try b.insert(idx(4))
 
-        let result = a.intersection(b)
+        let result = a.algebra.intersection(b)
         #expect(result.count == 2)
         #expect(result.contains(idx(2)))
         #expect(result.contains(idx(3)))
@@ -287,7 +287,7 @@ struct SetBitPackedSmallTests {
         var b = Set<Bit>.Packed.Small<2>()
         try b.insert(idx(2))
 
-        let result = a.subtracting(b)
+        let result = a.algebra.subtract(b)
         #expect(result.count == 2)
         #expect(result.contains(idx(1)))
         #expect(result.contains(idx(3)))
@@ -304,7 +304,7 @@ struct SetBitPackedSmallTests {
         try b.insert(idx(2))
         try b.insert(idx(3))
 
-        let result = a.symmetricDifference(b)
+        let result = a.algebra.symmetric.difference(b)
         #expect(result.count == 2)
         #expect(result.contains(idx(1)))
         #expect(result.contains(idx(3)))
@@ -324,8 +324,8 @@ struct SetBitPackedSmallTests {
         try large.insert(idx(2))
         try large.insert(idx(3))
 
-        #expect(small.isSubset(of: large))
-        #expect(!large.isSubset(of: small))
+        #expect(small.relation.isSubset(of: large))
+        #expect(!large.relation.isSubset(of: small))
     }
 
     @Test("isSuperset")
@@ -339,8 +339,8 @@ struct SetBitPackedSmallTests {
         try large.insert(idx(2))
         try large.insert(idx(3))
 
-        #expect(large.isSuperset(of: small))
-        #expect(!small.isSuperset(of: large))
+        #expect(large.relation.isSuperset(of: small))
+        #expect(!small.relation.isSuperset(of: large))
     }
 
     @Test("isDisjoint")
@@ -357,8 +357,8 @@ struct SetBitPackedSmallTests {
         try c.insert(idx(2))
         try c.insert(idx(3))
 
-        #expect(a.isDisjoint(with: b))
-        #expect(!a.isDisjoint(with: c))
+        #expect(a.relation.isDisjoint(with: b))
+        #expect(!a.relation.isDisjoint(with: c))
     }
 
     // MARK: - Equality

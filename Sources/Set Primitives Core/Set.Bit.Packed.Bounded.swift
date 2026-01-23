@@ -37,6 +37,13 @@ extension Set<Bit>.Packed {
             self.storage = ContiguousArray(repeating: 0, count: wordCount)
             self.capacity = capacity
         }
+
+        /// Internal initializer for constructing from storage.
+        @usableFromInline
+        init(__storage: ContiguousArray<UInt>, capacity: Int) {
+            self.storage = __storage
+            self.capacity = capacity
+        }
     }
 }
 
@@ -139,104 +146,6 @@ extension Set<Bit>.Packed.Bounded {
     }
 }
 
-// MARK: - Set Algebra
-
-extension Set<Bit>.Packed.Bounded {
-    @inlinable
-    public func union(_ other: Self) -> Self {
-        precondition(capacity == other.capacity, "Capacities must match")
-        var result = self
-        result.formUnion(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formUnion(_ other: Self) {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            storage[i] |= other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func intersection(_ other: Self) -> Self {
-        precondition(capacity == other.capacity, "Capacities must match")
-        var result = self
-        result.formIntersection(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formIntersection(_ other: Self) {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            storage[i] &= other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func subtracting(_ other: Self) -> Self {
-        precondition(capacity == other.capacity, "Capacities must match")
-        var result = self
-        result.subtract(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func subtract(_ other: Self) {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            storage[i] &= ~other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func symmetricDifference(_ other: Self) -> Self {
-        precondition(capacity == other.capacity, "Capacities must match")
-        var result = self
-        result.formSymmetricDifference(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formSymmetricDifference(_ other: Self) {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            storage[i] ^= other.storage[i]
-        }
-    }
-}
-
-// MARK: - Set Relations
-
-extension Set<Bit>.Packed.Bounded {
-    @inlinable
-    public func isSubset(of other: Self) -> Bool {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            if (storage[i] & ~other.storage[i]) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-
-    @inlinable
-    public func isSuperset(of other: Self) -> Bool {
-        other.isSubset(of: self)
-    }
-
-    @inlinable
-    public func isDisjoint(with other: Self) -> Bool {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
-            if (storage[i] & other.storage[i]) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-}
 
 // MARK: - Iteration
 

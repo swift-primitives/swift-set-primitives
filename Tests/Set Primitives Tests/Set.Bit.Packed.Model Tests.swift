@@ -129,7 +129,7 @@ struct SetBitPackedModelTests {
             modelB.insert(valueB)
         }
 
-        let bitUnion = bitSetA.union(bitSetB)
+        let bitUnion = bitSetA.algebra.union(bitSetB)
         let modelUnion = modelA.union(modelB)
 
         #expect(toIntSet(bitUnion) == modelUnion)
@@ -153,7 +153,7 @@ struct SetBitPackedModelTests {
             modelB.insert(valueB)
         }
 
-        let bitIntersection = bitSetA.intersection(bitSetB)
+        let bitIntersection = bitSetA.algebra.intersection(bitSetB)
         let modelIntersection = modelA.intersection(modelB)
 
         #expect(toIntSet(bitIntersection) == modelIntersection)
@@ -177,7 +177,7 @@ struct SetBitPackedModelTests {
             modelB.insert(valueB)
         }
 
-        let bitDifference = bitSetA.subtracting(bitSetB)
+        let bitDifference = bitSetA.algebra.subtract(bitSetB)
         let modelDifference = modelA.subtracting(modelB)
 
         #expect(toIntSet(bitDifference) == modelDifference)
@@ -201,7 +201,7 @@ struct SetBitPackedModelTests {
             modelB.insert(valueB)
         }
 
-        let bitSymmetric = bitSetA.symmetricDifference(bitSetB)
+        let bitSymmetric = bitSetA.algebra.symmetric.difference(bitSetB)
         let modelSymmetric = modelA.symmetricDifference(modelB)
 
         #expect(toIntSet(bitSymmetric) == modelSymmetric)
@@ -224,13 +224,13 @@ struct SetBitPackedModelTests {
             modelB.insert(i)
         }
 
-        #expect(bitSetA.isSubset(of: bitSetB) == modelA.isSubset(of: modelB))
-        #expect(bitSetB.isSubset(of: bitSetA) == modelB.isSubset(of: modelA))
+        #expect(bitSetA.relation.isSubset(of: bitSetB) == modelA.isSubset(of: modelB))
+        #expect(bitSetB.relation.isSubset(of: bitSetA) == modelB.isSubset(of: modelA))
 
         // Add element not in B
         try bitSetA.insert(idx(100))
         modelA.insert(100)
-        #expect(bitSetA.isSubset(of: bitSetB) == modelA.isSubset(of: modelB))
+        #expect(bitSetA.relation.isSubset(of: bitSetB) == modelA.isSubset(of: modelB))
     }
 
     @Test("isSuperset matches model")
@@ -249,8 +249,8 @@ struct SetBitPackedModelTests {
             modelB.insert(i)
         }
 
-        #expect(bitSetA.isSuperset(of: bitSetB) == modelA.isSuperset(of: modelB))
-        #expect(bitSetB.isSuperset(of: bitSetA) == modelB.isSuperset(of: modelA))
+        #expect(bitSetA.relation.isSuperset(of: bitSetB) == modelA.isSuperset(of: modelB))
+        #expect(bitSetB.relation.isSuperset(of: bitSetA) == modelB.isSuperset(of: modelA))
     }
 
     @Test("isDisjoint matches model")
@@ -270,12 +270,12 @@ struct SetBitPackedModelTests {
             modelB.insert(i)
         }
 
-        #expect(bitSetA.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
+        #expect(bitSetA.relation.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
 
         // Not disjoint
         try bitSetA.insert(idx(15))
         modelA.insert(15)
-        #expect(bitSetA.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
+        #expect(bitSetA.relation.isDisjoint(with: bitSetB) == modelA.isDisjoint(with: modelB))
     }
 
     @Test("Min and max match model")

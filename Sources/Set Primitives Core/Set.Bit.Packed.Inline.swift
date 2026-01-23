@@ -32,6 +32,12 @@ extension Set<Bit>.Packed {
         public init() {
             self.storage = InlineArray(repeating: 0)
         }
+
+        /// Internal initializer for constructing from storage.
+        @usableFromInline
+        init(__storage: InlineArray<wordCount, UInt>) {
+            self.storage = __storage
+        }
     }
 }
 
@@ -137,94 +143,6 @@ extension Set<Bit>.Packed.Inline {
     }
 }
 
-// MARK: - Set Algebra
-
-extension Set<Bit>.Packed.Inline {
-    @inlinable
-    public func union(_ other: Self) -> Self {
-        var result = self
-        result.formUnion(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formUnion(_ other: Self) {
-        for i in 0..<wordCount {
-            storage[i] |= other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func intersection(_ other: Self) -> Self {
-        var result = self
-        result.formIntersection(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formIntersection(_ other: Self) {
-        for i in 0..<wordCount {
-            storage[i] &= other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func subtracting(_ other: Self) -> Self {
-        var result = self
-        result.subtract(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func subtract(_ other: Self) {
-        for i in 0..<wordCount {
-            storage[i] &= ~other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func symmetricDifference(_ other: Self) -> Self {
-        var result = self
-        result.formSymmetricDifference(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formSymmetricDifference(_ other: Self) {
-        for i in 0..<wordCount {
-            storage[i] ^= other.storage[i]
-        }
-    }
-}
-
-// MARK: - Set Relations
-
-extension Set<Bit>.Packed.Inline {
-    @inlinable
-    public func isSubset(of other: Self) -> Bool {
-        for i in 0..<wordCount {
-            if (storage[i] & ~other.storage[i]) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-
-    @inlinable
-    public func isSuperset(of other: Self) -> Bool {
-        other.isSubset(of: self)
-    }
-
-    @inlinable
-    public func isDisjoint(with other: Self) -> Bool {
-        for i in 0..<wordCount {
-            if (storage[i] & other.storage[i]) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-}
 
 // MARK: - Iteration
 

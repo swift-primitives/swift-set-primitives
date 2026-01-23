@@ -231,7 +231,7 @@ struct SetBitPackedTests {
         let a = Set<Bit>.Packed([idx(1), idx(2), idx(3)])
         let b = Set<Bit>.Packed([idx(3), idx(4), idx(5)])
 
-        let result = a.union(b)
+        let result = a.algebra.union(b)
 
         #expect(result.count == 5)
         for i in 1...5 {
@@ -244,7 +244,7 @@ struct SetBitPackedTests {
         let a = Set<Bit>.Packed([idx(1), idx(2), idx(3), idx(4)])
         let b = Set<Bit>.Packed([idx(3), idx(4), idx(5), idx(6)])
 
-        let result = a.intersection(b)
+        let result = a.algebra.intersection(b)
 
         #expect(result.count == 2)
         #expect(result.contains(idx(3)))
@@ -258,7 +258,7 @@ struct SetBitPackedTests {
         let a = Set<Bit>.Packed([idx(1), idx(2), idx(3), idx(4), idx(5)])
         let b = Set<Bit>.Packed([idx(2), idx(4)])
 
-        let result = a.subtracting(b)
+        let result = a.algebra.subtract(b)
 
         #expect(result.count == 3)
         #expect(result.contains(idx(1)))
@@ -273,7 +273,7 @@ struct SetBitPackedTests {
         let a = Set<Bit>.Packed([idx(1), idx(2), idx(3)])
         let b = Set<Bit>.Packed([idx(2), idx(3), idx(4)])
 
-        let result = a.symmetricDifference(b)
+        let result = a.algebra.symmetric.difference(b)
 
         #expect(result.count == 2)
         #expect(result.contains(idx(1)))
@@ -287,7 +287,7 @@ struct SetBitPackedTests {
         let a = Set<Bit>.Packed([idx(0), idx(63)])
         let b = Set<Bit>.Packed([idx(64), idx(127)])
 
-        let result = a.union(b)
+        let result = a.algebra.union(b)
 
         #expect(result.count == 4)
         #expect(result.contains(idx(0)))
@@ -304,10 +304,10 @@ struct SetBitPackedTests {
         let large = Set<Bit>.Packed([idx(1), idx(2), idx(3), idx(4), idx(5)])
         let disjoint = Set<Bit>.Packed([idx(10), idx(11), idx(12)])
 
-        #expect(small.isSubset(of: large))
-        #expect(!large.isSubset(of: small))
-        #expect(!small.isSubset(of: disjoint))
-        #expect(small.isSubset(of: small))  // Every set is subset of itself
+        #expect(small.relation.isSubset(of: large))
+        #expect(!large.relation.isSubset(of: small))
+        #expect(!small.relation.isSubset(of: disjoint))
+        #expect(small.relation.isSubset(of: small))  // Every set is subset of itself
     }
 
     @Test("isSuperset")
@@ -315,9 +315,9 @@ struct SetBitPackedTests {
         let small = Set<Bit>.Packed([idx(1), idx(2), idx(3)])
         let large = Set<Bit>.Packed([idx(1), idx(2), idx(3), idx(4), idx(5)])
 
-        #expect(large.isSuperset(of: small))
-        #expect(!small.isSuperset(of: large))
-        #expect(small.isSuperset(of: small))  // Every set is superset of itself
+        #expect(large.relation.isSuperset(of: small))
+        #expect(!small.relation.isSuperset(of: large))
+        #expect(small.relation.isSuperset(of: small))  // Every set is superset of itself
     }
 
     @Test("isDisjoint")
@@ -326,8 +326,8 @@ struct SetBitPackedTests {
         let b = Set<Bit>.Packed([idx(4), idx(5), idx(6)])
         let c = Set<Bit>.Packed([idx(3), idx(4), idx(5)])
 
-        #expect(a.isDisjoint(with: b))
-        #expect(!a.isDisjoint(with: c))
+        #expect(a.relation.isDisjoint(with: b))
+        #expect(!a.relation.isDisjoint(with: c))
     }
 
     // MARK: - Equality

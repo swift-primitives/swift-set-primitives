@@ -62,6 +62,13 @@ extension Set where Element == Bit {
             self.storage = ContiguousArray(repeating: 0, count: wordCount)
             self.storedCapacity = capacity
         }
+
+        /// Internal initializer for constructing from storage.
+        @usableFromInline
+        init(__storage: ContiguousArray<UInt>, capacity: Int) {
+            self.storage = __storage
+            self.storedCapacity = capacity
+        }
     }
 }
 
@@ -167,110 +174,6 @@ extension Set<Bit>.Packed {
     }
 }
 
-// MARK: - Set Algebra
-
-extension Set<Bit>.Packed {
-    @inlinable
-    public func union(_ other: Self) -> Self {
-        var result = self
-        result.formUnion(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formUnion(_ other: Self) {
-        if other.capacity > capacity {
-            grow(toInclude: other.capacity - 1)
-        }
-        let minWords = Swift.min(storage.count, other.storage.count)
-        for i in 0..<minWords {
-            storage[i] |= other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func intersection(_ other: Self) -> Self {
-        var result = self
-        result.formIntersection(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formIntersection(_ other: Self) {
-        let minWords = Swift.min(storage.count, other.storage.count)
-        for i in 0..<minWords {
-            storage[i] &= other.storage[i]
-        }
-        for i in minWords..<storage.count {
-            storage[i] = 0
-        }
-    }
-
-    @inlinable
-    public func subtracting(_ other: Self) -> Self {
-        var result = self
-        result.subtract(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func subtract(_ other: Self) {
-        let minWords = Swift.min(storage.count, other.storage.count)
-        for i in 0..<minWords {
-            storage[i] &= ~other.storage[i]
-        }
-    }
-
-    @inlinable
-    public func symmetricDifference(_ other: Self) -> Self {
-        var result = self
-        result.formSymmetricDifference(other)
-        return result
-    }
-
-    @inlinable
-    public mutating func formSymmetricDifference(_ other: Self) {
-        if other.capacity > capacity {
-            grow(toInclude: other.capacity - 1)
-        }
-        let minWords = Swift.min(storage.count, other.storage.count)
-        for i in 0..<minWords {
-            storage[i] ^= other.storage[i]
-        }
-    }
-}
-
-// MARK: - Set Relations
-
-extension Set<Bit>.Packed {
-    @inlinable
-    public func isSubset(of other: Self) -> Bool {
-        for i in 0..<storage.count {
-            let selfWord = storage[i]
-            let otherWord = i < other.storage.count ? other.storage[i] : 0
-            if (selfWord & ~otherWord) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-
-    @inlinable
-    public func isSuperset(of other: Self) -> Bool {
-        other.isSubset(of: self)
-    }
-
-    @inlinable
-    public func isDisjoint(with other: Self) -> Bool {
-        let minWords = Swift.min(storage.count, other.storage.count)
-        for i in 0..<minWords {
-            if (storage[i] & other.storage[i]) != 0 {
-                return false
-            }
-        }
-        return true
-    }
-}
 
 // MARK: - Additional Properties
 
