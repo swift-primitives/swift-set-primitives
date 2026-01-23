@@ -350,85 +350,79 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 
 // Set.Ordered.Small is ~Copyable due to deinit and optional IndexStorage
 
-// MARK: - Span Access
+// MARK: - Span Access (Closure-Based)
 
 extension Set_Primitives_Core.Set.Ordered.Small {
-    /// Provides read-only span access to the set's elements in insertion order.
+    /// Safe, bounds-checked read access to contiguous storage via closure.
     ///
-    /// ## Lifetime Contract
+    /// Small sets use closure-based access because inline storage mode requires
+    /// it (Span is ~Escapable and cannot be returned from property accessors
+    /// without special compiler support).
     ///
-    /// - The span is valid ONLY for the duration of the closure.
-    /// - The span MUST NOT be stored, returned, or allowed to escape.
-    /// - Violating this contract is undefined behavior.
-    ///
-    /// ## Note
-    ///
-    /// Small sets use closure-based access because inline storage address
-    /// is not stable (it moves with the struct). Use `span` property on
-    /// heap-only variants (Ordered, Bounded) for direct access.
+    /// - Parameter body: Closure receiving a Span view of the elements.
+    /// - Returns: The result of the closure.
+    /// - Complexity: O(1)
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
         if count > 0 {
             if let heapPtr = unsafe heapElementPtr {
-                let span = unsafe Span(_unsafeStart: heapPtr, count: count)
-                return try body(span)
+                return try body(unsafe Span(_unsafeStart: heapPtr, count: count))
             } else {
-                return try unsafe withUnsafePointer(to: inlineElements) { storagePtr throws(E) -> R in
+                let result: Result<R, E> = unsafe withUnsafePointer(to: inlineElements) { storagePtr in
                     let basePtr = unsafe UnsafeRawPointer(storagePtr)
                     let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
                     let span = unsafe Span(_unsafeStart: elementPtr, count: count)
-                    return try body(span)
+                    do throws(E) {
+                        return .success(try body(span))
+                    } catch {
+                        return .failure(error)
+                    }
                 }
+                return try result.get()
             }
         } else {
-            // Empty: pointer irrelevant when count == 0
-            let span = unsafe Span(_unsafeStart: UnsafePointer<Element>(bitPattern: 1)!, count: 0)
-            return try body(span)
+            return try body(unsafe Span(_unsafeStart: UnsafePointer(bitPattern: 1)!, count: 0))
         }
     }
 
-    /// Provides mutable span access to the set's elements in insertion order.
+    /// Safe, bounds-checked write access to contiguous storage via closure.
     ///
-    /// ## Lifetime Contract
+    /// Small sets use closure-based access because inline storage mode requires
+    /// it (MutableSpan is ~Escapable and cannot be returned from property
+    /// accessors without special compiler support).
     ///
-    /// - The span is valid ONLY for the duration of the closure.
-    /// - The span MUST NOT be stored, returned, or allowed to escape.
-    /// - No concurrent mutable borrows are permitted.
-    /// - Violating this contract is undefined behavior.
-    ///
-    /// ## Warning
-    ///
-    /// Modifying elements through this span may invalidate uniqueness if the
-    /// modifications affect element equality/hash.
-    ///
-    /// ## Note
-    ///
-    /// Small sets use closure-based access because inline storage address
-    /// is not stable (it moves with the struct). Use `mutableSpan` property on
-    /// heap-only variants (Ordered, Bounded) for direct access.
+    /// - Warning: Modifying elements may invalidate uniqueness if the
+    ///   modifications affect element equality/hash.
+    /// - Parameter body: Closure receiving a MutableSpan view of the elements.
+    /// - Returns: The result of the closure.
+    /// - Complexity: O(1)
     @inlinable
     public mutating func withMutableSpan<R, E: Swift.Error>(
-        _ body: (borrowing MutableSpan<Element>) throws(E) -> R
+        _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
         let elementCount = storedCount
         if elementCount > 0 {
             if let heapPtr = unsafe heapElementPtr {
-                let span = unsafe MutableSpan(_unsafeStart: heapPtr, count: elementCount)
-                return try body(span)
+                var span = unsafe MutableSpan(_unsafeStart: heapPtr, count: elementCount)
+                return try body(&span)
             } else {
-                return try unsafe withUnsafeMutablePointer(to: &inlineElements) { storagePtr throws(E) -> R in
+                let result: Result<R, E> = unsafe withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                     let basePtr = UnsafeMutableRawPointer(storagePtr)
                     let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
-                    let span = unsafe MutableSpan(_unsafeStart: elementPtr, count: elementCount)
-                    return try body(span)
+                    var span = unsafe MutableSpan(_unsafeStart: elementPtr, count: elementCount)
+                    do throws(E) {
+                        return .success(try body(&span))
+                    } catch {
+                        return .failure(error)
+                    }
                 }
+                return try result.get()
             }
         } else {
-            // Empty: pointer irrelevant when count == 0
-            let span = unsafe MutableSpan(_unsafeStart: UnsafeMutablePointer<Element>(bitPattern: 1)!, count: 0)
-            return try body(span)
+            var span = unsafe MutableSpan(_unsafeStart: UnsafeMutablePointer<Element>(bitPattern: 1)!, count: 0)
+            return try body(&span)
         }
     }
 }
@@ -439,7 +433,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 extension Set_Primitives_Core.Set.Ordered.Small {
     /// Provides read-only access to the underlying contiguous storage.
     ///
-    /// - Warning: Prefer `withSpan` for safe access.
+    /// - Warning: Prefer ``span`` for safe access.
     @unsafe
     @inlinable
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
@@ -462,7 +456,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 
     /// Provides mutable access to the underlying contiguous storage.
     ///
-    /// - Warning: Prefer `withMutableSpan` for safe access.
+    /// - Warning: Prefer ``mutableSpan`` for safe access.
     /// - Warning: Modifying elements may invalidate uniqueness.
     @unsafe
     @inlinable

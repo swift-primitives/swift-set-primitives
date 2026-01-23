@@ -26,6 +26,7 @@ let package = Package(
         .package(path: "../swift-collection-primitives"),
         .package(path: "../swift-sequence-primitives"),
         .package(path: "../swift-property-primitives"),
+        .package(path: "../swift-memory-primitives"),
     ],
     targets: [
         // Internal: Core types with ~Copyable support (no Sequence/Collection.Protocol conformances)
@@ -40,6 +41,7 @@ let package = Package(
                 .product(name: "Collection Primitives", package: "swift-collection-primitives"),
                 .product(name: "Sequence Primitives", package: "swift-sequence-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
         // Internal: Sequence/Collection.Protocol conformances (Element: Copyable)
