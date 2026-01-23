@@ -39,19 +39,18 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     }
 }
 
-// MARK: - Core Operations
+// MARK: - Core Operations (Copyable elements)
 
-extension Set_Primitives_Core.Set.Ordered.Small {
+extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
     public func index(_ element: Element) -> Int? {
-        if _heapIndices != nil {
+        if _heapIndexStorage != nil {
             // Heap mode: O(1) hash table lookup
-            let position = _heapIndices!.position(
+            return _findHeapPosition(
                 forHash: element.hashValue,
-                equals: { idx in _heapStorage!._readElement(at: idx.position.rawValue) == element }
+                equals: { idx in _heapStorage!._readElement(at: idx) == element }
             )
-            return position?.position.rawValue
         } else {
             // Linear search in inline storage
             let stride = MemoryLayout<Element>.stride
@@ -92,8 +91,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
             _heapStorage!.header = count + 1
 
             // Insert position into hash table
-            let position = Index_Primitives.Index<Element>(__unchecked: (), position: count)
-            _heapIndices!.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+            _insertHeapPosition(position: count, hashValue: element.hashValue)
 
             _count += 1
             return (true, count)
@@ -115,8 +113,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
             _heapStorage!.header = _count + 1
 
             // Insert position into hash table
-            let position = Index_Primitives.Index<Element>(__unchecked: (), position: _count)
-            _heapIndices!.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+            _insertHeapPosition(position: _count, hashValue: element.hashValue)
 
             _count += 1
             return (true, _count - 1)
@@ -127,22 +124,23 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
-        if _heapStorage != nil {
+        if let storage = _heapStorage {
             // Heap mode: use hash table for removal
-            guard let removedPosition = _heapIndices!.remove(
-                hashValue: element.hashValue,
-                equals: { idx in _heapStorage!._readElement(at: idx.position.rawValue) == element }
+            // Capture storage reference to avoid overlapping access
+            let hashValue = element.hashValue
+            guard let removedPosition = _removeHeapPosition(
+                hashValue: hashValue,
+                equals: { idx in storage._readElement(at: idx) == element }
             ) else {
                 return nil
             }
 
-            let removedIndex = removedPosition.position.rawValue
             let count = _heapStorage!.header
-            let removed = _heapStorage!._moveElement(at: removedIndex)
-            _heapStorage!._shiftElementsLeftAndDecrement(removedAt: removedIndex, count: count)
+            let removed = _heapStorage!._moveElement(at: removedPosition)
+            _heapStorage!._shiftElementsLeftAndDecrement(removedAt: removedPosition, count: count)
 
             // Update hash table positions after removal
-            _heapIndices!.decrementPositions(after: removedPosition)
+            _decrementHeapPositions(after: removedPosition)
 
             _count -= 1
             return removed
@@ -178,10 +176,10 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 
         if _heapStorage != nil {
             _heapStorage!._deinitializeAllElements()
-            _heapIndices!.removeAll(keepingCapacity: keepingCapacity)
+            _clearHeapIndices(keepingCapacity: keepingCapacity)
             if !keepingCapacity {
                 _heapStorage = nil
-                _heapIndices = nil
+                _heapIndexStorage = nil
                 unsafe (_heapElementPtr = nil)
             }
         } else {
@@ -216,9 +214,9 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     }
 }
 
-// MARK: - Element Access
+// MARK: - Element Access (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Small {
+extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Accesses the element at the specified index.
     @inlinable
     public func element(at index: Int) -> Element? {
@@ -244,9 +242,9 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     }
 }
 
-// MARK: - First/Last Accessors
+// MARK: - First/Last Accessors (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Small {
+extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
@@ -333,7 +331,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
                 }
             }
             _heapStorage!.header = 0
-            _heapIndices!.removeAll(keepingCapacity: true)
+            _clearHeapIndices(keepingCapacity: true)
         } else {
             let stride = MemoryLayout<Element>.stride
             unsafe Swift.withUnsafeMutablePointer(to: &_inlineElements) { storagePtr in
@@ -350,7 +348,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 
 // MARK: - ~Copyable
 
-// Set.Ordered.Small is ~Copyable due to deinit and optional Hash.Table<Element>
+// Set.Ordered.Small is ~Copyable due to deinit and optional IndexStorage
 
 // MARK: - Span Access
 

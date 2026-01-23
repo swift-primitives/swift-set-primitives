@@ -42,17 +42,16 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     }
 }
 
-// MARK: - Core Operations
+// MARK: - Core Operations (Copyable elements)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
     public func index(_ element: Element) -> Int? {
-        let position = _indices.position(
+        _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         )
-        return position?.position.rawValue
     }
 
     /// Inserts an element into the set.
@@ -64,11 +63,11 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     @discardableResult
     public mutating func insert(_ element: Element) throws(__SetOrderedBoundedError) -> (inserted: Bool, index: Int) {
         // Check for existing element
-        if let existing = _indices.position(
+        if let existing = _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         ) {
-            return (false, existing.position.rawValue)
+            return (false, existing)
         }
 
         let index = _elementStorage.header
@@ -80,8 +79,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
         _elementStorage.header = index + 1
 
         // Insert position into hash table
-        let position = Index_Primitives.Index<Element>(__unchecked: (), position: index)
-        _indices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+        _insertPosition(position: index, hashValue: element.hashValue)
 
         return (true, index)
     }
@@ -93,21 +91,23 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
-        guard let removedPosition = _indices.remove(
-            hashValue: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+        // Capture storage reference to avoid overlapping access
+        let storage = _elementStorage
+        let hashValue = element.hashValue
+        guard let removedPosition = _removePosition(
+            hashValue: hashValue,
+            equals: { idx in storage._readElement(at: idx) == element }
         ) else {
             return nil
         }
 
         makeUnique()
-        let removedIndex = removedPosition.position.rawValue
         let count = _elementStorage.header
-        let removed = _elementStorage._moveElement(at: removedIndex)
-        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedIndex, count: count)
+        let removed = _elementStorage._moveElement(at: removedPosition)
+        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedPosition, count: count)
 
         // Update hash table positions after removal
-        _indices.decrementPositions(after: removedPosition)
+        _decrementPositions(after: removedPosition)
 
         return removed
     }
@@ -115,9 +115,9 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     /// Returns whether the set contains the given element.
     @inlinable
     public func contains(_ element: Element) -> Bool {
-        _indices.position(
+        _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         ) != nil
     }
 
@@ -126,13 +126,13 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
         _elementStorage._deinitializeAllElements()
-        _indices.removeAll(keepingCapacity: keepingCapacity)
+        _clearIndices(keepingCapacity: keepingCapacity)
     }
 }
 
-// MARK: - Element Access
+// MARK: - Element Access (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// Accesses the element at the specified index.
     @inlinable
     public func element(at index: Int) throws(__SetOrderedBoundedError) -> Element {
@@ -150,9 +150,9 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
     }
 }
 
-// MARK: - First/Last Accessors
+// MARK: - First/Last Accessors (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
@@ -202,13 +202,13 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
             }
         }
         _elementStorage.header = 0
-        _indices.removeAll(keepingCapacity: true)
+        _clearIndices(keepingCapacity: true)
     }
 }
 
 // MARK: - ~Copyable
 
-// Set.Ordered.Bounded is ~Copyable due to containing Hash.Table<Element>
+// Set.Ordered.Bounded is ~Copyable due to containing IndexStorage
 
 // MARK: - Span Access
 
@@ -309,7 +309,12 @@ extension Set_Primitives_Core.Set.Ordered.Bounded: Hash.`Protocol` {
     public static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         guard lhs.count == rhs.count else { return false }
         for i in 0..<lhs.count {
-            if lhs._elementStorage._readElement(at: i) != rhs._elementStorage._readElement(at: i) {
+            let matches = lhs._elementStorage.withElement(at: i) { lhsElem in
+                rhs._elementStorage.withElement(at: i) { rhsElem in
+                    lhsElem == rhsElem
+                }
+            }
+            if !matches {
                 return false
             }
         }
@@ -323,7 +328,9 @@ extension Set_Primitives_Core.Set.Ordered.Bounded: Hash.`Protocol` {
         for i in 0..<count {
             // Use Hash.Protocol's hash(into:) directly instead of hasher.combine()
             // which requires Swift.Hashable
-            _elementStorage._readElement(at: i).hash(into: &hasher)
+            _elementStorage.withElement(at: i) { elem in
+                elem.hash(into: &hasher)
+            }
         }
     }
 }

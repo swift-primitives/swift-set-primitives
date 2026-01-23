@@ -107,7 +107,7 @@ extension Set_Primitives_Core.Set {
     @safe
     public struct Ordered {
 
-        // MARK: - ElementStorage (nested to support future ~Copyable container)
+        // MARK: - ElementStorage (nested to inherit ~Copyable context)
 
         /// Internal storage class for elements using ManagedBuffer.
         @usableFromInline
@@ -215,12 +215,104 @@ extension Set_Primitives_Core.Set {
             }
         }
 
+        // MARK: - IndexStorage (nested to inherit ~Copyable context)
+
+        /// Internal hash index storage using ManagedBuffer.
+        /// Stores (hash, position) pairs for O(1) element lookup.
+        /// Declared nested to inherit Element's ~Copyable context from Set<Element>.
+        @usableFromInline
+        final class IndexStorage: ManagedBuffer<(count: Int, occupied: Int, hashCapacity: Int), Int> {
+
+            /// Sentinel value indicating an empty bucket.
+            @usableFromInline
+            static var empty: Int { 0 }
+
+            /// Sentinel value indicating a deleted bucket.
+            @usableFromInline
+            static var deleted: Int { Int.min }
+
+            /// Creates storage with the specified hash capacity.
+            @usableFromInline
+            static func create(hashCapacity: Int) -> IndexStorage {
+                // Allocate space for hashes + positions
+                let storage = IndexStorage.create(minimumCapacity: hashCapacity * 2) { _ in
+                    (count: 0, occupied: 0, hashCapacity: hashCapacity)
+                }
+                // Initialize all slots to empty (0)
+                _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
+                    unsafe elements.initialize(repeating: IndexStorage.empty, count: hashCapacity * 2)
+                }
+                return unsafe unsafeDowncast(storage, to: IndexStorage.self)
+            }
+
+            deinit {
+                // ManagedBuffer handles deallocation automatically
+            }
+
+            /// Reads hash at bucket index.
+            @usableFromInline
+            func _readHash(at bucket: Int) -> Int {
+                unsafe withUnsafeMutablePointerToElements { unsafe $0[bucket] }
+            }
+
+            /// Reads position at bucket index.
+            @usableFromInline
+            func _readPosition(at bucket: Int) -> Int {
+                let hashCapacity = header.hashCapacity
+                return unsafe withUnsafeMutablePointerToElements { unsafe $0[hashCapacity + bucket] }
+            }
+
+            /// Writes hash at bucket index.
+            @usableFromInline
+            func _writeHash(at bucket: Int, value: Int) {
+                unsafe withUnsafeMutablePointerToElements { unsafe $0[bucket] = value }
+            }
+
+            /// Writes position at bucket index.
+            @usableFromInline
+            func _writePosition(at bucket: Int, value: Int) {
+                let hashCapacity = header.hashCapacity
+                unsafe withUnsafeMutablePointerToElements { unsafe $0[hashCapacity + bucket] = value }
+            }
+
+            /// Computes the actual capacity for a given minimum capacity.
+            /// Uses power-of-two sizing for fast modulo via bitmasking.
+            @usableFromInline
+            static func capacity(for minimumCapacity: Int) -> Int {
+                guard minimumCapacity > 0 else { return 8 }
+                // Target ~70% load factor
+                let needed = Swift.max(8, (minimumCapacity * 10) / 7)
+                // Round up to next power of two
+                return 1 << (Int.bitWidth - (needed - 1).leadingZeroBitCount)
+            }
+
+            /// Normalizes a hash value to avoid sentinel collisions.
+            @usableFromInline
+            static func normalize(_ hashValue: Int) -> Int {
+                let hash = hashValue == 0 ? 1 : hashValue
+                return hash == Int.min ? 1 : hash
+            }
+
+            /// Computes the initial bucket for a hash value.
+            @usableFromInline
+            static func bucket(for hash: Int, capacity: Int) -> Int {
+                // capacity is power of two, so we can use bitmasking
+                hash & (capacity - 1)
+            }
+
+            /// Computes the next bucket in the probe sequence.
+            @usableFromInline
+            static func nextBucket(_ bucket: Int, capacity: Int) -> Int {
+                (bucket + 1) & (capacity - 1)
+            }
+        }
+
         @usableFromInline
         var _elementStorage: ElementStorage
 
-        /// Hash table mapping elements to indices for O(1) lookup.
+        /// Hash index storage for O(1) lookup.
         @usableFromInline
-        var _indices: Hash.Table<Element>
+        var _indexStorage: IndexStorage
 
         /// Cached pointer to element storage.
         @usableFromInline
@@ -230,8 +322,158 @@ extension Set_Primitives_Core.Set {
         @inlinable
         public init() {
             self._elementStorage = ElementStorage.create(minimumCapacity: 0)
-            self._indices = Hash.Table()
+            self._indexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: 0))
             unsafe (self._cachedElementPtr = _elementStorage._elementsPointer)
+        }
+
+        // MARK: - Hash Table Operations
+
+        /// Finds the position for an element with the given hash value.
+        @usableFromInline
+        func _findPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
+            let hash = IndexStorage.normalize(hashValue)
+            let hashCapacity = _indexStorage.header.hashCapacity
+            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+            while true {
+                let storedHash = _indexStorage._readHash(at: bucket)
+
+                if storedHash == IndexStorage.empty {
+                    return nil
+                }
+
+                if storedHash == hash {
+                    let position = _indexStorage._readPosition(at: bucket)
+                    if equals(position) {
+                        return position
+                    }
+                }
+
+                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            }
+        }
+
+        /// Whether the hash table should grow.
+        @usableFromInline
+        var _shouldGrowIndices: Bool {
+            let hashCapacity = _indexStorage.header.hashCapacity
+            let occupied = _indexStorage.header.occupied
+            // Grow when occupied exceeds 70% of capacity
+            return occupied * 10 >= hashCapacity * 7
+        }
+
+        /// Doubles the capacity and rehashes all elements.
+        @usableFromInline
+        mutating func _growIndices() {
+            let oldCapacity = _indexStorage.header.hashCapacity
+            let newCapacity = Swift.max(8, oldCapacity * 2)
+            let newStorage = IndexStorage.create(hashCapacity: newCapacity)
+
+            for i in 0..<oldCapacity {
+                let hash = _indexStorage._readHash(at: i)
+                if hash != IndexStorage.empty && hash != IndexStorage.deleted {
+                    let position = _indexStorage._readPosition(at: i)
+                    var bucket = IndexStorage.bucket(for: hash, capacity: newCapacity)
+
+                    while newStorage._readHash(at: bucket) != IndexStorage.empty {
+                        bucket = IndexStorage.nextBucket(bucket, capacity: newCapacity)
+                    }
+
+                    newStorage._writeHash(at: bucket, value: hash)
+                    newStorage._writePosition(at: bucket, value: position)
+                }
+            }
+
+            newStorage.header.count = _indexStorage.header.count
+            newStorage.header.occupied = _indexStorage.header.count
+            _indexStorage = newStorage
+        }
+
+        /// Inserts a position into the hash table without checking for duplicates.
+        @usableFromInline
+        mutating func _insertPosition(position: Int, hashValue: Int) {
+            if _shouldGrowIndices {
+                _growIndices()
+            }
+
+            let hash = IndexStorage.normalize(hashValue)
+            let hashCapacity = _indexStorage.header.hashCapacity
+            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+            while true {
+                let storedHash = _indexStorage._readHash(at: bucket)
+
+                if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
+                    _indexStorage._writeHash(at: bucket, value: hash)
+                    _indexStorage._writePosition(at: bucket, value: position)
+                    _indexStorage.header.count += 1
+                    if storedHash == IndexStorage.empty {
+                        _indexStorage.header.occupied += 1
+                    }
+                    return
+                }
+
+                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            }
+        }
+
+        /// Removes a position from the hash table.
+        @usableFromInline
+        mutating func _removePosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
+            let hash = IndexStorage.normalize(hashValue)
+            let hashCapacity = _indexStorage.header.hashCapacity
+            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+            while true {
+                let storedHash = _indexStorage._readHash(at: bucket)
+
+                if storedHash == IndexStorage.empty {
+                    return nil
+                }
+
+                if storedHash == hash {
+                    let position = _indexStorage._readPosition(at: bucket)
+                    if equals(position) {
+                        _indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
+                        _indexStorage.header.count -= 1
+                        return position
+                    }
+                }
+
+                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            }
+        }
+
+        /// Updates positions after an element is removed from element storage.
+        @usableFromInline
+        mutating func _decrementPositions(after removedPosition: Int) {
+            let hashCapacity = _indexStorage.header.hashCapacity
+            for i in 0..<hashCapacity {
+                let hash = _indexStorage._readHash(at: i)
+                if hash != IndexStorage.empty && hash != IndexStorage.deleted {
+                    let pos = _indexStorage._readPosition(at: i)
+                    if pos > removedPosition {
+                        _indexStorage._writePosition(at: i, value: pos - 1)
+                    }
+                }
+            }
+        }
+
+        /// Removes all entries from the hash table.
+        @usableFromInline
+        mutating func _clearIndices(keepingCapacity: Bool) {
+            if keepingCapacity {
+                let hashCapacity = _indexStorage.header.hashCapacity
+                for i in 0..<hashCapacity {
+                    _indexStorage._writeHash(at: i, value: IndexStorage.empty)
+                }
+                _indexStorage.header.count = 0
+                _indexStorage.header.occupied = 0
+            } else {
+                // Create new storage with default capacity
+                let hashCapacity = IndexStorage.capacity(for: 0)
+                _indexStorage = IndexStorage.create(hashCapacity: hashCapacity)
+            }
         }
 
         // MARK: - Bounded Variant
@@ -246,7 +488,7 @@ extension Set_Primitives_Core.Set {
             var _elementStorage: ElementStorage
 
             @usableFromInline
-            var _indices: Hash.Table<Element>
+            var _indexStorage: IndexStorage
 
             @usableFromInline
             var _cachedElementPtr: UnsafeMutablePointer<Element>
@@ -261,9 +503,108 @@ extension Set_Primitives_Core.Set {
                     throw .invalidCapacity
                 }
                 self._elementStorage = ElementStorage.create(minimumCapacity: capacity)
-                self._indices = Hash.Table(minimumCapacity: capacity)
+                self._indexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: capacity))
                 unsafe (self._cachedElementPtr = _elementStorage._elementsPointer)
                 self.capacity = capacity
+            }
+
+            // MARK: - Hash Table Operations (Bounded)
+
+            @usableFromInline
+            func _findPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = _indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = _indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty {
+                        return nil
+                    }
+
+                    if storedHash == hash {
+                        let position = _indexStorage._readPosition(at: bucket)
+                        if equals(position) {
+                            return position
+                        }
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _insertPosition(position: Int, hashValue: Int) {
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = _indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = _indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
+                        _indexStorage._writeHash(at: bucket, value: hash)
+                        _indexStorage._writePosition(at: bucket, value: position)
+                        _indexStorage.header.count += 1
+                        if storedHash == IndexStorage.empty {
+                            _indexStorage.header.occupied += 1
+                        }
+                        return
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _removePosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = _indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = _indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty {
+                        return nil
+                    }
+
+                    if storedHash == hash {
+                        let position = _indexStorage._readPosition(at: bucket)
+                        if equals(position) {
+                            _indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
+                            _indexStorage.header.count -= 1
+                            return position
+                        }
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _decrementPositions(after removedPosition: Int) {
+                let hashCapacity = _indexStorage.header.hashCapacity
+                for i in 0..<hashCapacity {
+                    let hash = _indexStorage._readHash(at: i)
+                    if hash != IndexStorage.empty && hash != IndexStorage.deleted {
+                        let pos = _indexStorage._readPosition(at: i)
+                        if pos > removedPosition {
+                            _indexStorage._writePosition(at: i, value: pos - 1)
+                        }
+                    }
+                }
+            }
+
+            @usableFromInline
+            mutating func _clearIndices(keepingCapacity: Bool) {
+                let hashCapacity = _indexStorage.header.hashCapacity
+                for i in 0..<hashCapacity {
+                    _indexStorage._writeHash(at: i, value: IndexStorage.empty)
+                }
+                _indexStorage.header.count = 0
+                _indexStorage.header.occupied = 0
             }
         }
 
@@ -285,6 +626,11 @@ extension Set_Primitives_Core.Set {
             /// Current element count.
             @usableFromInline
             var _count: Int
+
+            /// Workaround for Swift compiler bug with InlineArray + value generic deinit.
+            /// Per [COPY-FIX-009].
+            @usableFromInline
+            var _deinitWorkaround: AnyObject? = nil
 
             /// Creates an empty inline ordered set.
             @inlinable
@@ -355,10 +701,14 @@ extension Set_Primitives_Core.Set {
             var _heapStorage: ElementStorage?
 
             @usableFromInline
-            var _heapIndices: Hash.Table<Element>?
+            var _heapIndexStorage: IndexStorage?
 
             @usableFromInline
             var _heapElementPtr: UnsafeMutablePointer<Element>?
+
+            /// Workaround for Swift compiler bug with InlineArray + value generic deinit.
+            @usableFromInline
+            var _deinitWorkaround: AnyObject? = nil
 
             @inlinable
             public init() {
@@ -369,7 +719,7 @@ extension Set_Primitives_Core.Set {
                 self._inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
                 self._count = 0
                 self._heapStorage = nil
-                self._heapIndices = nil
+                self._heapIndexStorage = nil
                 unsafe (self._heapElementPtr = nil)
             }
 
@@ -425,7 +775,7 @@ extension Set_Primitives_Core.Set {
 
                 let newCapacity = Swift.max(minimumCapacity, inlineCapacity * 2, 8)
                 let newStorage = ElementStorage.create(minimumCapacity: newCapacity)
-                var newIndices = Hash.Table<Element>(minimumCapacity: newCapacity)
+                let newIndexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: newCapacity))
 
                 let stride = MemoryLayout<Element>.stride
                 _ = unsafe Swift.withUnsafeBytes(of: _inlineElements) { bytes in
@@ -435,17 +785,133 @@ extension Set_Primitives_Core.Set {
                             let inlineElement = unsafe (inlineBase + i * stride)
                                 .assumingMemoryBound(to: Element.self)
                             let element = unsafe inlineElement.move()
-                            let position = Index_Primitives.Index<Element>(__unchecked: (), position: i)
-                            newIndices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+                            let hashValue = element.hashValue
                             unsafe (heapPtr + i).initialize(to: element)
+
+                            // Insert into hash table
+                            let hash = IndexStorage.normalize(hashValue)
+                            let hashCapacity = newIndexStorage.header.hashCapacity
+                            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+                            while newIndexStorage._readHash(at: bucket) != IndexStorage.empty {
+                                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                            }
+                            newIndexStorage._writeHash(at: bucket, value: hash)
+                            newIndexStorage._writePosition(at: bucket, value: i)
+                            newIndexStorage.header.count += 1
+                            newIndexStorage.header.occupied += 1
                         }
                     }
                 }
                 newStorage.header = _count
 
                 _heapStorage = newStorage
-                _heapIndices = consume newIndices
+                _heapIndexStorage = newIndexStorage
                 unsafe (_heapElementPtr = newStorage._elementsPointer)
+            }
+
+            // MARK: - Hash Table Operations (Small - heap mode only)
+
+            @usableFromInline
+            func _findHeapPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
+                guard let indexStorage = _heapIndexStorage else { return nil }
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty {
+                        return nil
+                    }
+
+                    if storedHash == hash {
+                        let position = indexStorage._readPosition(at: bucket)
+                        if equals(position) {
+                            return position
+                        }
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _insertHeapPosition(position: Int, hashValue: Int) {
+                guard let indexStorage = _heapIndexStorage else { return }
+
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
+                        indexStorage._writeHash(at: bucket, value: hash)
+                        indexStorage._writePosition(at: bucket, value: position)
+                        indexStorage.header.count += 1
+                        if storedHash == IndexStorage.empty {
+                            indexStorage.header.occupied += 1
+                        }
+                        return
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _removeHeapPosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
+                guard let indexStorage = _heapIndexStorage else { return nil }
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = indexStorage.header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+
+                while true {
+                    let storedHash = indexStorage._readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty {
+                        return nil
+                    }
+
+                    if storedHash == hash {
+                        let position = indexStorage._readPosition(at: bucket)
+                        if equals(position) {
+                            indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
+                            indexStorage.header.count -= 1
+                            return position
+                        }
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            @usableFromInline
+            mutating func _decrementHeapPositions(after removedPosition: Int) {
+                guard let indexStorage = _heapIndexStorage else { return }
+                let hashCapacity = indexStorage.header.hashCapacity
+                for i in 0..<hashCapacity {
+                    let hash = indexStorage._readHash(at: i)
+                    if hash != IndexStorage.empty && hash != IndexStorage.deleted {
+                        let pos = indexStorage._readPosition(at: i)
+                        if pos > removedPosition {
+                            indexStorage._writePosition(at: i, value: pos - 1)
+                        }
+                    }
+                }
+            }
+
+            @usableFromInline
+            mutating func _clearHeapIndices(keepingCapacity: Bool) {
+                guard let indexStorage = _heapIndexStorage else { return }
+                let hashCapacity = indexStorage.header.hashCapacity
+                for i in 0..<hashCapacity {
+                    indexStorage._writeHash(at: i, value: IndexStorage.empty)
+                }
+                indexStorage.header.count = 0
+                indexStorage.header.occupied = 0
             }
         }
     }
@@ -486,10 +952,12 @@ extension Set_Primitives_Core.Set.Ordered {
             throw .bounds(.init(index: capacity, count: 0))
         }
         self._elementStorage = ElementStorage.create(minimumCapacity: capacity)
-        self._indices = Hash.Table(minimumCapacity: capacity)
+        self._indexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: capacity))
         unsafe (self._cachedElementPtr = _elementStorage._elementsPointer)
     }
+}
 
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Creates an ordered set containing the elements of a sequence.
     @inlinable
     public init<S: Swift.Sequence>(_ elements: S) where S.Element == Element {
@@ -536,8 +1004,7 @@ extension Set_Primitives_Core.Set.Ordered {
     /// Reserves enough space to store the specified number of elements.
     @inlinable
     public mutating func reserve(_ minimumCapacity: Int) {
-        makeUnique()
-        // Hash.Table grows automatically; only reserve element storage
+        // Hash table grows automatically; only reserve element storage
         ensureCapacity(minimumCapacity)
     }
 }
@@ -554,112 +1021,29 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         if !isKnownUniquelyReferenced(&_elementStorage) {
             _elementStorage = _elementStorage.copy()
             unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
-            // Hash.Table uses class storage, so copying Set.Ordered shares it.
-            // We need to rebuild the hash table after copying element storage.
-            _indices = _rebuildIndices()
+            // Rebuild the hash index after copying element storage.
+            _rebuildIndices()
         }
     }
 
     /// Rebuilds hash table indices from current element storage.
     @usableFromInline
-    func _rebuildIndices() -> Hash.Table<Element> {
-        var newIndices = Hash.Table<Element>(minimumCapacity: count)
+    mutating func _rebuildIndices() {
+        let newIndexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: count))
         for i in 0..<count {
             let element = _elementStorage._readElement(at: i)
-            let position = Index_Primitives.Index<Element>(__unchecked: (), position: i)
-            newIndices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+            let hash = IndexStorage.normalize(element.hashValue)
+            let hashCapacity = newIndexStorage.header.hashCapacity
+            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+            while newIndexStorage._readHash(at: bucket) != IndexStorage.empty {
+                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            }
+            newIndexStorage._writeHash(at: bucket, value: hash)
+            newIndexStorage._writePosition(at: bucket, value: i)
+            newIndexStorage.header.count += 1
+            newIndexStorage.header.occupied += 1
         }
-        return newIndices
-    }
-}
-
-// MARK: - Core Operations (Base - for ~Copyable elements)
-
-extension Set_Primitives_Core.Set.Ordered where Element: ~Copyable {
-    /// Returns the index of the given element, or `nil` if not present.
-    ///
-    /// For `~Copyable` elements, this uses borrowing comparison.
-    @inlinable
-    public func index(_ element: borrowing Element) -> Int? {
-        let position = _indices.position(
-            forHash: element.hashValue,
-            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
-        )
-        return position?.position.rawValue
-    }
-
-    /// Inserts an element into the set.
-    ///
-    /// For `~Copyable` elements, ownership is transferred to the set.
-    @inlinable
-    @discardableResult
-    public mutating func insert(_ element: consuming Element) -> (inserted: Bool, index: Int) {
-        // Check for existing element using borrowing comparison
-        if let existing = _indices.position(
-            forHash: element.hashValue,
-            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
-        ) {
-            // Element exists - it will be discarded since we consumed it
-            // Note: For ~Copyable this means the duplicate is dropped
-            return (false, existing.position.rawValue)
-        }
-
-        let index = _elementStorage.header
-        ensureCapacity(index + 1)
-        _elementStorage._initializeElement(at: index, to: element)
-        _elementStorage.header = index + 1
-
-        // Insert position into hash table
-        let position = Index_Primitives.Index<Element>(__unchecked: (), position: index)
-        _indices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
-
-        return (true, index)
-    }
-
-    /// Removes an element from the set.
-    ///
-    /// For `~Copyable` elements, ownership is transferred out if found.
-    @inlinable
-    @discardableResult
-    public mutating func remove(_ element: borrowing Element) -> Element? {
-        guard let removedPosition = _indices.remove(
-            hashValue: element.hashValue,
-            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
-        ) else {
-            return nil
-        }
-
-        let removedIndex = removedPosition.position.rawValue
-        let count = _elementStorage.header
-        let removed = _elementStorage._moveElement(at: removedIndex)
-        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedIndex, count: count)
-
-        // Update hash table positions after removal
-        _indices.decrementPositions(after: removedPosition)
-
-        return removed
-    }
-
-    /// Returns whether the set contains the given element.
-    ///
-    /// For `~Copyable` elements, this uses borrowing comparison.
-    @inlinable
-    public func contains(_ element: borrowing Element) -> Bool {
-        _indices.position(
-            forHash: element.hashValue,
-            equals: { idx in _elementStorage.withElement(at: idx.position.rawValue) { $0 == element } }
-        ) != nil
-    }
-
-    /// Removes all elements from the set.
-    @inlinable
-    public mutating func clear(keepingCapacity: Bool = false) {
-        _elementStorage._deinitializeAllElements()
-        _indices.removeAll(keepingCapacity: keepingCapacity)
-        if !keepingCapacity {
-            _elementStorage = ElementStorage.create(minimumCapacity: 0)
-            unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
-        }
+        _indexStorage = newIndexStorage
     }
 }
 
@@ -667,29 +1051,24 @@ extension Set_Primitives_Core.Set.Ordered where Element: ~Copyable {
 
 extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
-    ///
-    /// For `Copyable` elements, this uses copy-based comparison.
     @inlinable
     public func index(_ element: Element) -> Int? {
-        let position = _indices.position(
+        _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         )
-        return position?.position.rawValue
     }
 
     /// Inserts an element into the set (CoW-aware).
-    ///
-    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     @discardableResult
     public mutating func insert(_ element: Element) -> (inserted: Bool, index: Int) {
         // Check for existing element
-        if let existing = _indices.position(
+        if let existing = _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         ) {
-            return (false, existing.position.rawValue)
+            return (false, existing)
         }
 
         makeUnique()
@@ -699,56 +1078,55 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         _elementStorage.header = index + 1
 
         // Insert position into hash table
-        let position = Index_Primitives.Index<Element>(__unchecked: (), position: index)
-        _indices.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+        _insertPosition(position: index, hashValue: element.hashValue)
 
         return (true, index)
     }
 
     /// Removes an element from the set (CoW-aware).
-    ///
-    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
-        guard let removedPosition = _indices.remove(
-            hashValue: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+        // makeUnique() must be called first because it may rebuild the hash table
+        // from element storage - if we remove from hash table first, the rebuild
+        // would re-add the element.
+        makeUnique()
+
+        // Capture storage reference to avoid overlapping access
+        let storage = _elementStorage
+        let hashValue = element.hashValue
+        guard let removedPosition = _removePosition(
+            hashValue: hashValue,
+            equals: { idx in storage._readElement(at: idx) == element }
         ) else {
             return nil
         }
 
-        makeUnique()
-        let removedIndex = removedPosition.position.rawValue
         let count = _elementStorage.header
-        let removed = _elementStorage._moveElement(at: removedIndex)
-        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedIndex, count: count)
+        let removed = _elementStorage._moveElement(at: removedPosition)
+        _elementStorage._shiftElementsLeftAndDecrement(removedAt: removedPosition, count: count)
 
         // Update hash table positions after removal
-        _indices.decrementPositions(after: removedPosition)
+        _decrementPositions(after: removedPosition)
 
         return removed
     }
 
     /// Returns whether the set contains the given element.
-    ///
-    /// For `Copyable` elements, this uses copy-based comparison.
     @inlinable
     public func contains(_ element: Element) -> Bool {
-        _indices.position(
+        _findPosition(
             forHash: element.hashValue,
-            equals: { idx in _elementStorage._readElement(at: idx.position.rawValue) == element }
+            equals: { idx in _elementStorage._readElement(at: idx) == element }
         ) != nil
     }
 
     /// Removes all elements from the set (CoW-aware).
-    ///
-    /// For `Copyable` elements, this shadows the base to provide copy-on-write.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
         _elementStorage._deinitializeAllElements()
-        _indices.removeAll(keepingCapacity: keepingCapacity)
+        _clearIndices(keepingCapacity: keepingCapacity)
         if !keepingCapacity {
             _elementStorage = ElementStorage.create(minimumCapacity: 0)
             unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
@@ -831,7 +1209,9 @@ extension Set_Primitives_Core.Set.Ordered {
             }
         }
     }
+}
 
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Removes and consumes all elements.
     ///
     /// - Parameter body: A closure that receives each consumed element.
@@ -846,7 +1226,7 @@ extension Set_Primitives_Core.Set.Ordered {
             }
         }
         _elementStorage.header = 0
-        _indices.removeAll(keepingCapacity: true)
+        _clearIndices(keepingCapacity: true)
     }
 }
 
@@ -870,7 +1250,9 @@ extension Set_Primitives_Core.Set.Ordered {
             return unsafe Span(_unsafeStart: _cachedElementPtr, count: count)
         }
     }
+}
 
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Mutable span of the set's elements in insertion order.
     ///
     /// ## Lifetime Contract
@@ -918,7 +1300,10 @@ extension Set_Primitives_Core.Set.Ordered {
             return try unsafe body(UnsafeBufferPointer(start: nil, count: 0))
         }
     }
+}
 
+@_spi(Unsafe)
+extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Provides mutable access to the underlying contiguous storage.
     ///
     /// - Warning: This is an escape hatch for C interop. Prefer `withMutableSpan` for safe access.
