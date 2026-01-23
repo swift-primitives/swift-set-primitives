@@ -9,8 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Standard_Library_Extensions
-
 /// Namespace for ordered set types supporting move-only elements.
 ///
 /// This shadows `Swift.Set`. Use `Swift.Set` or module-qualified

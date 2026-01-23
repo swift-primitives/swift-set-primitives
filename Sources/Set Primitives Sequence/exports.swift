@@ -1,4 +1,4 @@
 // exports.swift
 // Re-exports for Set Primitives Sequence
 
-public import Set_Primitives_Core
+@_exported import Set_Primitives_Core
