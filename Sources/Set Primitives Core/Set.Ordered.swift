@@ -357,6 +357,131 @@ extension Set_Primitives_Core.Set {
             static func nextBucket(_ bucket: Int, capacity: Int) -> Int {
                 (bucket + 1) & (capacity - 1)
             }
+
+            // MARK: - Slot (probe result)
+
+            /// Result of probing the hash table for a position.
+            @usableFromInline
+            enum Slot {
+                /// Found an existing entry at the given bucket.
+                case found(position: Int, bucket: Int, normalizedHash: Int)
+                /// Found an empty or deleted bucket where insertion can occur.
+                case vacant(bucket: Int, normalizedHash: Int)
+            }
+
+            // MARK: - Core Operations
+
+            /// Finds a slot for the given hash value.
+            ///
+            /// - Parameters:
+            ///   - hashValue: The raw hash value to probe for.
+            ///   - equals: A closure that checks if the element at a position matches.
+            /// - Returns: Either `.found` with the position or `.vacant` with the first available bucket.
+            @usableFromInline
+            func findSlot(hashValue: Int, equals: (Int) -> Bool) -> Slot {
+                let hash = IndexStorage.normalize(hashValue)
+                let hashCapacity = header.hashCapacity
+                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
+                var firstTombstone: Int? = nil
+
+                while true {
+                    let storedHash = _readHash(at: bucket)
+
+                    if storedHash == IndexStorage.empty {
+                        // Empty slot - return first tombstone if we passed one, else this bucket
+                        let insertBucket = firstTombstone ?? bucket
+                        return .vacant(bucket: insertBucket, normalizedHash: hash)
+                    }
+
+                    if storedHash == IndexStorage.deleted {
+                        // Remember first tombstone for potential insertion
+                        if firstTombstone == nil {
+                            firstTombstone = bucket
+                        }
+                    } else if storedHash == hash {
+                        let position = _readPosition(at: bucket)
+                        if equals(position) {
+                            return .found(position: position, bucket: bucket, normalizedHash: hash)
+                        }
+                    }
+
+                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                }
+            }
+
+            /// Inserts a position at the given bucket.
+            ///
+            /// - Parameters:
+            ///   - position: The element position to store.
+            ///   - bucket: The bucket index (from a `.vacant` slot).
+            ///   - normalizedHash: The normalized hash value.
+            @usableFromInline
+            func insert(position: Int, at bucket: Int, normalizedHash: Int) {
+                let wasEmpty = _readHash(at: bucket) == IndexStorage.empty
+                _writeHash(at: bucket, value: normalizedHash)
+                _writePosition(at: bucket, value: position)
+                header.count += 1
+                if wasEmpty {
+                    header.occupied += 1
+                }
+            }
+
+            /// Marks a bucket as deleted.
+            ///
+            /// - Parameter bucket: The bucket index to mark as deleted.
+            @usableFromInline
+            func markDeleted(at bucket: Int) {
+                _writeHash(at: bucket, value: IndexStorage.deleted)
+                header.count -= 1
+            }
+
+            /// Decrements all positions greater than the removed position.
+            ///
+            /// Called after element removal to maintain correct position references.
+            @usableFromInline
+            func decrementPositions(after removedPosition: Int) {
+                let hashCapacity = header.hashCapacity
+                for i in 0..<hashCapacity {
+                    let hash = _readHash(at: i)
+                    if hash != IndexStorage.empty && hash != IndexStorage.deleted {
+                        let pos = _readPosition(at: i)
+                        if pos > removedPosition {
+                            _writePosition(at: i, value: pos - 1)
+                        }
+                    }
+                }
+            }
+
+            /// Clears all entries in the hash table.
+            @usableFromInline
+            func clear() {
+                let hashCapacity = header.hashCapacity
+                for i in 0..<hashCapacity {
+                    _writeHash(at: i, value: IndexStorage.empty)
+                }
+                header.count = 0
+                header.occupied = 0
+            }
+
+            /// Creates a copy of this index storage.
+            ///
+            /// - Returns: A new `IndexStorage` with the same entries.
+            @usableFromInline
+            func copyBuffer() -> IndexStorage {
+                let hashCapacity = header.hashCapacity
+                let newStorage = IndexStorage.create(hashCapacity: hashCapacity)
+
+                // Copy all data (hashes + positions)
+                _ = unsafe withUnsafeMutablePointerToElements { src in
+                    unsafe newStorage.withUnsafeMutablePointerToElements { dst in
+                        unsafe dst.update(from: src, count: hashCapacity * 2)
+                    }
+                }
+
+                newStorage.header.count = header.count
+                newStorage.header.occupied = header.occupied
+                return newStorage
+            }
         }
 
         @usableFromInline
@@ -383,25 +508,11 @@ extension Set_Primitives_Core.Set {
         /// Finds the position for an element with the given hash value.
         @usableFromInline
         func _findPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
-            let hash = IndexStorage.normalize(hashValue)
-            let hashCapacity = _indexStorage.header.hashCapacity
-            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-            while true {
-                let storedHash = _indexStorage._readHash(at: bucket)
-
-                if storedHash == IndexStorage.empty {
-                    return nil
-                }
-
-                if storedHash == hash {
-                    let position = _indexStorage._readPosition(at: bucket)
-                    if equals(position) {
-                        return position
-                    }
-                }
-
-                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            switch _indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+            case .found(let position, _, _):
+                return position
+            case .vacant:
+                return nil
             }
         }
 
@@ -448,79 +559,38 @@ extension Set_Primitives_Core.Set {
                 _growIndices()
             }
 
-            let hash = IndexStorage.normalize(hashValue)
-            let hashCapacity = _indexStorage.header.hashCapacity
-            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-            while true {
-                let storedHash = _indexStorage._readHash(at: bucket)
-
-                if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
-                    _indexStorage._writeHash(at: bucket, value: hash)
-                    _indexStorage._writePosition(at: bucket, value: position)
-                    _indexStorage.header.count += 1
-                    if storedHash == IndexStorage.empty {
-                        _indexStorage.header.occupied += 1
-                    }
-                    return
-                }
-
-                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            // Use a non-matching equals closure since we're inserting a new position
+            switch _indexStorage.findSlot(hashValue: hashValue, equals: { _ in false }) {
+            case .vacant(let bucket, let normalizedHash):
+                _indexStorage.insert(position: position, at: bucket, normalizedHash: normalizedHash)
+            case .found:
+                fatalError("Unreachable: equals always returns false")
             }
         }
 
         /// Removes a position from the hash table.
         @usableFromInline
         mutating func _removePosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
-            let hash = IndexStorage.normalize(hashValue)
-            let hashCapacity = _indexStorage.header.hashCapacity
-            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-            while true {
-                let storedHash = _indexStorage._readHash(at: bucket)
-
-                if storedHash == IndexStorage.empty {
-                    return nil
-                }
-
-                if storedHash == hash {
-                    let position = _indexStorage._readPosition(at: bucket)
-                    if equals(position) {
-                        _indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
-                        _indexStorage.header.count -= 1
-                        return position
-                    }
-                }
-
-                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+            switch _indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+            case .found(let position, let bucket, _):
+                _indexStorage.markDeleted(at: bucket)
+                return position
+            case .vacant:
+                return nil
             }
         }
 
         /// Updates positions after an element is removed from element storage.
         @usableFromInline
         mutating func _decrementPositions(after removedPosition: Int) {
-            let hashCapacity = _indexStorage.header.hashCapacity
-            for i in 0..<hashCapacity {
-                let hash = _indexStorage._readHash(at: i)
-                if hash != IndexStorage.empty && hash != IndexStorage.deleted {
-                    let pos = _indexStorage._readPosition(at: i)
-                    if pos > removedPosition {
-                        _indexStorage._writePosition(at: i, value: pos - 1)
-                    }
-                }
-            }
+            _indexStorage.decrementPositions(after: removedPosition)
         }
 
         /// Removes all entries from the hash table.
         @usableFromInline
         mutating func _clearIndices(keepingCapacity: Bool) {
             if keepingCapacity {
-                let hashCapacity = _indexStorage.header.hashCapacity
-                for i in 0..<hashCapacity {
-                    _indexStorage._writeHash(at: i, value: IndexStorage.empty)
-                }
-                _indexStorage.header.count = 0
-                _indexStorage.header.occupied = 0
+                _indexStorage.clear()
             } else {
                 // Create new storage with default capacity
                 let hashCapacity = IndexStorage.capacity(for: 0)
@@ -552,7 +622,7 @@ extension Set_Primitives_Core.Set {
             @inlinable
             public init(capacity: Int) throws(__SetOrderedBoundedError) {
                 guard capacity >= 0 else {
-                    throw .invalidCapacity
+                    throw .invalidCapacity(.init())
                 }
                 self._elementStorage = ElementStorage.create(minimumCapacity: capacity)
                 self._indexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: capacity))
@@ -564,99 +634,45 @@ extension Set_Primitives_Core.Set {
 
             @usableFromInline
             func _findPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = _indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = _indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty {
-                        return nil
-                    }
-
-                    if storedHash == hash {
-                        let position = _indexStorage._readPosition(at: bucket)
-                        if equals(position) {
-                            return position
-                        }
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                switch _indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+                case .found(let position, _, _):
+                    return position
+                case .vacant:
+                    return nil
                 }
             }
 
             @usableFromInline
             mutating func _insertPosition(position: Int, hashValue: Int) {
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = _indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = _indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
-                        _indexStorage._writeHash(at: bucket, value: hash)
-                        _indexStorage._writePosition(at: bucket, value: position)
-                        _indexStorage.header.count += 1
-                        if storedHash == IndexStorage.empty {
-                            _indexStorage.header.occupied += 1
-                        }
-                        return
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                // Bounded variant doesn't grow - capacity is fixed at creation
+                switch _indexStorage.findSlot(hashValue: hashValue, equals: { _ in false }) {
+                case .vacant(let bucket, let normalizedHash):
+                    _indexStorage.insert(position: position, at: bucket, normalizedHash: normalizedHash)
+                case .found:
+                    fatalError("Unreachable: equals always returns false")
                 }
             }
 
             @usableFromInline
             mutating func _removePosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = _indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = _indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty {
-                        return nil
-                    }
-
-                    if storedHash == hash {
-                        let position = _indexStorage._readPosition(at: bucket)
-                        if equals(position) {
-                            _indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
-                            _indexStorage.header.count -= 1
-                            return position
-                        }
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                switch _indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+                case .found(let position, let bucket, _):
+                    _indexStorage.markDeleted(at: bucket)
+                    return position
+                case .vacant:
+                    return nil
                 }
             }
 
             @usableFromInline
             mutating func _decrementPositions(after removedPosition: Int) {
-                let hashCapacity = _indexStorage.header.hashCapacity
-                for i in 0..<hashCapacity {
-                    let hash = _indexStorage._readHash(at: i)
-                    if hash != IndexStorage.empty && hash != IndexStorage.deleted {
-                        let pos = _indexStorage._readPosition(at: i)
-                        if pos > removedPosition {
-                            _indexStorage._writePosition(at: i, value: pos - 1)
-                        }
-                    }
-                }
+                _indexStorage.decrementPositions(after: removedPosition)
             }
 
             @usableFromInline
             mutating func _clearIndices(keepingCapacity: Bool) {
-                let hashCapacity = _indexStorage.header.hashCapacity
-                for i in 0..<hashCapacity {
-                    _indexStorage._writeHash(at: i, value: IndexStorage.empty)
-                }
-                _indexStorage.header.count = 0
-                _indexStorage.header.occupied = 0
+                // Bounded always keeps capacity
+                _indexStorage.clear()
             }
         }
 
@@ -840,17 +856,13 @@ extension Set_Primitives_Core.Set {
                             let hashValue = element.hashValue
                             unsafe (heapPtr + i).initialize(to: element)
 
-                            // Insert into hash table
-                            let hash = IndexStorage.normalize(hashValue)
-                            let hashCapacity = newIndexStorage.header.hashCapacity
-                            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-                            while newIndexStorage._readHash(at: bucket) != IndexStorage.empty {
-                                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                            // Insert into hash table using IndexStorage.findSlot + insert
+                            switch newIndexStorage.findSlot(hashValue: hashValue, equals: { _ in false }) {
+                            case .vacant(let bucket, let normalizedHash):
+                                newIndexStorage.insert(position: i, at: bucket, normalizedHash: normalizedHash)
+                            case .found:
+                                fatalError("Unreachable: equals always returns false")
                             }
-                            newIndexStorage._writeHash(at: bucket, value: hash)
-                            newIndexStorage._writePosition(at: bucket, value: i)
-                            newIndexStorage.header.count += 1
-                            newIndexStorage.header.occupied += 1
                         }
                     }
                 }
@@ -866,104 +878,47 @@ extension Set_Primitives_Core.Set {
             @usableFromInline
             func _findHeapPosition(forHash hashValue: Int, equals: (Int) -> Bool) -> Int? {
                 guard let indexStorage = _heapIndexStorage else { return nil }
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty {
-                        return nil
-                    }
-
-                    if storedHash == hash {
-                        let position = indexStorage._readPosition(at: bucket)
-                        if equals(position) {
-                            return position
-                        }
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                switch indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+                case .found(let position, _, _):
+                    return position
+                case .vacant:
+                    return nil
                 }
             }
 
             @usableFromInline
             mutating func _insertHeapPosition(position: Int, hashValue: Int) {
                 guard let indexStorage = _heapIndexStorage else { return }
-
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty || storedHash == IndexStorage.deleted {
-                        indexStorage._writeHash(at: bucket, value: hash)
-                        indexStorage._writePosition(at: bucket, value: position)
-                        indexStorage.header.count += 1
-                        if storedHash == IndexStorage.empty {
-                            indexStorage.header.occupied += 1
-                        }
-                        return
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                switch indexStorage.findSlot(hashValue: hashValue, equals: { _ in false }) {
+                case .vacant(let bucket, let normalizedHash):
+                    indexStorage.insert(position: position, at: bucket, normalizedHash: normalizedHash)
+                case .found:
+                    fatalError("Unreachable: equals always returns false")
                 }
             }
 
             @usableFromInline
             mutating func _removeHeapPosition(hashValue: Int, equals: (Int) -> Bool) -> Int? {
                 guard let indexStorage = _heapIndexStorage else { return nil }
-                let hash = IndexStorage.normalize(hashValue)
-                let hashCapacity = indexStorage.header.hashCapacity
-                var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-
-                while true {
-                    let storedHash = indexStorage._readHash(at: bucket)
-
-                    if storedHash == IndexStorage.empty {
-                        return nil
-                    }
-
-                    if storedHash == hash {
-                        let position = indexStorage._readPosition(at: bucket)
-                        if equals(position) {
-                            indexStorage._writeHash(at: bucket, value: IndexStorage.deleted)
-                            indexStorage.header.count -= 1
-                            return position
-                        }
-                    }
-
-                    bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
+                switch indexStorage.findSlot(hashValue: hashValue, equals: equals) {
+                case .found(let position, let bucket, _):
+                    indexStorage.markDeleted(at: bucket)
+                    return position
+                case .vacant:
+                    return nil
                 }
             }
 
             @usableFromInline
             mutating func _decrementHeapPositions(after removedPosition: Int) {
                 guard let indexStorage = _heapIndexStorage else { return }
-                let hashCapacity = indexStorage.header.hashCapacity
-                for i in 0..<hashCapacity {
-                    let hash = indexStorage._readHash(at: i)
-                    if hash != IndexStorage.empty && hash != IndexStorage.deleted {
-                        let pos = indexStorage._readPosition(at: i)
-                        if pos > removedPosition {
-                            indexStorage._writePosition(at: i, value: pos - 1)
-                        }
-                    }
-                }
+                indexStorage.decrementPositions(after: removedPosition)
             }
 
             @usableFromInline
             mutating func _clearHeapIndices(keepingCapacity: Bool) {
                 guard let indexStorage = _heapIndexStorage else { return }
-                let hashCapacity = indexStorage.header.hashCapacity
-                for i in 0..<hashCapacity {
-                    indexStorage._writeHash(at: i, value: IndexStorage.empty)
-                }
-                indexStorage.header.count = 0
-                indexStorage.header.occupied = 0
+                indexStorage.clear()
             }
         }
     }
@@ -1066,36 +1021,18 @@ extension Set_Primitives_Core.Set.Ordered {
 extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Ensures element storage is uniquely owned (copy-on-write).
     ///
-    /// This method copies storage if it's shared.
+    /// Copies both element storage and index storage together to maintain
+    /// consistency. Uses O(capacity) memcpy for index storage instead of
+    /// O(n) rehashing.
     @usableFromInline
     @inline(__always)
     mutating func makeUnique() {
         if !isKnownUniquelyReferenced(&_elementStorage) {
             _elementStorage = _elementStorage.copy()
+            _indexStorage = _indexStorage.copyBuffer()
+            // CRITICAL: Update cached pointer after copy
             unsafe (_cachedElementPtr = _elementStorage._elementsPointer)
-            // Rebuild the hash index after copying element storage.
-            _rebuildIndices()
         }
-    }
-
-    /// Rebuilds hash table indices from current element storage.
-    @usableFromInline
-    mutating func _rebuildIndices() {
-        let newIndexStorage = IndexStorage.create(hashCapacity: IndexStorage.capacity(for: count))
-        for i in 0..<count {
-            let element = _elementStorage._readElement(at: i)
-            let hash = IndexStorage.normalize(element.hashValue)
-            let hashCapacity = newIndexStorage.header.hashCapacity
-            var bucket = IndexStorage.bucket(for: hash, capacity: hashCapacity)
-            while newIndexStorage._readHash(at: bucket) != IndexStorage.empty {
-                bucket = IndexStorage.nextBucket(bucket, capacity: hashCapacity)
-            }
-            newIndexStorage._writeHash(at: bucket, value: hash)
-            newIndexStorage._writePosition(at: bucket, value: i)
-            newIndexStorage.header.count += 1
-            newIndexStorage.header.occupied += 1
-        }
-        _indexStorage = newIndexStorage
     }
 }
 

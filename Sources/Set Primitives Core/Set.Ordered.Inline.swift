@@ -73,7 +73,7 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
             return (false, existing)
         }
         guard _count < capacity else {
-            throw .overflow
+            throw .overflow(.init())
         }
         let ptr = unsafe _pointerToElement(at: _count)
         unsafe ptr.initialize(to: element)
@@ -134,7 +134,7 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     @inlinable
     public func element(at index: Int) throws(__SetOrderedInlineError) -> Element {
         guard index >= 0 && index < _count else {
-            throw .indexOutOfBounds(index: index, count: _count)
+            throw .bounds(.init(index: index, count: _count))
         }
         return unsafe _readPointerToElement(at: index).pointee
     }

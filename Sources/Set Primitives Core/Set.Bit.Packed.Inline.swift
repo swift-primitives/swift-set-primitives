@@ -62,6 +62,13 @@ extension Set<Bit>.Packed.Inline {
 // MARK: - Membership
 
 extension Set<Bit>.Packed.Inline {
+    /// Returns whether the set contains the given bit index.
+    @inlinable
+    public func contains(_ index: Bit.Index) -> Bool {
+        contains(index.position.rawValue)
+    }
+
+    /// Returns whether the set contains the given integer index.
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < Self.capacity else { return false }
@@ -75,14 +82,22 @@ extension Set<Bit>.Packed.Inline {
 // MARK: - Mutation
 
 extension Set<Bit>.Packed.Inline {
+    /// Inserts a bit index into the set.
+    @inlinable
+    @discardableResult
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedInlineError) -> Bool {
+        try insert(index.position.rawValue)
+    }
+
+    /// Inserts an integer index into the set.
     @inlinable
     @discardableResult
     public mutating func insert(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
             if index >= Self.capacity {
-                throw .overflow
+                throw .overflow(.init())
             }
-            throw .bounds(index: index, capacity: Self.capacity)
+            throw .bounds(.init(index: index, capacity: Self.capacity))
         }
         let wordIndex = index / Self._bitsPerWord
         let bitIndex = index % Self._bitsPerWord
@@ -92,11 +107,19 @@ extension Set<Bit>.Packed.Inline {
         return !wasSet
     }
 
+    /// Removes a bit index from the set.
+    @inlinable
+    @discardableResult
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedInlineError) -> Bool {
+        try remove(index.position.rawValue)
+    }
+
+    /// Removes an integer index from the set.
     @inlinable
     @discardableResult
     public mutating func remove(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
-            throw .bounds(index: index, capacity: Self.capacity)
+            throw .bounds(.init(index: index, capacity: Self.capacity))
         }
         let wordIndex = index / Self._bitsPerWord
         let bitIndex = index % Self._bitsPerWord

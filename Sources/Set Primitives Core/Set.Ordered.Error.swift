@@ -55,23 +55,53 @@ extension __SetOrderedError: CustomStringConvertible {
 /// Hoisted implementation of ``Set/Ordered/Bounded/Error``.
 public enum __SetOrderedBoundedError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
-    case bounds(index: Int, count: Int)
+    case bounds(Bounds)
 
     /// The set is empty.
-    case empty
+    case empty(Empty)
 
     /// The set is full and cannot accept more elements.
-    case overflow
+    case overflow(Overflow)
 
     /// The specified capacity is invalid.
-    case invalidCapacity
+    case invalidCapacity(InvalidCapacity)
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let count: Int
+
+        @inlinable
+        public init(index: Int, count: Int) {
+            self.index = index
+            self.count = count
+        }
+    }
+
+    /// Empty collection payload.
+    public struct Empty: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
+
+    /// Overflow payload.
+    public struct Overflow: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
+
+    /// Invalid capacity payload.
+    public struct InvalidCapacity: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
 }
 
 extension __SetOrderedBoundedError: CustomStringConvertible {
     public var description: String {
         switch self {
-        case .bounds(let index, let count):
-            return "index \(index) out of bounds for count \(count)"
+        case .bounds(let e):
+            return "index \(e.index) out of bounds for count \(e.count)"
         case .empty:
             return "operation attempted on empty bounded set"
         case .overflow:
@@ -85,10 +115,28 @@ extension __SetOrderedBoundedError: CustomStringConvertible {
 /// Hoisted implementation of ``Set/Ordered/Inline/Error``.
 public enum __SetOrderedInlineError: Swift.Error, Sendable, Equatable {
     /// The set is full and cannot accept more elements.
-    case overflow
+    case overflow(Overflow)
 
     /// The index is out of bounds.
-    case indexOutOfBounds(index: Int, count: Int)
+    case bounds(Bounds)
+
+    /// Overflow payload.
+    public struct Overflow: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let count: Int
+
+        @inlinable
+        public init(index: Int, count: Int) {
+            self.index = index
+            self.count = count
+        }
+    }
 }
 
 extension __SetOrderedInlineError: CustomStringConvertible {
@@ -96,8 +144,8 @@ extension __SetOrderedInlineError: CustomStringConvertible {
         switch self {
         case .overflow:
             return "inline set is full"
-        case .indexOutOfBounds(let index, let count):
-            return "index \(index) out of bounds for count \(count)"
+        case .bounds(let e):
+            return "index \(e.index) out of bounds for count \(e.count)"
         }
     }
 }

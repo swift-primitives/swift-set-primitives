@@ -31,7 +31,7 @@ extension Set<Bit>.Packed {
         @inlinable
         public init(capacity: Int) throws(__SetBitPackedBoundedError) {
             guard capacity >= 0 else {
-                throw .invalidCapacity
+                throw .invalidCapacity(.init())
             }
             let wordCount = (capacity + Self._bitsPerWord - 1) / Self._bitsPerWord
             self._storage = ContiguousArray(repeating: 0, count: wordCount)
@@ -64,6 +64,13 @@ extension Set<Bit>.Packed.Bounded {
 // MARK: - Membership
 
 extension Set<Bit>.Packed.Bounded {
+    /// Returns whether the set contains the given bit index.
+    @inlinable
+    public func contains(_ index: Bit.Index) -> Bool {
+        contains(index.position.rawValue)
+    }
+
+    /// Returns whether the set contains the given integer index.
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < capacity else { return false }
@@ -77,14 +84,22 @@ extension Set<Bit>.Packed.Bounded {
 // MARK: - Mutation
 
 extension Set<Bit>.Packed.Bounded {
+    /// Inserts a bit index into the set.
+    @inlinable
+    @discardableResult
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
+        try insert(index.position.rawValue)
+    }
+
+    /// Inserts an integer index into the set.
     @inlinable
     @discardableResult
     public mutating func insert(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
         guard index >= 0 && index < capacity else {
             if index >= capacity {
-                throw .overflow
+                throw .overflow(.init())
             }
-            throw .bounds(index: index, capacity: capacity)
+            throw .bounds(.init(index: index, capacity: capacity))
         }
         let wordIndex = index / Self._bitsPerWord
         let bitIndex = index % Self._bitsPerWord
@@ -94,11 +109,19 @@ extension Set<Bit>.Packed.Bounded {
         return !wasSet
     }
 
+    /// Removes a bit index from the set.
+    @inlinable
+    @discardableResult
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
+        try remove(index.position.rawValue)
+    }
+
+    /// Removes an integer index from the set.
     @inlinable
     @discardableResult
     public mutating func remove(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
         guard index >= 0 && index < capacity else {
-            throw .bounds(index: index, capacity: capacity)
+            throw .bounds(.init(index: index, capacity: capacity))
         }
         let wordIndex = index / Self._bitsPerWord
         let bitIndex = index % Self._bitsPerWord

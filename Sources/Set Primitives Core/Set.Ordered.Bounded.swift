@@ -72,7 +72,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
 
         let index = _elementStorage.header
         guard index < capacity else {
-            throw .overflow
+            throw .overflow(.init())
         }
         makeUnique()
         _elementStorage._initializeElement(at: index, to: element)
@@ -137,7 +137,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     @inlinable
     public func element(at index: Int) throws(__SetOrderedBoundedError) -> Element {
         guard index >= 0 && index < count else {
-            throw .bounds(index: index, count: count)
+            throw .bounds(.init(index: index, count: count))
         }
         return _elementStorage._readElement(at: index)
     }

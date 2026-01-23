@@ -56,7 +56,7 @@ extension Set where Element == Bit {
         @inlinable
         public init(capacity: Int) throws(__SetBitPackedError) {
             guard capacity >= 0 else {
-                throw .invalidCapacity
+                throw .invalidCapacity(.init())
             }
             let wordCount = (capacity + Self._bitsPerWord - 1) / Self._bitsPerWord
             self._storage = ContiguousArray(repeating: 0, count: wordCount)
@@ -114,11 +114,11 @@ extension Set<Bit>.Packed {
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 else {
-            throw .bounds(index: i, capacity: _capacity)
+            throw .bounds(.init(index: i, capacity: _capacity))
         }
 
         if i >= _capacity {
-            try _grow(toInclude: i)
+            _grow(toInclude: i)
         }
 
         let wordIndex = i / Self._bitsPerWord
@@ -134,7 +134,7 @@ extension Set<Bit>.Packed {
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 && i < _capacity else {
-            throw .bounds(index: i, capacity: _capacity)
+            throw .bounds(.init(index: i, capacity: _capacity))
         }
         let wordIndex = i / Self._bitsPerWord
         let bitIndex = i % Self._bitsPerWord
@@ -152,7 +152,7 @@ extension Set<Bit>.Packed {
     }
 
     @usableFromInline
-    mutating func _grow(toInclude index: Int) throws(__SetBitPackedError) {
+    mutating func _grow(toInclude index: Int) {
         let newCapacity = index + 1
         let newWordCount = (newCapacity + Self._bitsPerWord - 1) / Self._bitsPerWord
         let oldWordCount = _storage.count
@@ -180,7 +180,7 @@ extension Set<Bit>.Packed {
     @inlinable
     public mutating func formUnion(_ other: Self) {
         if other._capacity > _capacity {
-            try! _grow(toInclude: other._capacity - 1)
+            _grow(toInclude: other._capacity - 1)
         }
         let minWords = Swift.min(_storage.count, other._storage.count)
         for i in 0..<minWords {
@@ -231,7 +231,7 @@ extension Set<Bit>.Packed {
     @inlinable
     public mutating func formSymmetricDifference(_ other: Self) {
         if other._capacity > _capacity {
-            try! _grow(toInclude: other._capacity - 1)
+            _grow(toInclude: other._capacity - 1)
         }
         let minWords = Swift.min(_storage.count, other._storage.count)
         for i in 0..<minWords {

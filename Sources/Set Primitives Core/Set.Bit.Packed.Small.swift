@@ -184,7 +184,7 @@ extension Set<Bit>.Packed.Small {
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 else {
-            throw .bounds(index: i, capacity: _capacity)
+            throw .bounds(.init(index: i, capacity: _capacity))
         }
 
         // Spill to heap if needed
@@ -224,7 +224,7 @@ extension Set<Bit>.Packed.Small {
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 && i < _capacity else {
-            throw .bounds(index: i, capacity: _capacity)
+            throw .bounds(.init(index: i, capacity: _capacity))
         }
 
         let wordIndex = i / Self._bitsPerWord
@@ -476,6 +476,118 @@ extension Set<Bit>.Packed.Small {
         }
 
         return result
+    }
+
+    /// Adds the elements of another set to this set.
+    @inlinable
+    public mutating func formUnion(_ other: Self) {
+        if other._capacity > _capacity {
+            _spillToHeap(toInclude: other._capacity - 1)
+        }
+
+        let otherWordCount = other._wordCount
+        let selfWordCount = _wordCount
+
+        for i in 0..<selfWordCount {
+            let otherWord: UInt
+            if i < otherWordCount {
+                if let heapStorage = other._heapStorage {
+                    otherWord = heapStorage[i]
+                } else {
+                    otherWord = other._inlineStorage[i]
+                }
+            } else {
+                otherWord = 0
+            }
+
+            if _heapStorage != nil {
+                _heapStorage![i] |= otherWord
+            } else {
+                _inlineStorage[i] |= otherWord
+            }
+        }
+    }
+
+    /// Removes elements not in another set from this set.
+    @inlinable
+    public mutating func formIntersection(_ other: Self) {
+        let selfWordCount = _wordCount
+        let otherWordCount = other._wordCount
+
+        for i in 0..<selfWordCount {
+            let otherWord: UInt
+            if i < otherWordCount {
+                if let heapStorage = other._heapStorage {
+                    otherWord = heapStorage[i]
+                } else {
+                    otherWord = other._inlineStorage[i]
+                }
+            } else {
+                otherWord = 0
+            }
+
+            if _heapStorage != nil {
+                _heapStorage![i] &= otherWord
+            } else {
+                _inlineStorage[i] &= otherWord
+            }
+        }
+    }
+
+    /// Removes elements of another set from this set.
+    @inlinable
+    public mutating func subtract(_ other: Self) {
+        let selfWordCount = _wordCount
+        let otherWordCount = other._wordCount
+
+        for i in 0..<selfWordCount {
+            let otherWord: UInt
+            if i < otherWordCount {
+                if let heapStorage = other._heapStorage {
+                    otherWord = heapStorage[i]
+                } else {
+                    otherWord = other._inlineStorage[i]
+                }
+            } else {
+                otherWord = 0
+            }
+
+            if _heapStorage != nil {
+                _heapStorage![i] &= ~otherWord
+            } else {
+                _inlineStorage[i] &= ~otherWord
+            }
+        }
+    }
+
+    /// Replaces this set with the symmetric difference with another set.
+    @inlinable
+    public mutating func formSymmetricDifference(_ other: Self) {
+        if other._capacity > _capacity {
+            _spillToHeap(toInclude: other._capacity - 1)
+        }
+
+        let otherWordCount = other._wordCount
+        let selfWordCount = _wordCount
+
+        for i in 0..<selfWordCount {
+            let otherWord: UInt
+            if i < otherWordCount {
+                if let heapStorage = other._heapStorage {
+                    otherWord = heapStorage[i]
+                } else {
+                    otherWord = other._inlineStorage[i]
+                }
+            } else {
+                otherWord = 0
+            }
+
+            if _heapStorage != nil {
+                _heapStorage![i] ^= otherWord
+            } else {
+                _inlineStorage[i] ^= otherWord
+            }
+        }
     }
 }
 

@@ -18,26 +18,110 @@ public import Bit_Primitives
 
 /// Errors that can occur during `Set<Bit>.Packed` operations.
 public enum __SetBitPackedError: Swift.Error, Sendable, Equatable {
-    case bounds(index: Int, capacity: Int)
-    case invalidCapacity
+    /// The index is out of bounds.
+    case bounds(Bounds)
+
+    /// The specified capacity is invalid.
+    case invalidCapacity(InvalidCapacity)
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let capacity: Int
+
+        @inlinable
+        public init(index: Int, capacity: Int) {
+            self.index = index
+            self.capacity = capacity
+        }
+    }
+
+    /// Invalid capacity payload.
+    public struct InvalidCapacity: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
 }
 
 /// Errors that can occur during `Set<Bit>.Packed.Bounded` operations.
 public enum __SetBitPackedBoundedError: Swift.Error, Sendable, Equatable {
-    case bounds(index: Int, capacity: Int)
-    case invalidCapacity
-    case overflow
+    /// The index is out of bounds.
+    case bounds(Bounds)
+
+    /// The specified capacity is invalid.
+    case invalidCapacity(InvalidCapacity)
+
+    /// The set is full and cannot accept more elements.
+    case overflow(Overflow)
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let capacity: Int
+
+        @inlinable
+        public init(index: Int, capacity: Int) {
+            self.index = index
+            self.capacity = capacity
+        }
+    }
+
+    /// Invalid capacity payload.
+    public struct InvalidCapacity: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
+
+    /// Overflow payload.
+    public struct Overflow: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
 }
 
 /// Errors that can occur during `Set<Bit>.Packed.Inline` operations.
 public enum __SetBitPackedInlineError: Swift.Error, Sendable, Equatable {
-    case bounds(index: Int, capacity: Int)
-    case overflow
+    /// The index is out of bounds.
+    case bounds(Bounds)
+
+    /// The set is full and cannot accept more elements.
+    case overflow(Overflow)
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let capacity: Int
+
+        @inlinable
+        public init(index: Int, capacity: Int) {
+            self.index = index
+            self.capacity = capacity
+        }
+    }
+
+    /// Overflow payload.
+    public struct Overflow: Sendable, Equatable {
+        @inlinable
+        public init() {}
+    }
 }
 
 /// Errors that can occur during `Set<Bit>.Packed.Small` operations.
 public enum __SetBitPackedSmallError: Swift.Error, Sendable, Equatable {
-    case bounds(index: Int, capacity: Int)
+    /// The index is out of bounds.
+    case bounds(Bounds)
+
+    /// Bounds violation payload.
+    public struct Bounds: Sendable, Equatable {
+        public let index: Int
+        public let capacity: Int
+
+        @inlinable
+        public init(index: Int, capacity: Int) {
+            self.index = index
+            self.capacity = capacity
+        }
+    }
 }
 
 // MARK: - Canonical Error Typealiases
