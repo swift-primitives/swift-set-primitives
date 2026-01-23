@@ -24,6 +24,8 @@ let package = Package(
         .package(path: "../swift-hash-primitives"),
         .package(path: "../swift-hash-table-primitives"),
         .package(path: "../swift-collection-primitives"),
+        .package(path: "../swift-sequence-primitives"),
+        .package(path: "../swift-property-primitives"),
     ],
     targets: [
         // Internal: Core types with ~Copyable support (no Sequence/Collection.Protocol conformances)
@@ -36,6 +38,8 @@ let package = Package(
                 .product(name: "Hash Primitives", package: "swift-hash-primitives"),
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
                 .product(name: "Collection Primitives", package: "swift-collection-primitives"),
+                .product(name: "Sequence Primitives", package: "swift-sequence-primitives"),
+                .product(name: "Property Primitives", package: "swift-property-primitives"),
             ]
         ),
         // Internal: Sequence/Collection.Protocol conformances (Element: Copyable)

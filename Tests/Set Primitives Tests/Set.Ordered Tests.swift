@@ -341,10 +341,10 @@ struct OrderedSetTests {
         }
     }
 
-    // MARK: - Consuming Iteration
+    // MARK: - Consuming Iteration (via .consume().forEach pattern)
 
-    @Test("makeConsumingIterator yields all elements")
-    func makeConsumingIteratorYieldsAllElements() {
+    @Test("consume().forEach yields all elements")
+    func consumeForEachYieldsAllElements() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -352,18 +352,16 @@ struct OrderedSetTests {
         set.insert(40)
         set.insert(50)
 
-        var iterator = set.makeConsumingIterator()
         var result: [Int] = []
-
-        while let element = iterator.next() {
+        set.consume().forEach { element in
             result.append(element)
         }
 
         #expect(result == [10, 20, 30, 40, 50])
     }
 
-    @Test("consumingForEach processes all elements")
-    func consumingForEachProcessesAllElements() {
+    @Test("consume().forEach processes all elements")
+    func consumeForEachProcessesAllElements() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -372,52 +370,53 @@ struct OrderedSetTests {
         set.insert(5)
 
         var sum = 0
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             sum += element
         }
 
         #expect(sum == 15)
     }
 
-    @Test("consumingCount returns correct count and iterator")
-    func consumingCountReturnsCorrectCountAndIterator() {
+    @Test("consume() with manual iteration")
+    func consumeWithManualIteration() {
         var set = Set<String>.Ordered()
         set.insert("a")
         set.insert("b")
         set.insert("c")
         set.insert("d")
 
-        var counted = set.consumingCount()
-        #expect(counted.count == 4)
+        let count = set.count
+        #expect(count == 4)
 
+        var view = set.consume()
         var result: [String] = []
-        result.reserveCapacity(counted.count)
+        result.reserveCapacity(count)
 
-        while let element = counted.iterator.next() {
+        while let element = view.next() {
             result.append(element)
         }
 
         #expect(result == ["a", "b", "c", "d"])
     }
 
-    @Test("Consuming iterator handles empty set")
-    func consumingIteratorHandlesEmptySet() {
+    @Test("consume() handles empty set")
+    func consumeHandlesEmptySet() {
         let set = Set<Int>.Ordered()
 
-        var iterator = set.makeConsumingIterator()
-        let next = iterator.next()
+        var view = set.consume()
+        let next = view.next()
         #expect(next == nil)
     }
 
-    @Test("Consuming iteration preserves order")
-    func consumingIterationPreservesOrder() {
+    @Test("consume().forEach preserves order")
+    func consumeForEachPreservesOrder() {
         var set = Set<String>.Ordered()
         set.insert("charlie")
         set.insert("alpha")
         set.insert("bravo")
 
         var result: [String] = []
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             result.append(element)
         }
 
@@ -426,122 +425,120 @@ struct OrderedSetTests {
 
     // MARK: - Bounded Consuming Iteration
 
-    @Test("Bounded: makeConsumingIterator yields all elements")
-    func boundedMakeConsumingIterator() throws {
+    @Test("Bounded: consume().forEach yields all elements")
+    func boundedConsumeForEach() throws {
         var set = try Set<Int>.Ordered.Bounded(capacity: 10)
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
 
-        var iterator = set.makeConsumingIterator()
         var result: [Int] = []
-
-        while let element = iterator.next() {
+        set.consume().forEach { element in
             result.append(element)
         }
 
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Bounded: consumingForEach processes all elements")
-    func boundedConsumingForEach() throws {
+    @Test("Bounded: consume().forEach processes all elements")
+    func boundedConsumeForEachProcesses() throws {
         var set = try Set<Int>.Ordered.Bounded(capacity: 10)
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
 
         var sum = 0
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             sum += element
         }
 
         #expect(sum == 6)
     }
 
-    @Test("Bounded: consumingCount returns correct count")
-    func boundedConsumingCount() throws {
+    @Test("Bounded: consume() with manual iteration")
+    func boundedConsumeManualIteration() throws {
         var set = try Set<String>.Ordered.Bounded(capacity: 10)
         try set.insert("a")
         try set.insert("b")
 
-        var counted = set.consumingCount()
-        #expect(counted.count == 2)
+        let count = set.count
+        #expect(count == 2)
 
+        var view = set.consume()
         var result: [String] = []
-        while let element = counted.iterator.next() {
+        while let element = view.next() {
             result.append(element)
         }
         #expect(result == ["a", "b"])
     }
 
-    @Test("Bounded: consuming iterator handles empty set")
-    func boundedConsumingIteratorEmpty() throws {
+    @Test("Bounded: consume() handles empty set")
+    func boundedConsumeEmpty() throws {
         let set = try Set<Int>.Ordered.Bounded(capacity: 10)
-        var iterator = set.makeConsumingIterator()
-        let next = iterator.next()
+        var view = set.consume()
+        let next = view.next()
         #expect(next == nil)
     }
 
     // MARK: - Inline Consuming Iteration
 
-    @Test("Inline: makeConsumingIterator yields all elements")
-    func inlineMakeConsumingIterator() throws {
+    @Test("Inline: consume().forEach yields all elements")
+    func inlineConsumeForEach() throws {
         var set = Set<Int>.Ordered.Inline<8>()
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
 
-        var iterator = set.makeConsumingIterator()
         var result: [Int] = []
-
-        while let element = iterator.next() {
+        set.consume().forEach { element in
             result.append(element)
         }
 
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Inline: consumingForEach processes all elements")
-    func inlineConsumingForEach() throws {
+    @Test("Inline: consume().forEach processes all elements")
+    func inlineConsumeForEachProcesses() throws {
         var set = Set<Int>.Ordered.Inline<8>()
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
 
         var sum = 0
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             sum += element
         }
 
         #expect(sum == 6)
     }
 
-    @Test("Inline: consumingCount returns correct count")
-    func inlineConsumingCount() throws {
+    @Test("Inline: consume() with manual iteration")
+    func inlineConsumeManualIteration() throws {
         var set = Set<String>.Ordered.Inline<8>()
         try set.insert("a")
         try set.insert("b")
 
-        var counted = set.consumingCount()
-        #expect(counted.count == 2)
+        let count = set.count
+        #expect(count == 2)
 
+        var view = set.consume()
         var result: [String] = []
-        while let element = counted.iterator.next() {
+        while let element = view.next() {
             result.append(element)
         }
         #expect(result == ["a", "b"])
     }
 
-    @Test("Inline: consuming iterator handles empty set")
-    func inlineConsumingIteratorEmpty() {
+    @Test("Inline: consume() handles empty set")
+    func inlineConsumeEmpty() {
         let set = Set<Int>.Ordered.Inline<8>()
-        var iterator = set.makeConsumingIterator()
-        let next = iterator.next()
+        var view = set.consume()
+        let next = view.next()
         #expect(next == nil)
     }
 
-    @Test("Inline: consuming full capacity set")
-    func inlineConsumingFullCapacity() throws {
+    @Test("Inline: consume() full capacity set")
+    func inlineConsumeFullCapacity() throws {
         var set = Set<Int>.Ordered.Inline<4>()
         try set.insert(1)
         try set.insert(2)
@@ -550,7 +547,7 @@ struct OrderedSetTests {
         precondition(set.isFull, "Should be at full capacity")
 
         var result: [Int] = []
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             result.append(element)
         }
 
@@ -559,26 +556,24 @@ struct OrderedSetTests {
 
     // MARK: - Small Consuming Iteration
 
-    @Test("Small: makeConsumingIterator yields all elements (inline mode)")
-    func smallMakeConsumingIteratorInline() {
+    @Test("Small: consume().forEach yields all elements (inline mode)")
+    func smallConsumeForEachInline() {
         var set = Set<Int>.Ordered.Small<4>()
         set.insert(10)
         set.insert(20)
         set.insert(30)
         precondition(!set.isSpilled, "Should be in inline mode")
 
-        var iterator = set.makeConsumingIterator()
         var result: [Int] = []
-
-        while let element = iterator.next() {
+        set.consume().forEach { element in
             result.append(element)
         }
 
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Small: makeConsumingIterator yields all elements (heap mode)")
-    func smallMakeConsumingIteratorHeap() {
+    @Test("Small: consume().forEach yields all elements (heap mode)")
+    func smallConsumeForEachHeap() {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)
@@ -586,57 +581,56 @@ struct OrderedSetTests {
         set.insert(4)
         precondition(set.isSpilled, "Should be in heap mode")
 
-        var iterator = set.makeConsumingIterator()
         var result: [Int] = []
-
-        while let element = iterator.next() {
+        set.consume().forEach { element in
             result.append(element)
         }
 
         #expect(result == [1, 2, 3, 4])
     }
 
-    @Test("Small: consumingForEach processes all elements")
-    func smallConsumingForEach() {
+    @Test("Small: consume().forEach processes all elements")
+    func smallConsumeForEachProcesses() {
         var set = Set<Int>.Ordered.Small<4>()
         set.insert(1)
         set.insert(2)
         set.insert(3)
 
         var sum = 0
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             sum += element
         }
 
         #expect(sum == 6)
     }
 
-    @Test("Small: consumingCount returns correct count")
-    func smallConsumingCount() {
+    @Test("Small: consume() with manual iteration")
+    func smallConsumeManualIteration() {
         var set = Set<String>.Ordered.Small<4>()
         set.insert("a")
         set.insert("b")
 
-        var counted = set.consumingCount()
-        #expect(counted.count == 2)
+        let count = set.count
+        #expect(count == 2)
 
+        var view = set.consume()
         var result: [String] = []
-        while let element = counted.iterator.next() {
+        while let element = view.next() {
             result.append(element)
         }
         #expect(result == ["a", "b"])
     }
 
-    @Test("Small: consuming iterator handles empty set")
-    func smallConsumingIteratorEmpty() {
+    @Test("Small: consume() handles empty set")
+    func smallConsumeEmpty() {
         let set = Set<Int>.Ordered.Small<4>()
-        var iterator = set.makeConsumingIterator()
-        let next = iterator.next()
+        var view = set.consume()
+        let next = view.next()
         #expect(next == nil)
     }
 
-    @Test("Small: consuming after spill to heap")
-    func smallConsumingAfterSpill() {
+    @Test("Small: consume() after spill to heap")
+    func smallConsumeAfterSpill() {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)
@@ -648,7 +642,7 @@ struct OrderedSetTests {
         precondition(set.isSpilled, "Should be in heap mode after spill")
 
         var result: [Int] = []
-        set.consumingForEach { element in
+        set.consume().forEach { element in
             result.append(element)
         }
 
@@ -665,13 +659,13 @@ struct OrderedSetTests {
         set.insert(3)
         set.insert(4)
         set.insert(5)
-        var iterator = set.makeConsumingIterator()
+        var view = set.consume()
 
         // Only consume first 2
-        _ = iterator.next()
-        _ = iterator.next()
+        _ = view.next()
+        _ = view.next()
 
-        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // View goes out of scope - State's deinit should clean up remaining 3 elements
         // If double-free occurred, this would crash
     }
 
@@ -684,13 +678,13 @@ struct OrderedSetTests {
         try set.insert(4)
         try set.insert(5)
 
-        var iterator = set.makeConsumingIterator()
+        var view = set.consume()
 
         // Only consume first 2
-        _ = iterator.next()
-        _ = iterator.next()
+        _ = view.next()
+        _ = view.next()
 
-        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
     @Test("Inline: partial consumption cleans up remaining")
@@ -702,13 +696,13 @@ struct OrderedSetTests {
         try set.insert(4)
         try set.insert(5)
 
-        var iterator = set.makeConsumingIterator()
+        var view = set.consume()
 
         // Only consume first 2
-        _ = iterator.next()
-        _ = iterator.next()
+        _ = view.next()
+        _ = view.next()
 
-        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
     @Test("Small: partial consumption cleans up remaining (inline mode)")
@@ -721,13 +715,13 @@ struct OrderedSetTests {
         set.insert(5)
         precondition(!set.isSpilled, "Should be in inline mode")
 
-        var iterator = set.makeConsumingIterator()
+        var view = set.consume()
 
         // Only consume first 2
-        _ = iterator.next()
-        _ = iterator.next()
+        _ = view.next()
+        _ = view.next()
 
-        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
     @Test("Small: partial consumption cleans up remaining (heap mode)")
@@ -740,12 +734,12 @@ struct OrderedSetTests {
         set.insert(5)
         precondition(set.isSpilled, "Should be in heap mode")
 
-        var iterator = set.makeConsumingIterator()
+        var view = set.consume()
 
         // Only consume first 2
-        _ = iterator.next()
-        _ = iterator.next()
+        _ = view.next()
+        _ = view.next()
 
-        // Iterator goes out of scope - deinit should clean up remaining 3 elements
+        // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 }
