@@ -217,9 +217,61 @@ extension Set_Primitives_Core.Set {
 
         // MARK: - IndexStorage (nested to inherit ~Copyable context)
 
+        // ===------------------------------------------------------------------===//
+        // TEMPORARY: Hash.Table Replacement
+        // ===------------------------------------------------------------------===//
+        //
+        // This class is a workaround for a Swift compiler limitation where ~Copyable
+        // constraints do not propagate correctly across module boundaries when using
+        // generic types as stored properties.
+        //
+        // ## The Problem
+        //
+        // When `Hash.Table<Element>` from `Hash_Table_Primitives` was used as a stored
+        // property in `Set.Ordered`, the compiler failed with:
+        //
+        //     error: type 'Element' does not conform to protocol 'Copyable'
+        //
+        // This occurred despite `Hash.Table` being declared as:
+        //
+        //     public struct Table<Element: ~Copyable>: ~Copyable { ... }
+        //
+        // The constraint `Element: ~Copyable` was not propagating through the
+        // cross-module generic instantiation.
+        //
+        // ## The Solution
+        //
+        // By declaring `IndexStorage` as a nested class inside `Set.Ordered`, it
+        // automatically inherits the `Element` generic parameter from the enclosing
+        // `Set<Element>` enum. This keeps the ~Copyable constraint within the same
+        // compilation unit, allowing proper propagation.
+        //
+        // ## Refactoring Back to Hash.Table
+        //
+        // Once the Swift compiler properly supports ~Copyable constraint propagation
+        // across module boundaries (tracked in Swift issue #86669 or related), this
+        // class should be removed and replaced with:
+        //
+        //     @usableFromInline
+        //     var _indices: Hash.Table<Element>
+        //
+        // The hash table operations (_findPosition, _insertPosition, _removePosition,
+        // _decrementPositions, _clearIndices, _growIndices) should then delegate to
+        // the Hash.Table methods.
+        //
+        // See also:
+        // - /Users/coen/Developer/swift-institute/.../Copyable Remediation.md
+        // - Pattern used in swift-stack-primitives (Stack.Storage)
+        //
+        // ===------------------------------------------------------------------===//
+
         /// Internal hash index storage using ManagedBuffer.
+        ///
         /// Stores (hash, position) pairs for O(1) element lookup.
         /// Declared nested to inherit Element's ~Copyable context from Set<Element>.
+        ///
+        /// - Important: This is a temporary workaround. See the comment block above
+        ///   for context and refactoring guidance.
         @usableFromInline
         final class IndexStorage: ManagedBuffer<(count: Int, occupied: Int, hashCapacity: Int), Int> {
 
