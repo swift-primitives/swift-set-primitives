@@ -34,38 +34,38 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Consuming {
     @safe
     public struct Iterator: ~Copyable {
         @usableFromInline
-        let _storage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage
+        let storage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage
 
         @usableFromInline
-        var _index: Int
+        var index: Int
 
         @usableFromInline
-        let _count: Int
+        let count: Int
 
         @usableFromInline
         init(_consuming set: consuming Set_Primitives_Core.Set<Element>.Ordered.Bounded) {
             var mutableSet = set
             mutableSet.makeUnique()
 
-            self._storage = mutableSet._elementStorage
-            self._index = 0
-            self._count = _storage.header
+            self.storage = mutableSet.elementStorage
+            self.index = 0
+            self.count = storage.header
 
-            _storage.header = 0
+            storage.header = 0
         }
 
         @inlinable
         public mutating func next() -> Element? {
-            guard _index < _count else { return nil }
-            let element = _storage._moveElement(at: _index)
-            _index += 1
+            guard index < count else { return nil }
+            let element = storage.moveElement(at: index)
+            index += 1
             return element
         }
 
         deinit {
-            let remaining = _count - _index
+            let remaining = count - index
             guard remaining > 0 else { return }
-            _storage._deinitializeElements(from: _index, count: remaining)
+            storage.deinitializeElements(from: index, count: remaining)
         }
     }
 }

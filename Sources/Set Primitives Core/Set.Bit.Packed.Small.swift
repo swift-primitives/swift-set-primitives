@@ -54,32 +54,32 @@ extension Set<Bit>.Packed {
     /// unconditionally `Copyable`, enabling `Sequence`, `Equatable`, and `Hashable`.
     public struct Small<let inlineWordCount: Int>: Sendable {
         @usableFromInline
-        static var _bitsPerWord: Int { UInt.bitWidth }
+        static var bitsPerWord: Int { UInt.bitWidth }
 
         /// The number of bits that can be stored inline without heap allocation.
         @inlinable
-        public static var inlineCapacity: Int { inlineWordCount * _bitsPerWord }
+        public static var inlineCapacity: Int { inlineWordCount * bitsPerWord }
 
         @usableFromInline
-        var _inlineStorage: InlineArray<inlineWordCount, UInt>
+        var inlineStorage: InlineArray<inlineWordCount, UInt>
 
         @usableFromInline
-        var _capacity: Int
+        var storedCapacity: Int
 
         @usableFromInline
-        var _heapStorage: ContiguousArray<UInt>?
+        var heapStorage: ContiguousArray<UInt>?
 
         /// Creates an empty small bit set.
         @inlinable
         public init() {
-            self._inlineStorage = InlineArray(repeating: 0)
-            self._capacity = Self.inlineCapacity
-            self._heapStorage = nil
+            self.inlineStorage = InlineArray(repeating: 0)
+            self.storedCapacity = Self.inlineCapacity
+            self.heapStorage = nil
         }
 
         /// Whether the set has spilled to heap storage.
         @inlinable
-        public var isSpilled: Bool { _heapStorage != nil }
+        public var isSpilled: Bool { heapStorage != nil }
     }
 }
 
@@ -88,12 +88,12 @@ extension Set<Bit>.Packed {
 extension Set<Bit>.Packed.Small {
     /// The current capacity of the set.
     @inlinable
-    public var capacity: Int { _capacity }
+    public var capacity: Int { storedCapacity }
 
     /// The number of bits set (popcount).
     @inlinable
     public var count: Int {
-        if let heapStorage = _heapStorage {
+        if let heapStorage = heapStorage {
             var total = 0
             for word in heapStorage {
                 total += word.nonzeroBitCount
@@ -102,7 +102,7 @@ extension Set<Bit>.Packed.Small {
         } else {
             var total = 0
             for i in 0..<inlineWordCount {
-                total += _inlineStorage[i].nonzeroBitCount
+                total += inlineStorage[i].nonzeroBitCount
             }
             return total
         }
@@ -111,22 +111,22 @@ extension Set<Bit>.Packed.Small {
     /// Whether the set is empty.
     @inlinable
     public var isEmpty: Bool {
-        if let heapStorage = _heapStorage {
+        if let heapStorage = heapStorage {
             for word in heapStorage {
                 if word != 0 { return false }
             }
             return true
         } else {
             for i in 0..<inlineWordCount {
-                if _inlineStorage[i] != 0 { return false }
+                if inlineStorage[i] != 0 { return false }
             }
             return true
         }
     }
 
     @usableFromInline
-    var _wordCount: Int {
-        if let heapStorage = _heapStorage {
+    var wordCount: Int {
+        if let heapStorage = heapStorage {
             return heapStorage.count
         } else {
             return inlineWordCount
@@ -141,30 +141,30 @@ extension Set<Bit>.Packed.Small {
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
         let i = index.position.rawValue
-        guard i >= 0 && i < _capacity else { return false }
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        guard i >= 0 && i < capacity else { return false }
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
 
-        if let heapStorage = _heapStorage {
+        if let heapStorage = heapStorage {
             return (heapStorage[wordIndex] & mask) != 0
         } else {
-            return (_inlineStorage[wordIndex] & mask) != 0
+            return (inlineStorage[wordIndex] & mask) != 0
         }
     }
 
     /// Returns whether the set contains the given integer index.
     @inlinable
     public func contains(_ index: Int) -> Bool {
-        guard index >= 0 && index < _capacity else { return false }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        guard index >= 0 && index < capacity else { return false }
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
 
-        if let heapStorage = _heapStorage {
+        if let heapStorage = heapStorage {
             return (heapStorage[wordIndex] & mask) != 0
         } else {
-            return (_inlineStorage[wordIndex] & mask) != 0
+            return (inlineStorage[wordIndex] & mask) != 0
         }
     }
 }
@@ -184,25 +184,25 @@ extension Set<Bit>.Packed.Small {
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 else {
-            throw .bounds(.init(index: i, capacity: _capacity))
+            throw .bounds(.init(index: i, capacity: capacity))
         }
 
         // Spill to heap if needed
-        if i >= _capacity {
-            _spillToHeap(toInclude: i)
+        if i >= capacity {
+            spillToHeap(toInclude: i)
         }
 
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
 
-        if _heapStorage != nil {
-            let wasSet = (_heapStorage![wordIndex] & mask) != 0
-            _heapStorage![wordIndex] |= mask
+        if heapStorage != nil {
+            let wasSet = (heapStorage![wordIndex] & mask) != 0
+            heapStorage![wordIndex] |= mask
             return !wasSet
         } else {
-            let wasSet = (_inlineStorage[wordIndex] & mask) != 0
-            _inlineStorage[wordIndex] |= mask
+            let wasSet = (inlineStorage[wordIndex] & mask) != 0
+            inlineStorage[wordIndex] |= mask
             return !wasSet
         }
     }
@@ -223,21 +223,21 @@ extension Set<Bit>.Packed.Small {
     @discardableResult
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
         let i = index.position.rawValue
-        guard i >= 0 && i < _capacity else {
-            throw .bounds(.init(index: i, capacity: _capacity))
+        guard i >= 0 && i < capacity else {
+            throw .bounds(.init(index: i, capacity: capacity))
         }
 
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
 
-        if _heapStorage != nil {
-            let wasSet = (_heapStorage![wordIndex] & mask) != 0
-            _heapStorage![wordIndex] &= ~mask
+        if heapStorage != nil {
+            let wasSet = (heapStorage![wordIndex] & mask) != 0
+            heapStorage![wordIndex] &= ~mask
             return wasSet
         } else {
-            let wasSet = (_inlineStorage[wordIndex] & mask) != 0
-            _inlineStorage[wordIndex] &= ~mask
+            let wasSet = (inlineStorage[wordIndex] & mask) != 0
+            inlineStorage[wordIndex] &= ~mask
             return wasSet
         }
     }
@@ -252,13 +252,13 @@ extension Set<Bit>.Packed.Small {
     /// Removes all elements from the set.
     @inlinable
     public mutating func removeAll() {
-        if _heapStorage != nil {
-            for i in 0..<_heapStorage!.count {
-                _heapStorage![i] = 0
+        if heapStorage != nil {
+            for i in 0..<heapStorage!.count {
+                heapStorage![i] = 0
             }
         } else {
             for i in 0..<inlineWordCount {
-                _inlineStorage[i] = 0
+                inlineStorage[i] = 0
             }
         }
     }
@@ -266,19 +266,19 @@ extension Set<Bit>.Packed.Small {
     /// Removes all elements and resets to inline storage mode.
     @inlinable
     public mutating func clear() {
-        _heapStorage = nil
-        _capacity = Self.inlineCapacity
+        heapStorage = nil
+        storedCapacity = Self.inlineCapacity
         for i in 0..<inlineWordCount {
-            _inlineStorage[i] = 0
+            inlineStorage[i] = 0
         }
     }
 
     @usableFromInline
-    mutating func _spillToHeap(toInclude index: Int) {
+    mutating func spillToHeap(toInclude index: Int) {
         let newCapacity = index + 1
-        let newWordCount = (newCapacity + Self._bitsPerWord - 1) / Self._bitsPerWord
+        let newWordCount = (newCapacity + Self.bitsPerWord - 1) / Self.bitsPerWord
 
-        if var existingHeap = _heapStorage {
+        if var existingHeap = heapStorage {
             // Already spilled - grow the heap storage
             let oldWordCount = existingHeap.count
             if newWordCount > oldWordCount {
@@ -286,9 +286,9 @@ extension Set<Bit>.Packed.Small {
                 for _ in oldWordCount..<newWordCount {
                     existingHeap.append(0)
                 }
-                _heapStorage = existingHeap
+                heapStorage = existingHeap
             }
-            _capacity = newCapacity
+            storedCapacity = newCapacity
         } else {
             // First spill - copy from inline to heap
             var newStorage = ContiguousArray<UInt>()
@@ -296,7 +296,7 @@ extension Set<Bit>.Packed.Small {
 
             // Copy inline storage to heap
             for i in 0..<inlineWordCount {
-                newStorage.append(_inlineStorage[i])
+                newStorage.append(inlineStorage[i])
             }
 
             // Add new words
@@ -304,8 +304,8 @@ extension Set<Bit>.Packed.Small {
                 newStorage.append(0)
             }
 
-            _heapStorage = newStorage
-            _capacity = newCapacity
+            heapStorage = newStorage
+            storedCapacity = newCapacity
         }
     }
 }
@@ -318,22 +318,22 @@ extension Set<Bit>.Packed.Small {
     public func union(_ other: Self) -> Self {
         var result = Self()
 
-        let maxCapacity = Swift.max(_capacity, other._capacity)
+        let maxCapacity = Swift.max(capacity, other.capacity)
         if maxCapacity > Self.inlineCapacity {
-            result._spillToHeap(toInclude: maxCapacity - 1)
+            result.spillToHeap(toInclude: maxCapacity - 1)
         }
 
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
-        let resultWordCount = result._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
+        let resultWordCount = result.wordCount
 
         for i in 0..<resultWordCount {
             let selfWord: UInt
             if i < selfWordCount {
-                if let heapStorage = _heapStorage {
+                if let heapStorage = heapStorage {
                     selfWord = heapStorage[i]
                 } else {
-                    selfWord = _inlineStorage[i]
+                    selfWord = inlineStorage[i]
                 }
             } else {
                 selfWord = 0
@@ -341,19 +341,19 @@ extension Set<Bit>.Packed.Small {
 
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if result._heapStorage != nil {
-                result._heapStorage![i] = selfWord | otherWord
+            if result.heapStorage != nil {
+                result.heapStorage![i] = selfWord | otherWord
             } else {
-                result._inlineStorage[i] = selfWord | otherWord
+                result.inlineStorage[i] = selfWord | otherWord
             }
         }
 
@@ -365,25 +365,25 @@ extension Set<Bit>.Packed.Small {
     public func intersection(_ other: Self) -> Self {
         var result = Self()
 
-        let minWordCount = Swift.min(_wordCount, other._wordCount)
+        let minWordCount = Swift.min(wordCount, other.wordCount)
 
         for i in 0..<minWordCount {
             let selfWord: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 selfWord = heapStorage[i]
             } else {
-                selfWord = _inlineStorage[i]
+                selfWord = inlineStorage[i]
             }
 
             let otherWord: UInt
-            if let heapStorage = other._heapStorage {
+            if let heapStorage = other.heapStorage {
                 otherWord = heapStorage[i]
             } else {
-                otherWord = other._inlineStorage[i]
+                otherWord = other.inlineStorage[i]
             }
 
             if i < inlineWordCount {
-                result._inlineStorage[i] = selfWord & otherWord
+                result.inlineStorage[i] = selfWord & otherWord
             }
         }
 
@@ -395,36 +395,36 @@ extension Set<Bit>.Packed.Small {
     public func subtracting(_ other: Self) -> Self {
         var result = Self()
 
-        if _capacity > Self.inlineCapacity {
-            result._spillToHeap(toInclude: _capacity - 1)
+        if capacity > Self.inlineCapacity {
+            result.spillToHeap(toInclude: capacity - 1)
         }
 
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
 
         for i in 0..<selfWordCount {
             let selfWord: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 selfWord = heapStorage[i]
             } else {
-                selfWord = _inlineStorage[i]
+                selfWord = inlineStorage[i]
             }
 
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if result._heapStorage != nil {
-                result._heapStorage![i] = selfWord & ~otherWord
+            if result.heapStorage != nil {
+                result.heapStorage![i] = selfWord & ~otherWord
             } else if i < inlineWordCount {
-                result._inlineStorage[i] = selfWord & ~otherWord
+                result.inlineStorage[i] = selfWord & ~otherWord
             }
         }
 
@@ -436,22 +436,22 @@ extension Set<Bit>.Packed.Small {
     public func symmetricDifference(_ other: Self) -> Self {
         var result = Self()
 
-        let maxCapacity = Swift.max(_capacity, other._capacity)
+        let maxCapacity = Swift.max(capacity, other.capacity)
         if maxCapacity > Self.inlineCapacity {
-            result._spillToHeap(toInclude: maxCapacity - 1)
+            result.spillToHeap(toInclude: maxCapacity - 1)
         }
 
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
-        let resultWordCount = result._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
+        let resultWordCount = result.wordCount
 
         for i in 0..<resultWordCount {
             let selfWord: UInt
             if i < selfWordCount {
-                if let heapStorage = _heapStorage {
+                if let heapStorage = heapStorage {
                     selfWord = heapStorage[i]
                 } else {
-                    selfWord = _inlineStorage[i]
+                    selfWord = inlineStorage[i]
                 }
             } else {
                 selfWord = 0
@@ -459,19 +459,19 @@ extension Set<Bit>.Packed.Small {
 
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if result._heapStorage != nil {
-                result._heapStorage![i] = selfWord ^ otherWord
+            if result.heapStorage != nil {
+                result.heapStorage![i] = selfWord ^ otherWord
             } else {
-                result._inlineStorage[i] = selfWord ^ otherWord
+                result.inlineStorage[i] = selfWord ^ otherWord
             }
         }
 
@@ -481,29 +481,29 @@ extension Set<Bit>.Packed.Small {
     /// Adds the elements of another set to this set.
     @inlinable
     public mutating func formUnion(_ other: Self) {
-        if other._capacity > _capacity {
-            _spillToHeap(toInclude: other._capacity - 1)
+        if other.capacity > capacity {
+            spillToHeap(toInclude: other.capacity - 1)
         }
 
-        let otherWordCount = other._wordCount
-        let selfWordCount = _wordCount
+        let otherWordCount = other.wordCount
+        let selfWordCount = wordCount
 
         for i in 0..<selfWordCount {
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if _heapStorage != nil {
-                _heapStorage![i] |= otherWord
+            if heapStorage != nil {
+                heapStorage![i] |= otherWord
             } else {
-                _inlineStorage[i] |= otherWord
+                inlineStorage[i] |= otherWord
             }
         }
     }
@@ -511,25 +511,25 @@ extension Set<Bit>.Packed.Small {
     /// Removes elements not in another set from this set.
     @inlinable
     public mutating func formIntersection(_ other: Self) {
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
 
         for i in 0..<selfWordCount {
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if _heapStorage != nil {
-                _heapStorage![i] &= otherWord
+            if heapStorage != nil {
+                heapStorage![i] &= otherWord
             } else {
-                _inlineStorage[i] &= otherWord
+                inlineStorage[i] &= otherWord
             }
         }
     }
@@ -537,25 +537,25 @@ extension Set<Bit>.Packed.Small {
     /// Removes elements of another set from this set.
     @inlinable
     public mutating func subtract(_ other: Self) {
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
 
         for i in 0..<selfWordCount {
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if _heapStorage != nil {
-                _heapStorage![i] &= ~otherWord
+            if heapStorage != nil {
+                heapStorage![i] &= ~otherWord
             } else {
-                _inlineStorage[i] &= ~otherWord
+                inlineStorage[i] &= ~otherWord
             }
         }
     }
@@ -563,29 +563,29 @@ extension Set<Bit>.Packed.Small {
     /// Replaces this set with the symmetric difference with another set.
     @inlinable
     public mutating func formSymmetricDifference(_ other: Self) {
-        if other._capacity > _capacity {
-            _spillToHeap(toInclude: other._capacity - 1)
+        if other.capacity > capacity {
+            spillToHeap(toInclude: other.capacity - 1)
         }
 
-        let otherWordCount = other._wordCount
-        let selfWordCount = _wordCount
+        let otherWordCount = other.wordCount
+        let selfWordCount = wordCount
 
         for i in 0..<selfWordCount {
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
             }
 
-            if _heapStorage != nil {
-                _heapStorage![i] ^= otherWord
+            if heapStorage != nil {
+                heapStorage![i] ^= otherWord
             } else {
-                _inlineStorage[i] ^= otherWord
+                inlineStorage[i] ^= otherWord
             }
         }
     }
@@ -597,23 +597,23 @@ extension Set<Bit>.Packed.Small {
     /// Returns whether this set is a subset of another.
     @inlinable
     public func isSubset(of other: Self) -> Bool {
-        let selfWordCount = _wordCount
-        let otherWordCount = other._wordCount
+        let selfWordCount = wordCount
+        let otherWordCount = other.wordCount
 
         for i in 0..<selfWordCount {
             let selfWord: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 selfWord = heapStorage[i]
             } else {
-                selfWord = _inlineStorage[i]
+                selfWord = inlineStorage[i]
             }
 
             let otherWord: UInt
             if i < otherWordCount {
-                if let heapStorage = other._heapStorage {
+                if let heapStorage = other.heapStorage {
                     otherWord = heapStorage[i]
                 } else {
-                    otherWord = other._inlineStorage[i]
+                    otherWord = other.inlineStorage[i]
                 }
             } else {
                 otherWord = 0
@@ -635,21 +635,21 @@ extension Set<Bit>.Packed.Small {
     /// Returns whether this set is disjoint from another.
     @inlinable
     public func isDisjoint(with other: Self) -> Bool {
-        let minWordCount = Swift.min(_wordCount, other._wordCount)
+        let minWordCount = Swift.min(wordCount, other.wordCount)
 
         for i in 0..<minWordCount {
             let selfWord: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 selfWord = heapStorage[i]
             } else {
-                selfWord = _inlineStorage[i]
+                selfWord = inlineStorage[i]
             }
 
             let otherWord: UInt
-            if let heapStorage = other._heapStorage {
+            if let heapStorage = other.heapStorage {
                 otherWord = heapStorage[i]
             } else {
-                otherWord = other._inlineStorage[i]
+                otherWord = other.inlineStorage[i]
             }
 
             if (selfWord & otherWord) != 0 {
@@ -666,20 +666,20 @@ extension Set<Bit>.Packed.Small {
     /// Calls the given closure on each set bit index.
     @inlinable
     public func forEach(_ body: (Bit.Index) -> Void) {
-        let wordCount = _wordCount
+        let wordCount = wordCount
 
         for wordIndex in 0..<wordCount {
             var word: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 word = heapStorage[wordIndex]
             } else {
-                word = _inlineStorage[wordIndex]
+                word = inlineStorage[wordIndex]
             }
 
             while word != 0 {
                 let bitIndex = word.trailingZeroBitCount
-                let globalIndex = wordIndex * Self._bitsPerWord + bitIndex
-                if globalIndex < _capacity {
+                let globalIndex = wordIndex * Self.bitsPerWord + bitIndex
+                if globalIndex < capacity {
                     body(Bit.Index(__unchecked: (), position: globalIndex))
                 }
                 word &= word - 1
@@ -694,20 +694,20 @@ extension Set<Bit>.Packed.Small {
     /// The smallest element in the set, or `nil` if empty.
     @inlinable
     public var min: Bit.Index? {
-        let wordCount = _wordCount
+        let wordCount = wordCount
 
         for wordIndex in 0..<wordCount {
             let word: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 word = heapStorage[wordIndex]
             } else {
-                word = _inlineStorage[wordIndex]
+                word = inlineStorage[wordIndex]
             }
 
             if word != 0 {
                 let lowestBit = word.trailingZeroBitCount
-                let element = wordIndex * Self._bitsPerWord + lowestBit
-                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
+                let element = wordIndex * Self.bitsPerWord + lowestBit
+                return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -716,20 +716,20 @@ extension Set<Bit>.Packed.Small {
     /// The largest element in the set, or `nil` if empty.
     @inlinable
     public var max: Bit.Index? {
-        let wordCount = _wordCount
+        let wordCount = wordCount
 
         for wordIndex in (0..<wordCount).reversed() {
             let word: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 word = heapStorage[wordIndex]
             } else {
-                word = _inlineStorage[wordIndex]
+                word = inlineStorage[wordIndex]
             }
 
             if word != 0 {
                 let highestBit = UInt.bitWidth - 1 - word.leadingZeroBitCount
-                let element = wordIndex * Self._bitsPerWord + highestBit
-                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
+                let element = wordIndex * Self.bitsPerWord + highestBit
+                return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -799,9 +799,9 @@ extension Set<Bit>.Packed.Small: Swift.Sequence {
     @inlinable
     public func makeIterator() -> Iterator {
         Iterator(
-            inlineStorage: _inlineStorage,
-            heapStorage: _heapStorage,
-            capacity: _capacity
+            inlineStorage: inlineStorage,
+            heapStorage: heapStorage,
+            capacity: capacity
         )
     }
 }
@@ -811,17 +811,17 @@ extension Set<Bit>.Packed.Small: Swift.Sequence {
 extension Set<Bit>.Packed.Small: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        let lhsWordCount = lhs._wordCount
-        let rhsWordCount = rhs._wordCount
+        let lhsWordCount = lhs.wordCount
+        let rhsWordCount = rhs.wordCount
         let maxWordCount = Swift.max(lhsWordCount, rhsWordCount)
 
         for i in 0..<maxWordCount {
             let lhsWord: UInt
             if i < lhsWordCount {
-                if let heapStorage = lhs._heapStorage {
+                if let heapStorage = lhs.heapStorage {
                     lhsWord = heapStorage[i]
                 } else {
-                    lhsWord = lhs._inlineStorage[i]
+                    lhsWord = lhs.inlineStorage[i]
                 }
             } else {
                 lhsWord = 0
@@ -829,10 +829,10 @@ extension Set<Bit>.Packed.Small: Equatable {
 
             let rhsWord: UInt
             if i < rhsWordCount {
-                if let heapStorage = rhs._heapStorage {
+                if let heapStorage = rhs.heapStorage {
                     rhsWord = heapStorage[i]
                 } else {
-                    rhsWord = rhs._inlineStorage[i]
+                    rhsWord = rhs.inlineStorage[i]
                 }
             } else {
                 rhsWord = 0
@@ -851,13 +851,13 @@ extension Set<Bit>.Packed.Small: Equatable {
 extension Set<Bit>.Packed.Small: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
-        let wordCount = _wordCount
+        let wordCount = wordCount
         for i in 0..<wordCount {
             let word: UInt
-            if let heapStorage = _heapStorage {
+            if let heapStorage = heapStorage {
                 word = heapStorage[i]
             } else {
-                word = _inlineStorage[i]
+                word = inlineStorage[i]
             }
             hasher.combine(word)
         }

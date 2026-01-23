@@ -44,7 +44,7 @@ extension Set.Ordered {
     public subscript(index: Set<Element>.Index) -> Element {
         _read {
             precondition(index.position.rawValue >= 0 && index.position.rawValue < count, "Index out of bounds")
-            yield _elementStorage._readElement(at: index.position.rawValue)
+            yield elementStorage.readElement(at: index.position.rawValue)
         }
     }
 
@@ -55,7 +55,7 @@ extension Set.Ordered {
     @inlinable
     public func element(at index: Set<Element>.Index) -> Element? {
         guard index.position.rawValue >= 0 && index.position.rawValue < count else { return nil }
-        return _elementStorage._readElement(at: index.position.rawValue)
+        return elementStorage.readElement(at: index.position.rawValue)
     }
 }
 

@@ -20,17 +20,17 @@ extension Set<Bit>.Packed {
     /// capacity. Ideal for small bit sets where heap allocation is unnecessary.
     public struct Inline<let wordCount: Int>: Sendable {
         @usableFromInline
-        static var _bitsPerWord: Int { UInt.bitWidth }
+        static var bitsPerWord: Int { UInt.bitWidth }
 
         @inlinable
-        public static var capacity: Int { wordCount * _bitsPerWord }
+        public static var capacity: Int { wordCount * bitsPerWord }
 
         @usableFromInline
-        var _storage: InlineArray<wordCount, UInt>
+        var storage: InlineArray<wordCount, UInt>
 
         @inlinable
         public init() {
-            self._storage = InlineArray(repeating: 0)
+            self.storage = InlineArray(repeating: 0)
         }
     }
 }
@@ -45,7 +45,7 @@ extension Set<Bit>.Packed.Inline {
     public var count: Int {
         var total = 0
         for i in 0..<wordCount {
-            total += _storage[i].nonzeroBitCount
+            total += storage[i].nonzeroBitCount
         }
         return total
     }
@@ -53,7 +53,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public var isEmpty: Bool {
         for i in 0..<wordCount {
-            if _storage[i] != 0 { return false }
+            if storage[i] != 0 { return false }
         }
         return true
     }
@@ -72,10 +72,10 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < Self.capacity else { return false }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        return (_storage[wordIndex] & mask) != 0
+        return (storage[wordIndex] & mask) != 0
     }
 }
 
@@ -99,11 +99,11 @@ extension Set<Bit>.Packed.Inline {
             }
             throw .bounds(.init(index: index, capacity: Self.capacity))
         }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] |= mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] |= mask
         return !wasSet
     }
 
@@ -121,18 +121,18 @@ extension Set<Bit>.Packed.Inline {
         guard index >= 0 && index < Self.capacity else {
             throw .bounds(.init(index: index, capacity: Self.capacity))
         }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] &= ~mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] &= ~mask
         return wasSet
     }
 
     @inlinable
     public mutating func removeAll() {
         for i in 0..<wordCount {
-            _storage[i] = 0
+            storage[i] = 0
         }
     }
 }
@@ -150,7 +150,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public mutating func formUnion(_ other: Self) {
         for i in 0..<wordCount {
-            _storage[i] |= other._storage[i]
+            storage[i] |= other.storage[i]
         }
     }
 
@@ -164,7 +164,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public mutating func formIntersection(_ other: Self) {
         for i in 0..<wordCount {
-            _storage[i] &= other._storage[i]
+            storage[i] &= other.storage[i]
         }
     }
 
@@ -178,7 +178,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public mutating func subtract(_ other: Self) {
         for i in 0..<wordCount {
-            _storage[i] &= ~other._storage[i]
+            storage[i] &= ~other.storage[i]
         }
     }
 
@@ -192,7 +192,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public mutating func formSymmetricDifference(_ other: Self) {
         for i in 0..<wordCount {
-            _storage[i] ^= other._storage[i]
+            storage[i] ^= other.storage[i]
         }
     }
 }
@@ -203,7 +203,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
         for i in 0..<wordCount {
-            if (_storage[i] & ~other._storage[i]) != 0 {
+            if (storage[i] & ~other.storage[i]) != 0 {
                 return false
             }
         }
@@ -218,7 +218,7 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public func isDisjoint(with other: Self) -> Bool {
         for i in 0..<wordCount {
-            if (_storage[i] & other._storage[i]) != 0 {
+            if (storage[i] & other.storage[i]) != 0 {
                 return false
             }
         }
@@ -232,10 +232,10 @@ extension Set<Bit>.Packed.Inline {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for wordIndex in 0..<wordCount {
-            var word = _storage[wordIndex]
+            var word = storage[wordIndex]
             while word != 0 {
                 let bitIndex = word.trailingZeroBitCount
-                let globalIndex = wordIndex * Self._bitsPerWord + bitIndex
+                let globalIndex = wordIndex * Self.bitsPerWord + bitIndex
                 body(globalIndex)
                 word &= word - 1
             }
@@ -249,7 +249,7 @@ extension Set<Bit>.Packed.Inline: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         for i in 0..<wordCount {
-            if lhs._storage[i] != rhs._storage[i] { return false }
+            if lhs.storage[i] != rhs.storage[i] { return false }
         }
         return true
     }
@@ -261,7 +261,7 @@ extension Set<Bit>.Packed.Inline: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         for i in 0..<wordCount {
-            hasher.combine(_storage[i])
+            hasher.combine(storage[i])
         }
     }
 }

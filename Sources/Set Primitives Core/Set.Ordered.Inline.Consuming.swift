@@ -43,7 +43,7 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// - Complexity: O(1).
     @inlinable
     public consuming func consumingCount() -> Consuming.Counted {
-        let count = _count
+        let count = storedCount
         return Consuming.Counted(count: count, iterator: Consuming.Iterator(_consuming: self))
     }
 

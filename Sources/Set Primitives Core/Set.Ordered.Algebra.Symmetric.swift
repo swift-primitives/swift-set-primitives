@@ -16,15 +16,15 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// the Set.Ordered directly (which is ~Copyable due to Hash.Table).
     public struct Symmetric {
         @usableFromInline
-        let _storage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage
+        let storage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage
 
         @usableFromInline
         init(storage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage) {
-            self._storage = storage
+            self.storage = storage
         }
 
         @usableFromInline
-        var _count: Int { _storage.header }
+        var count: Int { storage.header }
     }
 }
 
@@ -44,8 +44,8 @@ extension Set_Primitives_Core.Set.Ordered.Algebra.Symmetric {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
 
         // Elements in self but not in other
-        for i in 0..<_count {
-            let element = _storage._readElement(at: i)
+        for i in 0..<count {
+            let element = storage.readElement(at: i)
             if !other.contains(element) {
                 result.insert(element)
             }
@@ -53,11 +53,11 @@ extension Set_Primitives_Core.Set.Ordered.Algebra.Symmetric {
 
         // Elements in other but not in self
         for i in 0..<other.count {
-            let element = other._elementStorage._readElement(at: i)
+            let element = other.elementStorage.readElement(at: i)
             // Check if element is in self by iterating
             var found = false
-            for j in 0..<_count {
-                if _storage._readElement(at: j) == element {
+            for j in 0..<count {
+                if storage.readElement(at: j) == element {
                     found = true
                     break
                 }

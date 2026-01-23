@@ -108,7 +108,7 @@ extension Set_Primitives_Core.Set.Ordered {
     ///   so this returns a ``Consuming/Counted`` struct instead.
     @inlinable
     public consuming func consumingCount() -> Consuming.Counted {
-        let count = _elementStorage.header
+        let count = elementStorage.header
         return Consuming.Counted(count: count, iterator: Consuming.Iterator(_consuming: self))
     }
 

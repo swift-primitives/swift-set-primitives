@@ -39,18 +39,18 @@ extension Set where Element == Bit {
     /// - ``Set/Packed-swift.struct/Small``: Inline storage with automatic spill to heap
     public struct Packed: Sendable {
         @usableFromInline
-        static var _bitsPerWord: Int { UInt.bitWidth }
+        static var bitsPerWord: Int { UInt.bitWidth }
 
         @usableFromInline
-        var _storage: ContiguousArray<UInt>
+        var storage: ContiguousArray<UInt>
 
         @usableFromInline
-        var _capacity: Int
+        var storedCapacity: Int
 
         @inlinable
         public init() {
-            self._storage = []
-            self._capacity = 0
+            self.storage = []
+            self.storedCapacity = 0
         }
 
         @inlinable
@@ -58,9 +58,9 @@ extension Set where Element == Bit {
             guard capacity >= 0 else {
                 throw .invalidCapacity(.init())
             }
-            let wordCount = (capacity + Self._bitsPerWord - 1) / Self._bitsPerWord
-            self._storage = ContiguousArray(repeating: 0, count: wordCount)
-            self._capacity = capacity
+            let wordCount = (capacity + Self.bitsPerWord - 1) / Self.bitsPerWord
+            self.storage = ContiguousArray(repeating: 0, count: wordCount)
+            self.storedCapacity = capacity
         }
     }
 }
@@ -69,12 +69,12 @@ extension Set where Element == Bit {
 
 extension Set<Bit>.Packed {
     @inlinable
-    public var capacity: Int { _capacity }
+    public var capacity: Int { storedCapacity }
 
     @inlinable
     public var count: Int {
         var total = 0
-        for word in _storage {
+        for word in storage {
             total += word.nonzeroBitCount
         }
         return total
@@ -82,14 +82,14 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public var isEmpty: Bool {
-        for word in _storage {
+        for word in storage {
             if word != 0 { return false }
         }
         return true
     }
 
     @usableFromInline
-    var _wordCount: Int { _storage.count }
+    var wordCount: Int { storage.count }
 }
 
 // MARK: - Membership
@@ -98,11 +98,11 @@ extension Set<Bit>.Packed {
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
         let i = index.position.rawValue
-        guard i >= 0 && i < _capacity else { return false }
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        guard i >= 0 && i < capacity else { return false }
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        return (_storage[wordIndex] & mask) != 0
+        return (storage[wordIndex] & mask) != 0
     }
 }
 
@@ -114,18 +114,18 @@ extension Set<Bit>.Packed {
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
         guard i >= 0 else {
-            throw .bounds(.init(index: i, capacity: _capacity))
+            throw .bounds(.init(index: i, capacity: capacity))
         }
 
-        if i >= _capacity {
-            _grow(toInclude: i)
+        if i >= capacity {
+            grow(toInclude: i)
         }
 
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] |= mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] |= mask
         return !wasSet
     }
 
@@ -133,37 +133,37 @@ extension Set<Bit>.Packed {
     @discardableResult
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
         let i = index.position.rawValue
-        guard i >= 0 && i < _capacity else {
-            throw .bounds(.init(index: i, capacity: _capacity))
+        guard i >= 0 && i < capacity else {
+            throw .bounds(.init(index: i, capacity: capacity))
         }
-        let wordIndex = i / Self._bitsPerWord
-        let bitIndex = i % Self._bitsPerWord
+        let wordIndex = i / Self.bitsPerWord
+        let bitIndex = i % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] &= ~mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] &= ~mask
         return wasSet
     }
 
     @inlinable
     public mutating func removeAll() {
-        for i in 0..<_storage.count {
-            _storage[i] = 0
+        for i in 0..<storage.count {
+            storage[i] = 0
         }
     }
 
     @usableFromInline
-    mutating func _grow(toInclude index: Int) {
+    mutating func grow(toInclude index: Int) {
         let newCapacity = index + 1
-        let newWordCount = (newCapacity + Self._bitsPerWord - 1) / Self._bitsPerWord
-        let oldWordCount = _storage.count
+        let newWordCount = (newCapacity + Self.bitsPerWord - 1) / Self.bitsPerWord
+        let oldWordCount = storage.count
 
         if newWordCount > oldWordCount {
-            _storage.reserveCapacity(newWordCount)
+            storage.reserveCapacity(newWordCount)
             for _ in oldWordCount..<newWordCount {
-                _storage.append(0)
+                storage.append(0)
             }
         }
-        _capacity = newCapacity
+        storedCapacity = newCapacity
     }
 }
 
@@ -179,12 +179,12 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public mutating func formUnion(_ other: Self) {
-        if other._capacity > _capacity {
-            _grow(toInclude: other._capacity - 1)
+        if other.capacity > capacity {
+            grow(toInclude: other.capacity - 1)
         }
-        let minWords = Swift.min(_storage.count, other._storage.count)
+        let minWords = Swift.min(storage.count, other.storage.count)
         for i in 0..<minWords {
-            _storage[i] |= other._storage[i]
+            storage[i] |= other.storage[i]
         }
     }
 
@@ -197,12 +197,12 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public mutating func formIntersection(_ other: Self) {
-        let minWords = Swift.min(_storage.count, other._storage.count)
+        let minWords = Swift.min(storage.count, other.storage.count)
         for i in 0..<minWords {
-            _storage[i] &= other._storage[i]
+            storage[i] &= other.storage[i]
         }
-        for i in minWords..<_storage.count {
-            _storage[i] = 0
+        for i in minWords..<storage.count {
+            storage[i] = 0
         }
     }
 
@@ -215,9 +215,9 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public mutating func subtract(_ other: Self) {
-        let minWords = Swift.min(_storage.count, other._storage.count)
+        let minWords = Swift.min(storage.count, other.storage.count)
         for i in 0..<minWords {
-            _storage[i] &= ~other._storage[i]
+            storage[i] &= ~other.storage[i]
         }
     }
 
@@ -230,12 +230,12 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public mutating func formSymmetricDifference(_ other: Self) {
-        if other._capacity > _capacity {
-            _grow(toInclude: other._capacity - 1)
+        if other.capacity > capacity {
+            grow(toInclude: other.capacity - 1)
         }
-        let minWords = Swift.min(_storage.count, other._storage.count)
+        let minWords = Swift.min(storage.count, other.storage.count)
         for i in 0..<minWords {
-            _storage[i] ^= other._storage[i]
+            storage[i] ^= other.storage[i]
         }
     }
 }
@@ -245,9 +245,9 @@ extension Set<Bit>.Packed {
 extension Set<Bit>.Packed {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
-        for i in 0..<_storage.count {
-            let selfWord = _storage[i]
-            let otherWord = i < other._storage.count ? other._storage[i] : 0
+        for i in 0..<storage.count {
+            let selfWord = storage[i]
+            let otherWord = i < other.storage.count ? other.storage[i] : 0
             if (selfWord & ~otherWord) != 0 {
                 return false
             }
@@ -262,31 +262,13 @@ extension Set<Bit>.Packed {
 
     @inlinable
     public func isDisjoint(with other: Self) -> Bool {
-        let minWords = Swift.min(_storage.count, other._storage.count)
+        let minWords = Swift.min(storage.count, other.storage.count)
         for i in 0..<minWords {
-            if (_storage[i] & other._storage[i]) != 0 {
+            if (storage[i] & other.storage[i]) != 0 {
                 return false
             }
         }
         return true
-    }
-}
-
-// MARK: - Iteration
-
-extension Set<Bit>.Packed {
-    @inlinable
-    public func forEach(_ body: (Bit.Index) -> Void) {
-        for (wordIndex, var word) in _storage.enumerated() {
-            while word != 0 {
-                let bitIndex = word.trailingZeroBitCount
-                let globalIndex = wordIndex * Self._bitsPerWord + bitIndex
-                if globalIndex < _capacity {
-                    body(Bit.Index(__unchecked: (), position: globalIndex))
-                }
-                word &= word - 1
-            }
-        }
     }
 }
 
@@ -298,12 +280,12 @@ extension Set<Bit>.Packed {
     /// - Complexity: O(n/w) where w is word bit width
     @inlinable
     public var min: Bit.Index? {
-        for wordIndex in _storage.indices {
-            let word = _storage[wordIndex]
+        for wordIndex in storage.indices {
+            let word = storage[wordIndex]
             if word != 0 {
                 let lowestBit = word.trailingZeroBitCount
-                let element = wordIndex * Self._bitsPerWord + lowestBit
-                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
+                let element = wordIndex * Self.bitsPerWord + lowestBit
+                return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -314,12 +296,12 @@ extension Set<Bit>.Packed {
     /// - Complexity: O(n/w) where w is word bit width
     @inlinable
     public var max: Bit.Index? {
-        for wordIndex in _storage.indices.reversed() {
-            let word = _storage[wordIndex]
+        for wordIndex in storage.indices.reversed() {
+            let word = storage[wordIndex]
             if word != 0 {
                 let highestBit = UInt.bitWidth - 1 - word.leadingZeroBitCount
-                let element = wordIndex * Self._bitsPerWord + highestBit
-                return element < _capacity ? Bit.Index(__unchecked: (), position: element) : nil
+                let element = wordIndex * Self.bitsPerWord + highestBit
+                return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
             }
         }
         return nil
@@ -346,54 +328,6 @@ extension Set<Bit>.Packed {
         for element in elements {
             try! insert(element)
         }
-    }
-}
-
-// MARK: - Sequence
-
-extension Set<Bit>.Packed: Swift.Sequence {
-    /// An iterator over the elements of a bit set.
-    ///
-    /// Elements are yielded in ascending order.
-    public struct Iterator: IteratorProtocol, Sendable {
-        @usableFromInline
-        let storage: ContiguousArray<UInt>
-
-        @usableFromInline
-        let capacity: Int
-
-        @usableFromInline
-        var wordIndex: Int
-
-        @usableFromInline
-        var currentWord: UInt
-
-        @usableFromInline
-        init(storage: ContiguousArray<UInt>, capacity: Int) {
-            self.storage = storage
-            self.capacity = capacity
-            self.wordIndex = 0
-            self.currentWord = storage.isEmpty ? 0 : storage[0]
-        }
-
-        @inlinable
-        public mutating func next() -> Bit.Index? {
-            while currentWord == 0 {
-                wordIndex += 1
-                guard wordIndex < storage.count else { return nil }
-                currentWord = storage[wordIndex]
-            }
-
-            let bit = currentWord.trailingZeroBitCount
-            currentWord &= currentWord &- 1  // Clear lowest set bit
-            let element = wordIndex * UInt.bitWidth + bit
-            return element < capacity ? Bit.Index(__unchecked: (), position: element) : nil
-        }
-    }
-
-    @inlinable
-    public func makeIterator() -> Iterator {
-        Iterator(storage: _storage, capacity: _capacity)
     }
 }
 

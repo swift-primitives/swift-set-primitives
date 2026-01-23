@@ -22,7 +22,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// ```
     @inlinable
     public var algebra: Algebra {
-        Algebra(storage: _elementStorage)
+        Algebra(storage: elementStorage)
     }
 }
 
@@ -38,15 +38,15 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// the Set.Ordered directly (which is ~Copyable due to Hash.Table).
     public struct Algebra {
         @usableFromInline
-        let _storage: ElementStorage
+        let storage: ElementStorage
 
         @usableFromInline
         init(storage: ElementStorage) {
-            self._storage = storage
+            self.storage = storage
         }
 
         @usableFromInline
-        var _count: Int { _storage.header }
+        var count: Int { storage.header }
     }
 }
 
@@ -65,12 +65,12 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     public func union(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
         // Add elements from self
-        for i in 0..<_count {
-            result.insert(_storage._readElement(at: i))
+        for i in 0..<count {
+            result.insert(storage.readElement(at: i))
         }
         // Add elements from other
         for i in 0..<other.count {
-            result.insert(other._elementStorage._readElement(at: i))
+            result.insert(other.elementStorage.readElement(at: i))
         }
         return result
     }
@@ -85,8 +85,8 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     @inlinable
     public func intersection(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
-        for i in 0..<_count {
-            let element = _storage._readElement(at: i)
+        for i in 0..<count {
+            let element = storage.readElement(at: i)
             if other.contains(element) {
                 result.insert(element)
             }
@@ -104,8 +104,8 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     @inlinable
     public func subtract(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
-        for i in 0..<_count {
-            let element = _storage._readElement(at: i)
+        for i in 0..<count {
+            let element = storage.readElement(at: i)
             if !other.contains(element) {
                 result.insert(element)
             }
@@ -116,7 +116,7 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Nested accessor for symmetric operations.
     @inlinable
     public var symmetric: Symmetric {
-        Symmetric(storage: _storage)
+        Symmetric(storage: storage)
     }
 }
 

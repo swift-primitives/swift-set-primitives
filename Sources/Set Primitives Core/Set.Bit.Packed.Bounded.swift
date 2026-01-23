@@ -21,10 +21,10 @@ extension Set<Bit>.Packed {
     /// predictable memory behavior.
     public struct Bounded: Sendable {
         @usableFromInline
-        static var _bitsPerWord: Int { UInt.bitWidth }
+        static var bitsPerWord: Int { UInt.bitWidth }
 
         @usableFromInline
-        var _storage: ContiguousArray<UInt>
+        var storage: ContiguousArray<UInt>
 
         public let capacity: Int
 
@@ -33,8 +33,8 @@ extension Set<Bit>.Packed {
             guard capacity >= 0 else {
                 throw .invalidCapacity(.init())
             }
-            let wordCount = (capacity + Self._bitsPerWord - 1) / Self._bitsPerWord
-            self._storage = ContiguousArray(repeating: 0, count: wordCount)
+            let wordCount = (capacity + Self.bitsPerWord - 1) / Self.bitsPerWord
+            self.storage = ContiguousArray(repeating: 0, count: wordCount)
             self.capacity = capacity
         }
     }
@@ -46,7 +46,7 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public var count: Int {
         var total = 0
-        for word in _storage {
+        for word in storage {
             total += word.nonzeroBitCount
         }
         return total
@@ -54,7 +54,7 @@ extension Set<Bit>.Packed.Bounded {
 
     @inlinable
     public var isEmpty: Bool {
-        for word in _storage {
+        for word in storage {
             if word != 0 { return false }
         }
         return true
@@ -74,10 +74,10 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func contains(_ index: Int) -> Bool {
         guard index >= 0 && index < capacity else { return false }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        return (_storage[wordIndex] & mask) != 0
+        return (storage[wordIndex] & mask) != 0
     }
 }
 
@@ -101,11 +101,11 @@ extension Set<Bit>.Packed.Bounded {
             }
             throw .bounds(.init(index: index, capacity: capacity))
         }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] |= mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] |= mask
         return !wasSet
     }
 
@@ -123,18 +123,18 @@ extension Set<Bit>.Packed.Bounded {
         guard index >= 0 && index < capacity else {
             throw .bounds(.init(index: index, capacity: capacity))
         }
-        let wordIndex = index / Self._bitsPerWord
-        let bitIndex = index % Self._bitsPerWord
+        let wordIndex = index / Self.bitsPerWord
+        let bitIndex = index % Self.bitsPerWord
         let mask: UInt = 1 << bitIndex
-        let wasSet = (_storage[wordIndex] & mask) != 0
-        _storage[wordIndex] &= ~mask
+        let wasSet = (storage[wordIndex] & mask) != 0
+        storage[wordIndex] &= ~mask
         return wasSet
     }
 
     @inlinable
     public mutating func removeAll() {
-        for i in 0..<_storage.count {
-            _storage[i] = 0
+        for i in 0..<storage.count {
+            storage[i] = 0
         }
     }
 }
@@ -153,8 +153,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public mutating func formUnion(_ other: Self) {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            _storage[i] |= other._storage[i]
+        for i in 0..<storage.count {
+            storage[i] |= other.storage[i]
         }
     }
 
@@ -169,8 +169,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public mutating func formIntersection(_ other: Self) {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            _storage[i] &= other._storage[i]
+        for i in 0..<storage.count {
+            storage[i] &= other.storage[i]
         }
     }
 
@@ -185,8 +185,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public mutating func subtract(_ other: Self) {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            _storage[i] &= ~other._storage[i]
+        for i in 0..<storage.count {
+            storage[i] &= ~other.storage[i]
         }
     }
 
@@ -201,8 +201,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public mutating func formSymmetricDifference(_ other: Self) {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            _storage[i] ^= other._storage[i]
+        for i in 0..<storage.count {
+            storage[i] ^= other.storage[i]
         }
     }
 }
@@ -213,8 +213,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func isSubset(of other: Self) -> Bool {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            if (_storage[i] & ~other._storage[i]) != 0 {
+        for i in 0..<storage.count {
+            if (storage[i] & ~other.storage[i]) != 0 {
                 return false
             }
         }
@@ -229,8 +229,8 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func isDisjoint(with other: Self) -> Bool {
         precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<_storage.count {
-            if (_storage[i] & other._storage[i]) != 0 {
+        for i in 0..<storage.count {
+            if (storage[i] & other.storage[i]) != 0 {
                 return false
             }
         }
@@ -243,10 +243,10 @@ extension Set<Bit>.Packed.Bounded {
 extension Set<Bit>.Packed.Bounded {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
-        for (wordIndex, var word) in _storage.enumerated() {
+        for (wordIndex, var word) in storage.enumerated() {
             while word != 0 {
                 let bitIndex = word.trailingZeroBitCount
-                let globalIndex = wordIndex * Self._bitsPerWord + bitIndex
+                let globalIndex = wordIndex * Self.bitsPerWord + bitIndex
                 if globalIndex < capacity {
                     body(globalIndex)
                 }
@@ -262,7 +262,7 @@ extension Set<Bit>.Packed.Bounded: Equatable {
     /// Explicit implementation to avoid compiler crash in synthesized __derived_struct_equals.
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.capacity == rhs.capacity && lhs._storage == rhs._storage
+        lhs.capacity == rhs.capacity && lhs.storage == rhs.storage
     }
 }
 
@@ -273,6 +273,6 @@ extension Set<Bit>.Packed.Bounded: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         hasher.combine(capacity)
-        hasher.combine(_storage)
+        hasher.combine(storage)
     }
 }

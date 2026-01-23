@@ -25,15 +25,15 @@
 extension Set_Primitives_Core.Set.Ordered.Inline {
     /// The number of elements in the set.
     @inlinable
-    public var count: Int { _count }
+    public var count: Int { storedCount }
 
     /// Whether the set is empty.
     @inlinable
-    public var isEmpty: Bool { _count == 0 }
+    public var isEmpty: Bool { storedCount == 0 }
 
     /// Whether the set is at full capacity.
     @inlinable
-    public var isFull: Bool { _count >= capacity }
+    public var isFull: Bool { count >= capacity }
 }
 
 // MARK: - Core Operations
@@ -44,8 +44,8 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// - Complexity: O(n) linear search.
     @inlinable
     public func index(_ element: Element) -> Int? {
-        for i in 0..<_count {
-            if unsafe _readPointerToElement(at: i).pointee == element {
+        for i in 0..<count {
+            if unsafe readPointerToElement(at: i).pointee == element {
                 return i
             }
         }
@@ -72,13 +72,13 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
         if let existing = index(element) {
             return (false, existing)
         }
-        guard _count < capacity else {
+        guard count < capacity else {
             throw .overflow(.init())
         }
-        let ptr = unsafe _pointerToElement(at: _count)
+        let ptr = unsafe pointerToElement(at: storedCount)
         unsafe ptr.initialize(to: element)
-        let idx = _count
-        _count += 1
+        let idx = storedCount
+        storedCount += 1
         return (true, idx)
     }
 
@@ -94,36 +94,36 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
             return nil
         }
         let stride = MemoryLayout<Element>.stride
-        let removed: Element = unsafe Swift.withUnsafeMutablePointer(to: &_elements) { storagePtr in
+        let removed: Element = unsafe Swift.withUnsafeMutablePointer(to: &elements) { storagePtr in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
             let elementPtr = unsafe (basePtr + idx * stride).assumingMemoryBound(to: Element.self)
             let value = unsafe elementPtr.move()
 
             // Shift remaining elements left
-            for i in idx..<(_count - 1) {
+            for i in idx..<(storedCount - 1) {
                 let src = unsafe (basePtr + (i + 1) * stride).assumingMemoryBound(to: Element.self)
                 let dst = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
                 unsafe dst.initialize(to: src.move())
             }
             return value
         }
-        _count -= 1
+        storedCount -= 1
         return removed
     }
 
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear() {
-        guard _count > 0 else { return }
+        guard storedCount > 0 else { return }
         let stride = MemoryLayout<Element>.stride
-        unsafe Swift.withUnsafeMutablePointer(to: &_elements) { storagePtr in
+        unsafe Swift.withUnsafeMutablePointer(to: &elements) { storagePtr in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
-            for i in 0..<_count {
+            for i in 0..<storedCount {
                 let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
                 unsafe elementPtr.deinitialize(count: 1)
             }
         }
-        _count = 0
+        storedCount = 0
     }
 }
 
@@ -133,17 +133,17 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// Accesses the element at the specified index.
     @inlinable
     public func element(at index: Int) throws(__SetOrderedInlineError) -> Element {
-        guard index >= 0 && index < _count else {
-            throw .bounds(.init(index: index, count: _count))
+        guard index >= 0 && index < count else {
+            throw .bounds(.init(index: index, count: count))
         }
-        return unsafe _readPointerToElement(at: index).pointee
+        return unsafe readPointerToElement(at: index).pointee
     }
 
     /// Subscript access to elements by index.
     @inlinable
     public subscript(index: Int) -> Element {
-        precondition(index >= 0 && index < _count, "Index out of bounds")
-        return unsafe _readPointerToElement(at: index).pointee
+        precondition(index >= 0 && index < count, "Index out of bounds")
+        return unsafe readPointerToElement(at: index).pointee
     }
 }
 
@@ -153,13 +153,13 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
-        _count > 0 ? unsafe _readPointerToElement(at: 0).pointee : nil
+        count > 0 ? unsafe readPointerToElement(at: 0).pointee : nil
     }
 
     /// The last element, or `nil` if the set is empty.
     @inlinable
     public var last: Element? {
-        _count > 0 ? unsafe _readPointerToElement(at: _count - 1).pointee : nil
+        count > 0 ? unsafe readPointerToElement(at: count - 1).pointee : nil
     }
 }
 
@@ -169,18 +169,18 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// Accesses the element at the given index via closure.
     @inlinable
     public func withElement<R>(at index: Int, _ body: (borrowing Element) -> R) -> R {
-        precondition(index >= 0 && index < _count, "Index out of bounds")
-        return unsafe body(_readPointerToElement(at: index).pointee)
+        precondition(index >= 0 && index < count, "Index out of bounds")
+        return unsafe body(readPointerToElement(at: index).pointee)
     }
 
     /// Iterates over all elements in the set.
     @inlinable
     public func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E) {
         let stride = MemoryLayout<Element>.stride
-        let result: Result<Void, E> = unsafe withUnsafePointer(to: _elements) { storagePtr in
+        let result: Result<Void, E> = unsafe withUnsafePointer(to: elements) { storagePtr in
             let basePtr = unsafe UnsafeRawPointer(storagePtr)
             do throws(E) {
-                for i in 0..<_count {
+                for i in 0..<count {
                     let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
                     try unsafe body(elementPtr.pointee)
                 }
@@ -195,16 +195,16 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     /// Removes and consumes all elements.
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
-        guard _count > 0 else { return }
+        guard storedCount > 0 else { return }
         let stride = MemoryLayout<Element>.stride
-        unsafe Swift.withUnsafeMutablePointer(to: &_elements) { storagePtr in
+        unsafe Swift.withUnsafeMutablePointer(to: &elements) { storagePtr in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
-            for i in 0..<_count {
+            for i in 0..<storedCount {
                 let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
                 unsafe body(elementPtr.move())
             }
         }
-        _count = 0
+        storedCount = 0
     }
 }
 
@@ -228,10 +228,10 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        return try unsafe withUnsafePointer(to: _elements) { storagePtr throws(E) -> R in
+        return try unsafe withUnsafePointer(to: elements) { storagePtr throws(E) -> R in
             let basePtr = unsafe UnsafeRawPointer(storagePtr)
             let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
-            let span = unsafe Span(_unsafeStart: elementPtr, count: _count)
+            let span = unsafe Span(_unsafeStart: elementPtr, count: count)
             return try body(span)
         }
     }
@@ -259,10 +259,11 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ body: (borrowing MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
-        return try unsafe withUnsafeMutablePointer(to: &_elements) { storagePtr throws(E) -> R in
+        let elementCount = storedCount
+        return try unsafe withUnsafeMutablePointer(to: &elements) { storagePtr throws(E) -> R in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
             let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
-            let span = unsafe MutableSpan(_unsafeStart: elementPtr, count: _count)
+            let span = unsafe MutableSpan(_unsafeStart: elementPtr, count: elementCount)
             return try body(span)
         }
     }
@@ -280,11 +281,11 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let result: Result<R, E> = unsafe withUnsafePointer(to: _elements) { storagePtr in
+        let result: Result<R, E> = unsafe withUnsafePointer(to: elements) { storagePtr in
             let basePtr = unsafe UnsafeRawPointer(storagePtr)
             let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
             do throws(E) {
-                return .success(try unsafe body(UnsafeBufferPointer(start: _count > 0 ? elementPtr : nil, count: _count)))
+                return .success(try unsafe body(UnsafeBufferPointer(start: count > 0 ? elementPtr : nil, count: count)))
             } catch {
                 return .failure(error)
             }
@@ -301,11 +302,12 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let result: Result<R, E> = unsafe withUnsafeMutablePointer(to: &_elements) { storagePtr in
+        let elementCount = storedCount
+        let result: Result<R, E> = unsafe withUnsafeMutablePointer(to: &elements) { storagePtr in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
             let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
             do throws(E) {
-                return .success(try unsafe body(UnsafeMutableBufferPointer(start: _count > 0 ? elementPtr : nil, count: _count)))
+                return .success(try unsafe body(UnsafeMutableBufferPointer(start: elementCount > 0 ? elementPtr : nil, count: elementCount)))
             } catch {
                 return .failure(error)
             }

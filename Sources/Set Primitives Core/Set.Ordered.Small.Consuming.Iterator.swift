@@ -39,82 +39,82 @@ extension Set_Primitives_Core.Set.Ordered.Small.Consuming {
     public struct Iterator: ~Copyable {
         /// Inline storage (used when set hasn't spilled to heap).
         @usableFromInline
-        var _inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+        var inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
         /// Heap storage (used when set has spilled).
         @usableFromInline
-        let _heapStorage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage?
+        let heapStorage: Set_Primitives_Core.Set<Element>.Ordered.ElementStorage?
 
         @usableFromInline
-        var _index: Int
+        var index: Int
 
         @usableFromInline
-        let _count: Int
+        let count: Int
 
         /// Whether we're iterating from heap storage.
         @usableFromInline
-        let _isSpilled: Bool
+        let isSpilled: Bool
 
         @usableFromInline
         init(_consuming set: consuming Set_Primitives_Core.Set<Element>.Ordered.Small<inlineCapacity>) {
-            let count = set._count
-            let isSpilled = set._heapStorage != nil
+            let count = set.storedCount
+            let isSpilled = set.heapStorage != nil
 
-            self._count = count
-            self._index = 0
-            self._isSpilled = isSpilled
+            self.count = count
+            self.index = 0
+            self.isSpilled = isSpilled
 
             if isSpilled {
                 // Heap mode: take the heap storage
-                self._heapStorage = set._heapStorage
-                self._inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+                self.heapStorage = set.heapStorage
+                self.inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
 
                 // Mark heap storage as empty so its deinit won't double-free
-                set._heapStorage!.header = 0
+                set.heapStorage!.header = 0
             } else {
                 // Inline mode: copy inline storage
-                self._inlineElements = set._inlineElements
-                self._heapStorage = nil
+                self.inlineElements = set.inlineElements
+                self.heapStorage = nil
             }
 
             // Zero out the set's count to prevent its deinit from double-freeing
-            set._count = 0
+            set.storedCount = 0
         }
 
         @inlinable
         public mutating func next() -> Element? {
-            guard _index < _count else { return nil }
+            guard index < count else { return nil }
 
             let element: Element
-            if _isSpilled {
+            if isSpilled {
                 // Heap mode
-                element = _heapStorage!._moveElement(at: _index)
+                element = heapStorage!.moveElement(at: index)
             } else {
                 // Inline mode
                 let stride = MemoryLayout<Element>.stride
-                element = unsafe Swift.withUnsafeMutablePointer(to: &_inlineElements) { storagePtr in
+                element = unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                     let basePtr = UnsafeMutableRawPointer(storagePtr)
-                    let elementPtr = unsafe (basePtr + _index * stride).assumingMemoryBound(to: Element.self)
+                    let elementPtr = unsafe (basePtr + index * stride).assumingMemoryBound(to: Element.self)
                     return unsafe elementPtr.move()
                 }
             }
-            _index += 1
+            index += 1
             return element
         }
 
         deinit {
-            let remaining = _count - _index
+            let remaining = count - index
             guard remaining > 0 else { return }
 
-            if _isSpilled {
+            if isSpilled {
                 // Heap mode: deinitialize remaining elements in heap storage
-                _heapStorage!._deinitializeElements(from: _index, count: remaining)
+                heapStorage!.deinitializeElements(from: index, count: remaining)
             } else {
                 // Inline mode: deinitialize remaining elements in inline storage
                 let stride = MemoryLayout<Element>.stride
-                unsafe Swift.withUnsafeBytes(of: _inlineElements) { bytes in
+                unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
                     let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
-                    for i in _index..<_count {
+                    for i in index..<count {
                         let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
                         unsafe elementPtr.deinitialize(count: 1)
                     }
