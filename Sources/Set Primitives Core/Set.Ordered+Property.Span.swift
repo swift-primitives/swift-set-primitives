@@ -9,16 +9,16 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Sequence_Primitives
+public import Property_Primitives
 
-// MARK: - Sequence.Span.Protocol Conformance
+// MARK: - Property.Span.Protocol Conformance
 
-extension Set_Primitives_Core.Set.Ordered: Sequence.Span.`Protocol` {
+extension Set_Primitives_Core.Set.Ordered: __PropertySpanProtocol {
     // span property already exists in Set.Ordered.swift
 }
 
-// MARK: - Sequence.Span.Mutable.Protocol Conformance
+// MARK: - Property.Span.Mutable.Protocol Conformance
 
-extension Set_Primitives_Core.Set.Ordered: Sequence.Span.Mutable.`Protocol` where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered: __PropertySpanMutableProtocol where Element: Copyable {
     // mutableSpan property already exists in Set.Ordered.swift
 }

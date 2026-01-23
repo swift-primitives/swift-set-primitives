@@ -9,16 +9,16 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Sequence_Primitives
+public import Property_Primitives
 
-// MARK: - Sequence.WithSpan.Protocol Conformance
+// MARK: - Property.Span.Scoped.Protocol Conformance
 
-extension Set_Primitives_Core.Set.Ordered.Inline: Sequence.WithSpan.`Protocol` {
+extension Set_Primitives_Core.Set.Ordered.Inline: __PropertySpanScopedProtocol {
     // withSpan(_:) method already exists in Set.Ordered.Inline.swift
 }
 
-// MARK: - Sequence.WithSpan.Mutable.Protocol Conformance
+// MARK: - Property.Span.Scoped.Mutable.Protocol Conformance
 
-extension Set_Primitives_Core.Set.Ordered.Inline: Sequence.WithSpan.Mutable.`Protocol` {
+extension Set_Primitives_Core.Set.Ordered.Inline: __PropertySpanScopedMutableProtocol {
     // withMutableSpan(_:) method already exists in Set.Ordered.Inline.swift
 }
