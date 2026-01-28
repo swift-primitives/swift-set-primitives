@@ -81,8 +81,8 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         @inlinable
         public subscript(index: Index_Primitives.Index<Tag>) -> Element {
             get {
-                precondition(index.position.rawValue < _storage.count, "Index out of bounds")
-                return _storage.elementStorage.readElement(at: index.position.rawValue)
+                precondition(index.position < _storage.count, "Index out of bounds")
+                return _storage.elementStorage.readElement(at: index.position)
             }
         }
     }

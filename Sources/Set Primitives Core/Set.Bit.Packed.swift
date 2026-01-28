@@ -104,7 +104,7 @@ extension Set<Bit>.Packed {
 extension Set<Bit>.Packed {
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 && i < capacity else { return false }
         let wordIndex = i / Self.bitsPerWord
         let bitIndex = i % Self.bitsPerWord
@@ -119,7 +119,7 @@ extension Set<Bit>.Packed {
     @inlinable
     @discardableResult
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 else {
             throw .bounds(.init(index: i, capacity: capacity))
         }
@@ -139,7 +139,7 @@ extension Set<Bit>.Packed {
     @inlinable
     @discardableResult
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 && i < capacity else {
             throw .bounds(.init(index: i, capacity: capacity))
         }
@@ -248,6 +248,6 @@ extension Set<Bit>.Packed: CustomStringConvertible {
     public var description: String {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
-        return "Set<Bit>.Packed(\(elements.map { String($0.position.rawValue) }.joined(separator: ", "))\(suffix))"
+        return "Set<Bit>.Packed(\(elements.map { String($0.position) }.joined(separator: ", "))\(suffix))"
     }
 }

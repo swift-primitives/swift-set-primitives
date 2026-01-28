@@ -152,7 +152,7 @@ extension Set<Bit>.Packed.Small {
     /// Returns whether the set contains the given index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 && i < capacity else { return false }
         let wordIndex = i / Self.bitsPerWord
         let bitIndex = i % Self.bitsPerWord
@@ -194,7 +194,7 @@ extension Set<Bit>.Packed.Small {
     @inlinable
     @discardableResult
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 else {
             throw .bounds(.init(index: i, capacity: capacity))
         }
@@ -234,7 +234,7 @@ extension Set<Bit>.Packed.Small {
     @inlinable
     @discardableResult
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
-        let i = index.position.rawValue
+        let i = index.position
         guard i >= 0 && i < capacity else {
             throw .bounds(.init(index: i, capacity: capacity))
         }
@@ -438,6 +438,6 @@ extension Set<Bit>.Packed.Small: CustomStringConvertible {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
         let spilledMarker = isSpilled ? " (spilled)" : ""
-        return "Set<Bit>.Packed.Small<\(inlineWordCount)>(\(elements.map { String($0.position.rawValue) }.joined(separator: ", "))\(suffix))\(spilledMarker)"
+        return "Set<Bit>.Packed.Small<\(inlineWordCount)>(\(elements.map { String($0.position) }.joined(separator: ", "))\(suffix))\(spilledMarker)"
     }
 }

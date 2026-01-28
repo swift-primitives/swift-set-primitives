@@ -39,12 +39,12 @@ extension Set.Ordered {
     /// Accesses the element at the given typed index in insertion order.
     ///
     /// - Parameter index: The typed index of the element to access.
-    /// - Precondition: `index.position.rawValue` must be in `0..<count`.
+    /// - Precondition: `index.position` must be in `0..<count`.
     @inlinable
     public subscript(index: Set<Element>.Index) -> Element {
         _read {
-            precondition(index.position.rawValue >= 0 && index.position.rawValue < count, "Index out of bounds")
-            yield elementStorage.readElement(at: index.position.rawValue)
+            precondition(index.position >= 0 && index.position < count, "Index out of bounds")
+            yield elementStorage.readElement(at: index.position)
         }
     }
 
@@ -54,8 +54,8 @@ extension Set.Ordered {
     /// - Returns: The element at the index, or `nil` if out of bounds.
     @inlinable
     public func element(at index: Set<Element>.Index) -> Element? {
-        guard index.position.rawValue >= 0 && index.position.rawValue < count else { return nil }
-        return elementStorage.readElement(at: index.position.rawValue)
+        guard index.position >= 0 && index.position < count else { return nil }
+        return elementStorage.readElement(at: index.position)
     }
 }
 

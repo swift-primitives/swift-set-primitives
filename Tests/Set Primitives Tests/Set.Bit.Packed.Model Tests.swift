@@ -41,7 +41,7 @@ struct SetBitPackedModelTests {
     func toIntSet(_ bitSet: Set<Bit>.Packed) -> SetModel {
         var result = SetModel()
         for index in bitSet {
-            result.insert(index.position.rawValue)
+            result.insert(index.position)
         }
         return result
     }
@@ -290,8 +290,8 @@ struct SetBitPackedModelTests {
             model.insert(value)
         }
 
-        #expect(bitSet.min?.position.rawValue == model.min())
-        #expect(bitSet.max?.position.rawValue == model.max())
+        #expect(bitSet.min?.position == model.min())
+        #expect(bitSet.max?.position == model.max())
     }
 
     @Test("Iteration produces sorted elements")
@@ -303,7 +303,7 @@ struct SetBitPackedModelTests {
             try bitSet.insert(idx(Int(rng.next() % 500)))
         }
 
-        let elements = Swift.Array(bitSet).map { $0.position.rawValue }
+        let elements = Swift.Array(bitSet).map { $0.position }
 
         // Should be sorted
         #expect(elements == elements.sorted())

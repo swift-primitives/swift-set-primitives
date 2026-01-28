@@ -74,7 +74,7 @@ extension Set<Bit>.Packed.Bounded {
     /// Returns whether the set contains the given bit index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
-        contains(index.position.rawValue)
+        contains(index.position)
     }
 
     /// Returns whether the set contains the given integer index.
@@ -95,7 +95,7 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     @discardableResult
     public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
-        try insert(index.position.rawValue)
+        try insert(index.position)
     }
 
     /// Inserts an integer index into the set.
@@ -120,7 +120,7 @@ extension Set<Bit>.Packed.Bounded {
     @inlinable
     @discardableResult
     public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
-        try remove(index.position.rawValue)
+        try remove(index.position)
     }
 
     /// Removes an integer index from the set.
