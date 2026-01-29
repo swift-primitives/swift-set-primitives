@@ -11,6 +11,7 @@
 
 import Testing
 @testable import Set_Primitives
+import Set_Primitives_Test_Support
 
 // MARK: - Helper to convert Set.Ordered to Array
 
@@ -18,7 +19,7 @@ import Testing
 // This helper uses index-based iteration to extract elements.
 func toArray<Element: Hashable>(_ set: borrowing Set<Element>.Ordered) -> [Element] {
     var result: [Element] = []
-    for i in 0..<set.count {
+    for i in Index<Element>.zero..<set.count {
         result.append(set[i])
     }
     return result
@@ -29,8 +30,8 @@ struct OrderedSetTests {
 
     // MARK: - Basic Operations
 
-    @Test("Insert and contains")
-    func insertAndContains() {
+    @Test
+    func `Insert and contains`() {
         var set = Set<String>.Ordered()
 
         let (inserted1, index1) = set.insert("apple")
@@ -54,8 +55,8 @@ struct OrderedSetTests {
         #expect(!containsCherry)
     }
 
-    @Test("Index lookup")
-    func indexLookup() {
+    @Test
+    func `Index lookup`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -71,8 +72,8 @@ struct OrderedSetTests {
         #expect(index40 == nil)
     }
 
-    @Test("Remove element")
-    func removeElement() {
+    @Test
+    func `Remove element`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -100,8 +101,8 @@ struct OrderedSetTests {
 
     // MARK: - Order Preservation
 
-    @Test("Insertion order preserved")
-    func insertionOrderPreserved() {
+    @Test
+    func `Insertion order preserved`() {
         var set = Set<String>.Ordered()
         set.insert("charlie")
         set.insert("alpha")
@@ -111,8 +112,8 @@ struct OrderedSetTests {
         #expect(array == ["charlie", "alpha", "bravo"])
     }
 
-    @Test("Order after removal")
-    func orderAfterRemoval() {
+    @Test
+    func `Order after removal`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -126,8 +127,8 @@ struct OrderedSetTests {
         #expect(array == [1, 3, 5])
     }
 
-    @Test("Re-insertion goes to end")
-    func reinsertionGoesToEnd() {
+    @Test
+    func `Re-insertion goes to end`() {
         var set = Set<String>.Ordered()
         set.insert("a")
         set.insert("b")
@@ -141,8 +142,8 @@ struct OrderedSetTests {
 
     // MARK: - Algebra Operations
 
-    @Test("Union")
-    func union() {
+    @Test
+    func `Union`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -157,8 +158,8 @@ struct OrderedSetTests {
         #expect(array == [1, 2, 3, 4, 5])
     }
 
-    @Test("Intersection")
-    func intersection() {
+    @Test
+    func `Intersection`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -174,8 +175,8 @@ struct OrderedSetTests {
         #expect(array == [2, 4])
     }
 
-    @Test("Subtract")
-    func subtract() {
+    @Test
+    func `Subtract`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -191,8 +192,8 @@ struct OrderedSetTests {
         #expect(array == [1, 3, 5])
     }
 
-    @Test("Symmetric difference")
-    func symmetricDifference() {
+    @Test
+    func `Symmetric difference`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -209,8 +210,8 @@ struct OrderedSetTests {
 
     // MARK: - Collection Conformance
 
-    @Test("Subscript access")
-    func subscriptAccess() {
+    @Test
+    func `Subscript access`() {
         var set = Set<String>.Ordered()
         set.insert("a")
         set.insert("b")
@@ -221,8 +222,8 @@ struct OrderedSetTests {
         #expect(set[2] == "c")
     }
 
-    @Test("Iteration via forEach")
-    func iterationViaForEach() {
+    @Test
+    func `Iteration via forEach`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -236,8 +237,8 @@ struct OrderedSetTests {
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Iteration via makeIterator")
-    func iterationViaMakeIterator() {
+    @Test
+    func `Iteration via makeIterator`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -254,15 +255,15 @@ struct OrderedSetTests {
 
     // MARK: - Properties
 
-    @Test("Empty set")
-    func emptySet() {
+    @Test
+    func `Empty set`() {
         let set = Set<Int>.Ordered()
         let isEmpty = set.isEmpty
         #expect(isEmpty)
     }
 
-    @Test("Init from sequence")
-    func initFromSequence() {
+    @Test
+    func `Init from sequence`() {
         let set = Set.Ordered([1, 2, 2, 3, 3, 3])
         let count = set.count
         let array = toArray(set)
@@ -270,8 +271,8 @@ struct OrderedSetTests {
         #expect(array == [1, 2, 3])
     }
 
-    @Test("Clear")
-    func clear() {
+    @Test
+    func `Clear`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -286,8 +287,8 @@ struct OrderedSetTests {
 
     // MARK: - Equatable & Hashable (via Hash.Protocol)
 
-    @Test("Equality")
-    func equality() {
+    @Test
+    func `Equality`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -307,8 +308,8 @@ struct OrderedSetTests {
         #expect(aNotEqualsC)  // Order matters
     }
 
-    @Test("Hashable")
-    func hashable() {
+    @Test
+    func `Hashable`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -325,8 +326,8 @@ struct OrderedSetTests {
 
     // MARK: - Error Types
 
-    @Test("Bounds error")
-    func boundsError() {
+    @Test
+    func `Bounds error for out-of-range index`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -336,15 +337,15 @@ struct OrderedSetTests {
             _ = try set.element(at: 10)
         }
 
-        #expect(throws: Set<Int>.Ordered.Error.self) {
-            _ = try set.element(at: -1)
-        }
+        // Note: Negative indices cannot be tested directly since Index<Element>
+        // wraps Ordinal (UInt) and cannot represent negative values.
+        // The type system prevents negative index access at compile time.
     }
 
     // MARK: - Consuming Iteration (via .consume().forEach pattern)
 
-    @Test("consume().forEach yields all elements")
-    func consumeForEachYieldsAllElements() {
+    @Test
+    func `consume().forEach yields all elements`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -360,8 +361,8 @@ struct OrderedSetTests {
         #expect(result == [10, 20, 30, 40, 50])
     }
 
-    @Test("consume().forEach processes all elements")
-    func consumeForEachProcessesAllElements() {
+    @Test
+    func `consume().forEach processes all elements`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -377,8 +378,8 @@ struct OrderedSetTests {
         #expect(sum == 15)
     }
 
-    @Test("consume() with manual iteration")
-    func consumeWithManualIteration() {
+    @Test
+    func `consume() with manual iteration`() {
         var set = Set<String>.Ordered()
         set.insert("a")
         set.insert("b")
@@ -390,7 +391,7 @@ struct OrderedSetTests {
 
         var view = set.consume()
         var result: [String] = []
-        result.reserveCapacity(count)
+        result.reserveCapacity(Int(bitPattern: count))
 
         while let element = view.next() {
             result.append(element)
@@ -399,8 +400,8 @@ struct OrderedSetTests {
         #expect(result == ["a", "b", "c", "d"])
     }
 
-    @Test("consume() handles empty set")
-    func consumeHandlesEmptySet() {
+    @Test
+    func `consume() handles empty set`() {
         let set = Set<Int>.Ordered()
 
         var view = set.consume()
@@ -408,8 +409,8 @@ struct OrderedSetTests {
         #expect(next == nil)
     }
 
-    @Test("consume().forEach preserves order")
-    func consumeForEachPreservesOrder() {
+    @Test
+    func `consume().forEach preserves order`() {
         var set = Set<String>.Ordered()
         set.insert("charlie")
         set.insert("alpha")
@@ -425,8 +426,8 @@ struct OrderedSetTests {
 
     // MARK: - Bounded Consuming Iteration
 
-    @Test("Bounded: consume().forEach yields all elements")
-    func boundedConsumeForEach() throws {
+    @Test
+    func `Bounded: consume().forEach yields all elements`() throws {
         var set = try Set<Int>.Ordered.Bounded(capacity: 10)
         try set.insert(10)
         try set.insert(20)
@@ -440,8 +441,8 @@ struct OrderedSetTests {
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Bounded: consume().forEach processes all elements")
-    func boundedConsumeForEachProcesses() throws {
+    @Test
+    func `Bounded: consume().forEach processes all elements`() throws {
         var set = try Set<Int>.Ordered.Bounded(capacity: 10)
         try set.insert(1)
         try set.insert(2)
@@ -455,8 +456,8 @@ struct OrderedSetTests {
         #expect(sum == 6)
     }
 
-    @Test("Bounded: consume() with manual iteration")
-    func boundedConsumeManualIteration() throws {
+    @Test
+    func `Bounded: consume() with manual iteration`() throws {
         var set = try Set<String>.Ordered.Bounded(capacity: 10)
         try set.insert("a")
         try set.insert("b")
@@ -472,8 +473,8 @@ struct OrderedSetTests {
         #expect(result == ["a", "b"])
     }
 
-    @Test("Bounded: consume() handles empty set")
-    func boundedConsumeEmpty() throws {
+    @Test
+    func `Bounded: consume() handles empty set`() throws {
         let set = try Set<Int>.Ordered.Bounded(capacity: 10)
         var view = set.consume()
         let next = view.next()
@@ -482,8 +483,8 @@ struct OrderedSetTests {
 
     // MARK: - Inline Consuming Iteration
 
-    @Test("Inline: consume().forEach yields all elements")
-    func inlineConsumeForEach() throws {
+    @Test
+    func `Inline: consume().forEach yields all elements`() throws {
         var set = Set<Int>.Ordered.Inline<8>()
         try set.insert(10)
         try set.insert(20)
@@ -497,8 +498,8 @@ struct OrderedSetTests {
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Inline: consume().forEach processes all elements")
-    func inlineConsumeForEachProcesses() throws {
+    @Test
+    func `Inline: consume().forEach processes all elements`() throws {
         var set = Set<Int>.Ordered.Inline<8>()
         try set.insert(1)
         try set.insert(2)
@@ -512,8 +513,8 @@ struct OrderedSetTests {
         #expect(sum == 6)
     }
 
-    @Test("Inline: consume() with manual iteration")
-    func inlineConsumeManualIteration() throws {
+    @Test
+    func `Inline: consume() with manual iteration`() throws {
         var set = Set<String>.Ordered.Inline<8>()
         try set.insert("a")
         try set.insert("b")
@@ -529,16 +530,16 @@ struct OrderedSetTests {
         #expect(result == ["a", "b"])
     }
 
-    @Test("Inline: consume() handles empty set")
-    func inlineConsumeEmpty() {
+    @Test
+    func `Inline: consume() handles empty set`() {
         let set = Set<Int>.Ordered.Inline<8>()
         var view = set.consume()
         let next = view.next()
         #expect(next == nil)
     }
 
-    @Test("Inline: consume() full capacity set")
-    func inlineConsumeFullCapacity() throws {
+    @Test
+    func `Inline: consume() full capacity set`() throws {
         var set = Set<Int>.Ordered.Inline<4>()
         try set.insert(1)
         try set.insert(2)
@@ -556,8 +557,8 @@ struct OrderedSetTests {
 
     // MARK: - Small Consuming Iteration
 
-    @Test("Small: consume().forEach yields all elements (inline mode)")
-    func smallConsumeForEachInline() {
+    @Test
+    func `Small: consume().forEach yields all elements (inline mode)`() {
         var set = Set<Int>.Ordered.Small<4>()
         set.insert(10)
         set.insert(20)
@@ -572,8 +573,8 @@ struct OrderedSetTests {
         #expect(result == [10, 20, 30])
     }
 
-    @Test("Small: consume().forEach yields all elements (heap mode)")
-    func smallConsumeForEachHeap() {
+    @Test
+    func `Small: consume().forEach yields all elements (heap mode)`() {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)
@@ -589,8 +590,8 @@ struct OrderedSetTests {
         #expect(result == [1, 2, 3, 4])
     }
 
-    @Test("Small: consume().forEach processes all elements")
-    func smallConsumeForEachProcesses() {
+    @Test
+    func `Small: consume().forEach processes all elements`() {
         var set = Set<Int>.Ordered.Small<4>()
         set.insert(1)
         set.insert(2)
@@ -604,8 +605,8 @@ struct OrderedSetTests {
         #expect(sum == 6)
     }
 
-    @Test("Small: consume() with manual iteration")
-    func smallConsumeManualIteration() {
+    @Test
+    func `Small: consume() with manual iteration`() {
         var set = Set<String>.Ordered.Small<4>()
         set.insert("a")
         set.insert("b")
@@ -621,16 +622,16 @@ struct OrderedSetTests {
         #expect(result == ["a", "b"])
     }
 
-    @Test("Small: consume() handles empty set")
-    func smallConsumeEmpty() {
+    @Test
+    func `Small: consume() handles empty set`() {
         let set = Set<Int>.Ordered.Small<4>()
         var view = set.consume()
         let next = view.next()
         #expect(next == nil)
     }
 
-    @Test("Small: consume() after spill to heap")
-    func smallConsumeAfterSpill() {
+    @Test
+    func `Small: consume() after spill to heap`() {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)
@@ -651,8 +652,8 @@ struct OrderedSetTests {
 
     // MARK: - Partial Consumption Tests (Double-Free Prevention)
 
-    @Test("Ordered: partial consumption cleans up remaining")
-    func orderedPartialConsumption() {
+    @Test
+    func `Ordered: partial consumption cleans up remaining`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -669,8 +670,8 @@ struct OrderedSetTests {
         // If double-free occurred, this would crash
     }
 
-    @Test("Bounded: partial consumption cleans up remaining")
-    func boundedPartialConsumption() throws {
+    @Test
+    func `Bounded: partial consumption cleans up remaining`() throws {
         var set = try Set<Int>.Ordered.Bounded(capacity: 10)
         try set.insert(1)
         try set.insert(2)
@@ -687,8 +688,8 @@ struct OrderedSetTests {
         // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
-    @Test("Inline: partial consumption cleans up remaining")
-    func inlinePartialConsumption() throws {
+    @Test
+    func `Inline: partial consumption cleans up remaining`() throws {
         var set = Set<Int>.Ordered.Inline<8>()
         try set.insert(1)
         try set.insert(2)
@@ -705,8 +706,8 @@ struct OrderedSetTests {
         // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
-    @Test("Small: partial consumption cleans up remaining (inline mode)")
-    func smallPartialConsumptionInline() {
+    @Test
+    func `Small: partial consumption cleans up remaining (inline mode)`() {
         var set = Set<Int>.Ordered.Small<8>()
         set.insert(1)
         set.insert(2)
@@ -724,8 +725,8 @@ struct OrderedSetTests {
         // View goes out of scope - State's deinit should clean up remaining 3 elements
     }
 
-    @Test("Small: partial consumption cleans up remaining (heap mode)")
-    func smallPartialConsumptionHeap() {
+    @Test
+    func `Small: partial consumption cleans up remaining (heap mode)`() {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)

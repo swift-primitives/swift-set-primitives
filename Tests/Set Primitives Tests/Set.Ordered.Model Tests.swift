@@ -11,6 +11,7 @@
 
 import Testing
 @testable import Set_Primitives
+import Set_Primitives_Test_Support
 
 // MARK: - Invariant Verification Helpers
 
@@ -22,7 +23,7 @@ func verifyInvariants<Element: Hashable>(
     line: UInt = #line
 ) {
     // Invariant 1: Count matches expected
-    let count = set.count
+    let count = Int(bitPattern: set.count)
     #expect(count == expectedElements.count, "Count mismatch: got \(count), expected \(expectedElements.count)", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
 
     // Invariant 2: isEmpty is consistent with count
@@ -31,13 +32,15 @@ func verifyInvariants<Element: Hashable>(
 
     // Invariant 3: Elements at indices match expected order
     for i in 0..<expectedElements.count {
-        #expect(set[i] == expectedElements[i], "Element at index \(i) mismatch", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+        let idx: Index<Element> = try! Index(i)
+        #expect(set[idx] == expectedElements[i], "Element at index \(i) mismatch", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
     }
 
     // Invariant 4: index() returns correct position for each element
     for (i, element) in expectedElements.enumerated() {
         let foundIndex = set.index(element)
-        #expect(foundIndex == i, "index(\(element)) returned \(String(describing: foundIndex)), expected \(i)", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+        let foundInt = foundIndex.map { Int(bitPattern: $0.position) }
+        #expect(foundInt == i, "index(\(element)) returned \(String(describing: foundInt)), expected \(i)", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
     }
 
     // Invariant 5: contains() returns true for all elements
@@ -108,8 +111,8 @@ struct OrderedSetModelTests {
 
     // MARK: - Random Operations with Invariant Verification
 
-    @Test("Random operations match model - 1000 iterations")
-    func randomOperationsMatchModel() {
+    @Test
+    func `Random operations match model - 1000 iterations`() {
         var rng = LCG(seed: 33333)
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
@@ -123,7 +126,7 @@ struct OrderedSetModelTests {
                 let orderedResult = orderedSet.insert(value)
                 let modelResult = model.insert(value)
                 #expect(orderedResult.inserted == modelResult.inserted, "Insert mismatch at iteration \(iteration)")
-                #expect(orderedResult.index == modelResult.index, "Insert index mismatch at iteration \(iteration)")
+                #expect(Int(bitPattern: orderedResult.index.position) == modelResult.index, "Insert index mismatch at iteration \(iteration)")
 
             case 1:  // remove
                 let orderedResult = orderedSet.remove(value)
@@ -136,7 +139,7 @@ struct OrderedSetModelTests {
                 #expect(orderedContains == modelContains, "Contains mismatch at iteration \(iteration)")
 
             case 3:  // index
-                let orderedIndex = orderedSet.index(value)
+                let orderedIndex = orderedSet.index(value).map { Int(bitPattern: $0.position) }
                 let modelIndex = model.index(value)
                 #expect(orderedIndex == modelIndex, "Index mismatch at iteration \(iteration)")
 
@@ -145,7 +148,7 @@ struct OrderedSetModelTests {
             }
 
             // Verify count invariant after each operation
-            let setCount = orderedSet.count
+            let setCount = Int(bitPattern: orderedSet.count)
             let modelCount = model.count
             #expect(setCount == modelCount, "Count mismatch after iteration \(iteration)")
 
@@ -161,8 +164,8 @@ struct OrderedSetModelTests {
 
     // MARK: - Order Preservation Invariants
 
-    @Test("Insertion order strictly preserved")
-    func insertionOrderPreserved() {
+    @Test
+    func `Insertion order strictly preserved`() {
         var rng = LCG(seed: 44444)
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
@@ -184,13 +187,13 @@ struct OrderedSetModelTests {
 
         // Verify index invariant for all elements
         for (i, element) in inserted.enumerated() {
-            let foundIndex = orderedSet.index(element)
+            let foundIndex = orderedSet.index(element).map { Int(bitPattern: $0.position) }
             #expect(foundIndex == i, "Index invariant violated for element \(element)")
         }
     }
 
-    @Test("Remove maintains order of remaining elements")
-    func removeMaintainsOrder() {
+    @Test
+    func `Remove maintains order of remaining elements`() {
         var rng = LCG(seed: 55555)
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
@@ -215,15 +218,15 @@ struct OrderedSetModelTests {
         for (idx, element) in array.enumerated() {
             let foundIndex = orderedSet.index(element)
             let modelIndex = model.index(element)
-            #expect(foundIndex == idx, "Set index invariant violated")
+            #expect(foundIndex.map { Int(bitPattern: $0.position) } == idx, "Set index invariant violated")
             #expect(modelIndex == idx, "Model index mismatch")
         }
     }
 
     // MARK: - Set Algebra Invariants
 
-    @Test("Algebra union matches model")
-    func algebraUnionMatchesModel() {
+    @Test
+    func `Algebra union matches model`() {
         var rng = LCG(seed: 66666)
 
         var setA = Set<Int>.Ordered()
@@ -248,15 +251,15 @@ struct OrderedSetModelTests {
             modelUnion.insert(element)
         }
 
-        let unionCount = union.count
+        let unionCount = Int(bitPattern: union.count)
         #expect(unionCount == modelUnion.count, "Union count mismatch")
 
         let unionArray = toArray(union)
         #expect(unionArray == modelUnion.elements, "Union elements mismatch")
     }
 
-    @Test("Algebra intersection matches model")
-    func algebraIntersectionMatchesModel() {
+    @Test
+    func `Algebra intersection matches model`() {
         var rng = LCG(seed: 77777)
 
         var setA = Set<Int>.Ordered()
@@ -277,8 +280,8 @@ struct OrderedSetModelTests {
         #expect(intersectionArray == modelIntersection, "Intersection mismatch")
     }
 
-    @Test("Algebra subtract matches model")
-    func algebraSubtractMatchesModel() {
+    @Test
+    func `Algebra subtract matches model`() {
         var rng = LCG(seed: 88888)
 
         var setA = Set<Int>.Ordered()
@@ -298,8 +301,8 @@ struct OrderedSetModelTests {
         #expect(differenceArray == modelDifference, "Subtract mismatch")
     }
 
-    @Test("Algebra symmetric difference matches model")
-    func algebraSymmetricDifferenceMatchesModel() {
+    @Test
+    func `Algebra symmetric difference matches model`() {
         var rng = LCG(seed: 99999)
 
         var setA = Set<Int>.Ordered()
@@ -325,8 +328,8 @@ struct OrderedSetModelTests {
 
     // MARK: - Index Access Invariants
 
-    @Test("Index access matches model")
-    func indexAccessMatchesModel() {
+    @Test
+    func `Index access matches model`() {
         var rng = LCG(seed: 10101)
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
@@ -339,21 +342,24 @@ struct OrderedSetModelTests {
 
         // Verify all indices
         let count = orderedSet.count
-        for i in 0..<count {
-            #expect(orderedSet[i] == model.elements[i], "Index \(i) mismatch")
+        let countInt = Int(bitPattern: count)
+        for i in 0..<countInt {
+            let idx: Index<Int> = try! Index(i)
+            #expect(orderedSet[idx] == model.elements[i], "Index \(i) mismatch")
         }
 
         // Random access verification
         for _ in 0..<100 {
-            let idx = rng.nextInt(count)
-            #expect(orderedSet[idx] == model.elements[idx], "Random access mismatch at \(idx)")
+            let i = rng.nextInt(countInt)
+            let idx: Index<Int> = try! Index(i)
+            #expect(orderedSet[idx] == model.elements[i], "Random access mismatch at \(i)")
         }
     }
 
     // MARK: - Heavy Operations
 
-    @Test("Heavy insert/remove cycles")
-    func heavyInsertRemoveCycles() {
+    @Test
+    func `Heavy insert/remove cycles`() {
         var rng = LCG(seed: 20202)
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
@@ -381,8 +387,8 @@ struct OrderedSetModelTests {
         }
     }
 
-    @Test("Large set operations")
-    func largeSetOperations() {
+    @Test
+    func `Large set operations`() {
         var setA = Set<Int>.Ordered()
         var setB = Set<Int>.Ordered()
 
@@ -413,8 +419,8 @@ struct OrderedSetModelTests {
 
     // MARK: - Edge Cases
 
-    @Test("Empty set operations")
-    func emptySetOperations() {
+    @Test
+    func `Empty set operations`() {
         let empty = Set<Int>.Ordered()
         var nonEmpty = Set<Int>.Ordered()
         nonEmpty.insert(1)
@@ -443,8 +449,8 @@ struct OrderedSetModelTests {
         #expect(subtractFromEmptyIsEmpty, "Subtract from empty should be empty")
     }
 
-    @Test("Single element set operations")
-    func singleElementSetOperations() {
+    @Test
+    func `Single element set operations`() {
         var set = Set<Int>.Ordered()
         set.insert(42)
 
@@ -466,8 +472,8 @@ struct OrderedSetModelTests {
         #expect(!contains42AfterRemove, "Should not contain 42 after remove")
     }
 
-    @Test("Duplicate insert behavior")
-    func duplicateInsertBehavior() {
+    @Test
+    func `Duplicate insert behavior`() {
         var orderedSet = Set<Int>.Ordered()
         var model = ArraySetModel<Int>()
 
@@ -491,8 +497,8 @@ struct OrderedSetModelTests {
 
     // MARK: - Hash.Protocol Invariants
 
-    @Test("Equal sets have equal hash values")
-    func equalSetsHaveEqualHashValues() {
+    @Test
+    func `Equal sets have equal hash values`() {
         var rng = LCG(seed: 12345)
 
         for _ in 0..<10 {
@@ -515,8 +521,8 @@ struct OrderedSetModelTests {
         }
     }
 
-    @Test("Different order produces different sets")
-    func differentOrderProducesDifferentSets() {
+    @Test
+    func `Different order produces different sets`() {
         var setA = Set<Int>.Ordered()
         setA.insert(1)
         setA.insert(2)

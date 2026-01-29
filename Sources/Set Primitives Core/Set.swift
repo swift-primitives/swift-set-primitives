@@ -23,13 +23,7 @@
 ///
 /// ## ~Copyable Support
 ///
-/// Unlike `Swift.Set`, this implementation supports `~Copyable` elements:
-///
-/// ```swift
-/// struct Token: ~Copyable, Hash.Protocol { ... }
-/// var set = Set<Token>.Ordered()
-/// set.insert(Token(1))  // consumes the token
-/// ```
+/// Unlike `Swift.Set`, this implementation supports `~Copyable` elements.
 ///
 /// ## Conditional Copyable
 ///
@@ -38,18 +32,161 @@
 /// semantics.
 ///
 /// Inline-storage variants (`Ordered.Inline`, `Ordered.Small`) are unconditionally
-/// `~Copyable` because they require a `deinit` for cleanup. This is a Swift type
-/// system limitation, not a design choice—structs with `deinit` cannot be
-/// conditionally `Copyable`.
-///
-/// ```swift
-/// // Copyable elements → Copyable container (for heap variants)
-/// let a = Set<String>.Ordered()
-/// let b = a  // Copy works - both share storage until mutation (CoW)
-///
-/// // ~Copyable elements → ~Copyable container (all variants)
-/// struct Token: ~Copyable, Hash.Protocol { ... }
-/// var set = Set<Token>.Ordered()
-/// let set2 = set  // Error: cannot copy ~Copyable value
-/// ```
-public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {}
+/// `~Copyable` because they require a `deinit` for cleanup.
+public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
+
+    // MARK: - Ordered (Dynamically-Growing, Heap-Allocated)
+
+    /// An ordered set that preserves insertion order with O(1) membership testing.
+    @safe
+    public struct Ordered {
+
+        // MARK: - Stored Properties
+
+        /// Element storage using the Storage primitive.
+        public var elementStorage: Storage<Element>
+
+        /// Hash table for O(1) position lookup.
+        public var hashTable: Hash.Table<Element>
+
+        // MARK: - Initialization
+
+        /// Creates an empty ordered set.
+        @inlinable
+        public init() {
+            self.elementStorage = Storage<Element>.create(minimumCapacity: .zero)
+            self.hashTable = Hash.Table<Element>(minimumCapacity: .zero)
+        }
+
+        // MARK: - Bounded (Fixed-Capacity, Heap-Allocated)
+
+        /// A fixed-capacity ordered set that throws on overflow.
+        @safe
+        public struct Bounded {
+            /// Element storage using the Storage primitive.
+            public var elementStorage: Storage<Element>
+
+            /// Hash table for O(1) position lookup.
+            public var hashTable: Hash.Table<Element>
+
+            /// The maximum number of elements the set can hold.
+            public let maximumCapacity: Index_Primitives.Index<Element>.Count
+
+            /// Creates a bounded ordered set with the specified capacity.
+            @inlinable
+            public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedBoundedError) {
+                self.elementStorage = Storage<Element>.create(minimumCapacity: capacity)
+                self.hashTable = Hash.Table<Element>(minimumCapacity: capacity)
+                self.maximumCapacity = capacity
+            }
+        }
+
+        // MARK: - Inline (Fixed-Capacity, Inline Storage)
+
+        /// A fixed-capacity, inline-storage ordered set with compile-time capacity.
+        public struct Inline<let capacity: Int>: ~Copyable {
+            @inlinable
+            public static var maxElementStride: Int { 64 }
+
+            public var elements: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+
+            public var storedCount: Int
+
+            public var _deinitWorkaround: AnyObject? = nil
+
+            /// Creates an empty inline ordered set.
+            @inlinable
+            public init() {
+                precondition(
+                    MemoryLayout<Element>.stride <= Self.maxElementStride,
+                    "Element stride exceeds inline storage slot size"
+                )
+                self.elements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+                self.storedCount = 0
+            }
+
+            deinit {
+                let count = storedCount
+                guard count > 0 else { return }
+
+                let stride = MemoryLayout<Element>.stride
+                unsafe Swift.withUnsafeBytes(of: elements) { bytes in
+                    let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
+                    for i in 0..<count {
+                        let elementPtr = unsafe (basePtr + i * stride)
+                            .assumingMemoryBound(to: Element.self)
+                        unsafe elementPtr.deinitialize(count: 1)
+                    }
+                }
+            }
+        }
+
+        // MARK: - Small (SmallVec Pattern)
+
+        /// An ordered set with small-buffer optimization (SmallVec pattern).
+        @safe
+        public struct Small<let inlineCapacity: Int>: ~Copyable {
+            @inlinable
+            public static var maxElementStride: Int { 64 }
+
+            public var inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+
+            public var storedCount: Int
+
+            public var heapStorage: Storage<Element>?
+
+            public var heapHashTable: Hash.Table<Element>?
+
+            public var _deinitWorkaround: AnyObject? = nil
+
+            /// Creates an empty small ordered set.
+            @inlinable
+            public init() {
+                precondition(
+                    MemoryLayout<Element>.stride <= Self.maxElementStride,
+                    "Element stride exceeds inline storage slot size"
+                )
+                self.inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
+                self.storedCount = 0
+                self.heapStorage = nil
+                self.heapHashTable = nil
+            }
+
+            deinit {
+                let count = storedCount
+                guard count > 0 else { return }
+
+                if heapStorage != nil {
+                    // Storage deinit handles cleanup via its count property
+                    heapStorage!.count = Index_Primitives.Index<Element>.Count(UInt(count))
+                } else {
+                    let stride = MemoryLayout<Element>.stride
+                    unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
+                        let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
+                        for i in 0..<count {
+                            let elementPtr = unsafe (basePtr + i * stride)
+                                .assumingMemoryBound(to: Element.self)
+                            unsafe elementPtr.deinitialize(count: 1)
+                        }
+                    }
+                }
+            }
+
+            /// Whether the set has spilled to heap storage.
+            @inlinable
+            public var isSpilled: Bool { heapStorage != nil }
+        }
+    }
+}
+
+// MARK: - Conditional Copyable
+
+extension Set.Ordered: Copyable where Element: Copyable {}
+extension Set.Ordered.Bounded: Copyable where Element: Copyable {}
+
+// MARK: - Sendable
+
+extension Set.Ordered: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Bounded: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Inline: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Small: @unchecked Sendable where Element: Sendable {}

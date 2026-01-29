@@ -9,17 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Set_Primitives_Core
 public import Index_Primitives
 
-extension Set {
-    /// Type-safe index for ordered set elements.
-    ///
-    /// Uses `Index<Element>` to provide compile-time safety preventing
-    /// cross-collection index confusion.
-    ///
-    /// ## Position Semantics
-    ///
-    /// Position 0 is the first element in insertion order.
-    /// Position `count - 1` is the most recently inserted element.
-    public typealias Index = Index_Primitives.Index<Element>
-}
+// Note: Set.Ordered now uses Index<Element> natively throughout its API.
+// Set<Element>.Index is a typealias for Index_Primitives.Index<Element>.
+// The subscript and element(at:) methods are defined in Set.Ordered Copyable.swift.

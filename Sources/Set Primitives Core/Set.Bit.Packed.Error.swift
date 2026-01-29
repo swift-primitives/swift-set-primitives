@@ -124,24 +124,12 @@ public enum __SetBitPackedSmallError: Swift.Error, Sendable, Equatable {
     }
 }
 
-// MARK: - Canonical Error Typealiases
+// MARK: - Canonical Error Typealias
 
 extension Set<Bit>.Packed {
     /// Errors that can occur during packed bit set operations.
     public typealias Error = __SetBitPackedError
 }
 
-extension Set<Bit>.Packed.Bounded {
-    /// Errors that can occur during bounded packed bit set operations.
-    public typealias Error = __SetBitPackedBoundedError
-}
-
-extension Set<Bit>.Packed.Inline {
-    /// Errors that can occur during inline packed bit set operations.
-    public typealias Error = __SetBitPackedInlineError
-}
-
-extension Set<Bit>.Packed.Small {
-    /// Errors that can occur during small packed bit set operations.
-    public typealias Error = __SetBitPackedSmallError
-}
+// Note: Error typealiases for Bounded, Inline, Small are in Set Bit Packed Primitives
+// module since those types are declared there.
