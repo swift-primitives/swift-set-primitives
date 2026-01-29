@@ -69,15 +69,6 @@ let package = Package(
                 .product(name: "Ordinal Primitives", package: "swift-ordinal-primitives"),
             ]
         ),
-        // Internal: Sequence/Collection.Protocol conformances (Element: Copyable)
-        // Separate module to avoid constraint poisoning on Core types
-        .target(
-            name: "Set Primitives Sequence",
-            dependencies: [
-                "Set Primitives Core",
-                .product(name: "Collection Primitives", package: "swift-collection-primitives"),
-            ]
-        ),
         // Public: Re-exports all modules for users
         .target(
             name: "Set Primitives",
