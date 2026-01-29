@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Algebra Accessor
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector {
     /// Nested accessor for set algebra operations.
     ///
     /// ```swift
@@ -25,13 +25,13 @@ extension Set<Bit>.Packed.Bounded {
     /// ```
     @inlinable
     public var algebra: Algebra {
-        Algebra(storage: storage, capacity: capacity)
+        Algebra(storage: storage, capacity: storedCapacity)
     }
 }
 
 // MARK: - Algebra Type
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector {
     /// Namespace for set algebra operations.
     public struct Algebra: Sendable {
         @usableFromInline
@@ -48,55 +48,82 @@ extension Set<Bit>.Packed.Bounded {
             self.storage = storage
             self.capacity = capacity
         }
+
+        @usableFromInline
+        var wordCount: Int { storage.count }
     }
 }
 
 // MARK: - Algebra Operations
 
-extension Set<Bit>.Packed.Bounded.Algebra {
+extension Set<Bit>.Vector.Algebra {
     /// Returns a new set with elements from both sets.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The set to form a union with.
     /// - Returns: A new set containing all elements from both sets.
+    /// - Complexity: O(n) where n is the number of words.
     @inlinable
-    public func union(_ other: Set<Bit>.Packed.Bounded) -> Set<Bit>.Packed.Bounded {
-        precondition(capacity == other.capacity, "Capacities must match")
+    public func union(_ other: Set<Bit>.Vector) -> Set<Bit>.Vector {
         var resultStorage = storage
-        for i in 0..<resultStorage.count {
+        var resultCapacity = capacity
+
+        if other.storedCapacity > capacity {
+            let newCapacity = other.storedCapacity
+            let newWordCount = (newCapacity + Self.bitsPerWord - 1) / Self.bitsPerWord
+            let oldWordCount = resultStorage.count
+
+            if newWordCount > oldWordCount {
+                resultStorage.reserveCapacity(newWordCount)
+                for _ in oldWordCount..<newWordCount {
+                    resultStorage.append(0)
+                }
+            }
+            resultCapacity = newCapacity
+        }
+
+        let minWords = Swift.min(resultStorage.count, other.storage.count)
+        for i in 0..<minWords {
             resultStorage[i] |= other.storage[i]
         }
-        return Set<Bit>.Packed.Bounded(__storage: resultStorage, capacity: capacity)
+
+        return Set<Bit>.Vector(__storage: resultStorage, capacity: resultCapacity)
     }
 
     /// Returns a new set with elements common to both sets.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The set to intersect with.
     /// - Returns: A new set containing only elements present in both sets.
+    /// - Complexity: O(n) where n is the number of words.
     @inlinable
-    public func intersection(_ other: Set<Bit>.Packed.Bounded) -> Set<Bit>.Packed.Bounded {
-        precondition(capacity == other.capacity, "Capacities must match")
+    public func intersection(_ other: Set<Bit>.Vector) -> Set<Bit>.Vector {
         var resultStorage = storage
-        for i in 0..<resultStorage.count {
+
+        let minWords = Swift.min(resultStorage.count, other.storage.count)
+        for i in 0..<minWords {
             resultStorage[i] &= other.storage[i]
         }
-        return Set<Bit>.Packed.Bounded(__storage: resultStorage, capacity: capacity)
+        for i in minWords..<resultStorage.count {
+            resultStorage[i] = 0
+        }
+
+        return Set<Bit>.Vector(__storage: resultStorage, capacity: capacity)
     }
 
     /// Returns a new set with elements in self but not in other.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The set to subtract.
     /// - Returns: A new set with elements not in other.
+    /// - Complexity: O(n) where n is the number of words.
     @inlinable
-    public func subtract(_ other: Set<Bit>.Packed.Bounded) -> Set<Bit>.Packed.Bounded {
-        precondition(capacity == other.capacity, "Capacities must match")
+    public func subtract(_ other: Set<Bit>.Vector) -> Set<Bit>.Vector {
         var resultStorage = storage
-        for i in 0..<resultStorage.count {
+
+        let minWords = Swift.min(resultStorage.count, other.storage.count)
+        for i in 0..<minWords {
             resultStorage[i] &= ~other.storage[i]
         }
-        return Set<Bit>.Packed.Bounded(__storage: resultStorage, capacity: capacity)
+
+        return Set<Bit>.Vector(__storage: resultStorage, capacity: capacity)
     }
 
     /// Nested accessor for symmetric operations.
@@ -108,12 +135,12 @@ extension Set<Bit>.Packed.Bounded.Algebra {
 
 // MARK: - Mutating Algebra Operations
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector {
     /// Applies an algebra operation and replaces self with the result.
     ///
     /// - Parameter operation: A closure that takes the algebra accessor and returns a new set.
     @inlinable
-    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Packed.Bounded) {
+    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Vector) {
         self = operation(algebra)
     }
 }

@@ -13,14 +13,14 @@ import Testing
 @testable import Set_Primitives
 import Set_Primitives_Test_Support
 
-@Suite("Set<Bit>.Packed")
-struct SetBitPackedTests {
+@Suite("Set<Bit>.Vector")
+struct SetBitVectorTests {
 
     // MARK: - Basic Operations
 
     @Test
     func `Insert and contains`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
 
         #expect(try set.insert(0) == true)
         #expect(try set.insert(1) == true)
@@ -41,7 +41,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Insert returns false for existing`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
 
         #expect(try set.insert(42) == true)
         #expect(try set.insert(42) == false)
@@ -49,7 +49,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Remove`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
@@ -64,7 +64,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Negative element not contained`() {
-        let set = Set<Bit>.Packed()
+        let set = Set<Bit>.Vector()
         // Negative indices are invalid - they would throw on construction
         // Testing that the set doesn't crash on boundary checks
         #expect(set.isEmpty)
@@ -74,7 +74,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Word boundary: 63 and 64`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(63)
         try set.insert(64)
 
@@ -86,7 +86,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Word boundary: 127 and 128`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(127)
         try set.insert(128)
 
@@ -98,7 +98,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Large elements`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(1000)
         try set.insert(10000)
         try set.insert(100000)
@@ -113,7 +113,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Count`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         #expect(set.isEmpty)
 
         try set.insert(0)
@@ -131,7 +131,7 @@ struct SetBitPackedTests {
 
     @Test
     func `isEmpty`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         #expect(set.isEmpty)
 
         try set.insert(42)
@@ -143,7 +143,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Min and max`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         #expect(set.min == nil)
         #expect(set.max == nil)
 
@@ -164,7 +164,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Clear`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
@@ -178,7 +178,7 @@ struct SetBitPackedTests {
     @Test
     func `Init from sequence`() {
         let indices: [Bit.Index] = [1, 2, 3, 64, 65, 66]
-        let set = Set<Bit>.Packed(indices)
+        let set = Set<Bit>.Vector(indices)
 
         #expect(set.count == 6)
         #expect(set.contains(1))
@@ -192,7 +192,7 @@ struct SetBitPackedTests {
     @Test
     func `Init with duplicates`() {
         let indices: [Bit.Index] = [1, 2, 1, 3, 2, 1]
-        let set = Set<Bit>.Packed(indices)
+        let set = Set<Bit>.Vector(indices)
         #expect(set.count == 3)
     }
 
@@ -200,7 +200,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Iteration order`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(100)
         try set.insert(10)
         try set.insert(50)
@@ -213,7 +213,7 @@ struct SetBitPackedTests {
 
     @Test
     func `Iteration across word boundaries`() throws {
-        var set = Set<Bit>.Packed()
+        var set = Set<Bit>.Vector()
         try set.insert(0)
         try set.insert(63)
         try set.insert(64)
@@ -229,8 +229,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Union`() {
-        let a = Set<Bit>.Packed([1, 2, 3])
-        let b = Set<Bit>.Packed([3, 4, 5])
+        let a = Set<Bit>.Vector([1, 2, 3])
+        let b = Set<Bit>.Vector([3, 4, 5])
 
         let result = a.algebra.union(b)
 
@@ -244,8 +244,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Intersection`() {
-        let a = Set<Bit>.Packed([1, 2, 3, 4])
-        let b = Set<Bit>.Packed([3, 4, 5, 6])
+        let a = Set<Bit>.Vector([1, 2, 3, 4])
+        let b = Set<Bit>.Vector([3, 4, 5, 6])
 
         let result = a.algebra.intersection(b)
 
@@ -258,8 +258,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Subtracting`() {
-        let a = Set<Bit>.Packed([1, 2, 3, 4, 5])
-        let b = Set<Bit>.Packed([2, 4])
+        let a = Set<Bit>.Vector([1, 2, 3, 4, 5])
+        let b = Set<Bit>.Vector([2, 4])
 
         let result = a.algebra.subtract(b)
 
@@ -273,8 +273,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Symmetric difference`() {
-        let a = Set<Bit>.Packed([1, 2, 3])
-        let b = Set<Bit>.Packed([2, 3, 4])
+        let a = Set<Bit>.Vector([1, 2, 3])
+        let b = Set<Bit>.Vector([2, 3, 4])
 
         let result = a.algebra.symmetric.difference(b)
 
@@ -287,8 +287,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Union across word boundaries`() {
-        let a = Set<Bit>.Packed([0, 63])
-        let b = Set<Bit>.Packed([64, 127])
+        let a = Set<Bit>.Vector([0, 63])
+        let b = Set<Bit>.Vector([64, 127])
 
         let result = a.algebra.union(b)
 
@@ -303,9 +303,9 @@ struct SetBitPackedTests {
 
     @Test
     func `isSubset`() {
-        let small = Set<Bit>.Packed([1, 2, 3])
-        let large = Set<Bit>.Packed([1, 2, 3, 4, 5])
-        let disjoint = Set<Bit>.Packed([10, 11, 12])
+        let small = Set<Bit>.Vector([1, 2, 3])
+        let large = Set<Bit>.Vector([1, 2, 3, 4, 5])
+        let disjoint = Set<Bit>.Vector([10, 11, 12])
 
         #expect(small.relation.isSubset(of: large))
         #expect(!large.relation.isSubset(of: small))
@@ -315,8 +315,8 @@ struct SetBitPackedTests {
 
     @Test
     func `isSuperset`() {
-        let small = Set<Bit>.Packed([1, 2, 3])
-        let large = Set<Bit>.Packed([1, 2, 3, 4, 5])
+        let small = Set<Bit>.Vector([1, 2, 3])
+        let large = Set<Bit>.Vector([1, 2, 3, 4, 5])
 
         #expect(large.relation.isSuperset(of: small))
         #expect(!small.relation.isSuperset(of: large))
@@ -325,9 +325,9 @@ struct SetBitPackedTests {
 
     @Test
     func `isDisjoint`() {
-        let a = Set<Bit>.Packed([1, 2, 3])
-        let b = Set<Bit>.Packed([4, 5, 6])
-        let c = Set<Bit>.Packed([3, 4, 5])
+        let a = Set<Bit>.Vector([1, 2, 3])
+        let b = Set<Bit>.Vector([4, 5, 6])
+        let c = Set<Bit>.Vector([3, 4, 5])
 
         #expect(a.relation.isDisjoint(with: b))
         #expect(!a.relation.isDisjoint(with: c))
@@ -337,9 +337,9 @@ struct SetBitPackedTests {
 
     @Test
     func `Equality`() {
-        let a = Set<Bit>.Packed([1, 2, 3])
-        let b = Set<Bit>.Packed([1, 2, 3])
-        let c = Set<Bit>.Packed([1, 2, 4])
+        let a = Set<Bit>.Vector([1, 2, 3])
+        let b = Set<Bit>.Vector([1, 2, 3])
+        let c = Set<Bit>.Vector([1, 2, 4])
 
         #expect(a == b)
         #expect(a != c)
@@ -347,8 +347,8 @@ struct SetBitPackedTests {
 
     @Test
     func `Empty sets equal`() {
-        let a = Set<Bit>.Packed()
-        let b = Set<Bit>.Packed()
+        let a = Set<Bit>.Vector()
+        let b = Set<Bit>.Vector()
         #expect(a == b)
     }
 
@@ -356,9 +356,9 @@ struct SetBitPackedTests {
 
     @Test
     func `Description`() {
-        let set = Set<Bit>.Packed([1, 2, 3])
+        let set = Set<Bit>.Vector([1, 2, 3])
         let desc = set.description
-        #expect(desc.contains("Set<Bit>.Packed"))
+        #expect(desc.contains("Set<Bit>.Vector"))
         #expect(desc.contains("1"))
         #expect(desc.contains("2"))
         #expect(desc.contains("3"))

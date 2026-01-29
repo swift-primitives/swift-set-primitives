@@ -12,15 +12,15 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-// MARK: - Set<Bit>.Packed.Bounded
+// MARK: - Set<Bit>.Vector.Fixed
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// Fixed-capacity packed bit set.
     ///
-    /// `Set<Bit>.Packed.Bounded` allocates storage upfront and throws on overflow.
+    /// `Set<Bit>.Vector.Fixed` allocates storage upfront and throws on overflow.
     /// Use this variant when capacity is known or in contexts requiring
     /// predictable memory behavior.
-    public struct Bounded: Sendable {
+    public struct Fixed: Sendable {
         @usableFromInline
         static var bitsPerWord: Int { UInt.bitWidth }
 
@@ -30,7 +30,7 @@ extension Set<Bit>.Packed {
         public let capacity: Int
 
         @inlinable
-        public init(capacity: Int) throws(__SetBitPackedBoundedError) {
+        public init(capacity: Int) throws(__SetBitVectorFixedError) {
             guard capacity >= 0 else {
                 throw .invalidCapacity(.init())
             }
@@ -50,7 +50,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Properties
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector.Fixed {
     @inlinable
     public var count: Int {
         var total = 0
@@ -71,7 +71,7 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Membership
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector.Fixed {
     /// Returns whether the set contains the given bit index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
@@ -91,18 +91,18 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Mutation
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector.Fixed {
     /// Inserts a bit index into the set.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitVectorFixedError) -> Bool {
         try insert(Int(bitPattern: index.position))
     }
 
     /// Inserts an integer index into the set.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
+    public mutating func insert(_ index: Int) throws(__SetBitVectorFixedError) -> Bool {
         guard index >= 0 && index < capacity else {
             if index >= capacity {
                 throw .overflow(.init())
@@ -120,14 +120,14 @@ extension Set<Bit>.Packed.Bounded {
     /// Removes a bit index from the set.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedBoundedError) -> Bool {
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitVectorFixedError) -> Bool {
         try remove(Int(bitPattern: index.position))
     }
 
     /// Removes an integer index from the set.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__SetBitPackedBoundedError) -> Bool {
+    public mutating func remove(_ index: Int) throws(__SetBitVectorFixedError) -> Bool {
         guard index >= 0 && index < capacity else {
             throw .bounds(.init(index: index, capacity: capacity))
         }
@@ -150,7 +150,7 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Iteration
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector.Fixed {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for (wordIndex, var word) in storage.enumerated() {
@@ -168,7 +168,7 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Packed.Bounded: Equatable {
+extension Set<Bit>.Vector.Fixed: Equatable {
     /// Explicit implementation to avoid compiler crash in synthesized __derived_struct_equals.
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -178,7 +178,7 @@ extension Set<Bit>.Packed.Bounded: Equatable {
 
 // MARK: - Hashable
 
-extension Set<Bit>.Packed.Bounded: Hashable {
+extension Set<Bit>.Vector.Fixed: Hashable {
     /// Explicit implementation to match explicit Equatable.
     @inlinable
     public func hash(into hasher: inout Hasher) {

@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Relation Accessor
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Nested accessor for set relation operations.
     ///
     /// ```swift
@@ -34,7 +34,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Relation Type
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Namespace for set relation operations.
     public struct Relation: Sendable {
         @usableFromInline
@@ -79,13 +79,13 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Relation Operations
 
-extension Set<Bit>.Packed.Small.Relation {
+extension Set<Bit>.Vector.Small.Relation {
     /// Returns whether this set is a subset of another.
     ///
     /// - Parameter other: The potential superset.
     /// - Returns: `true` if every element in this set is also in `other`.
     @inlinable
-    public func isSubset(of other: Set<Bit>.Packed.Small<inlineWordCount>) -> Bool {
+    public func isSubset(of other: Set<Bit>.Vector.Small<inlineWordCount>) -> Bool {
         let selfWordCount = wordCount
         let otherWordCount = other.wordCount
 
@@ -114,8 +114,8 @@ extension Set<Bit>.Packed.Small.Relation {
     /// - Parameter other: The potential subset.
     /// - Returns: `true` if every element in `other` is also in this set.
     @inlinable
-    public func isSuperset(of other: Set<Bit>.Packed.Small<inlineWordCount>) -> Bool {
-        other.relation.isSubset(of: Set<Bit>.Packed.Small<inlineWordCount>(
+    public func isSuperset(of other: Set<Bit>.Vector.Small<inlineWordCount>) -> Bool {
+        other.relation.isSubset(of: Set<Bit>.Vector.Small<inlineWordCount>(
             __inlineStorage: inlineStorage,
             heapStorage: heapStorage,
             storedCapacity: storedCapacity
@@ -127,7 +127,7 @@ extension Set<Bit>.Packed.Small.Relation {
     /// - Parameter other: The other set.
     /// - Returns: `true` if the sets have no elements in common.
     @inlinable
-    public func isDisjoint(with other: Set<Bit>.Packed.Small<inlineWordCount>) -> Bool {
+    public func isDisjoint(with other: Set<Bit>.Vector.Small<inlineWordCount>) -> Bool {
         let minWordCount = Swift.min(wordCount, other.wordCount)
 
         for i in 0..<minWordCount {

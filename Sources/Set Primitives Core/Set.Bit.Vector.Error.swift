@@ -14,10 +14,10 @@ public import Bit_Primitives
 // MARK: - Hoisted Error Types
 //
 // Error types are hoisted to module level for typed throws compatibility.
-// Use the typealias (e.g., `Set<Bit>.Packed.Error`) in your code.
+// Use the typealias (e.g., `Set<Bit>.Vector.Error`) in your code.
 
-/// Errors that can occur during `Set<Bit>.Packed` operations.
-public enum __SetBitPackedError: Swift.Error, Sendable, Equatable {
+/// Errors that can occur during `Set<Bit>.Vector` operations.
+public enum __SetBitVectorError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)
 
@@ -43,8 +43,8 @@ public enum __SetBitPackedError: Swift.Error, Sendable, Equatable {
     }
 }
 
-/// Errors that can occur during `Set<Bit>.Packed.Bounded` operations.
-public enum __SetBitPackedBoundedError: Swift.Error, Sendable, Equatable {
+/// Errors that can occur during `Set<Bit>.Vector.Fixed` operations.
+public enum __SetBitVectorFixedError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)
 
@@ -79,8 +79,8 @@ public enum __SetBitPackedBoundedError: Swift.Error, Sendable, Equatable {
     }
 }
 
-/// Errors that can occur during `Set<Bit>.Packed.Inline` operations.
-public enum __SetBitPackedInlineError: Swift.Error, Sendable, Equatable {
+/// Errors that can occur during `Set<Bit>.Vector.Inline` operations.
+public enum __SetBitVectorInlineError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)
 
@@ -106,8 +106,8 @@ public enum __SetBitPackedInlineError: Swift.Error, Sendable, Equatable {
     }
 }
 
-/// Errors that can occur during `Set<Bit>.Packed.Small` operations.
-public enum __SetBitPackedSmallError: Swift.Error, Sendable, Equatable {
+/// Errors that can occur during `Set<Bit>.Vector.Small` operations.
+public enum __SetBitVectorSmallError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)
 
@@ -126,10 +126,10 @@ public enum __SetBitPackedSmallError: Swift.Error, Sendable, Equatable {
 
 // MARK: - Canonical Error Typealias
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// Errors that can occur during packed bit set operations.
-    public typealias Error = __SetBitPackedError
+    public typealias Error = __SetBitVectorError
 }
 
-// Note: Error typealiases for Bounded, Inline, Small are in Set Bit Packed Primitives
+// Note: Error typealiases for Fixed, Inline, Small are in Set Bit Vector Primitives
 // module since those types are declared there.

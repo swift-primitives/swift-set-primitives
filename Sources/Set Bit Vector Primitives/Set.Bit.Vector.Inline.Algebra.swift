@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Algebra Accessor
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Nested accessor for set algebra operations.
     ///
     /// ```swift
@@ -31,7 +31,7 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Algebra Type
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Namespace for set algebra operations.
     public struct Algebra: Sendable {
         @usableFromInline
@@ -49,18 +49,18 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Algebra Operations
 
-extension Set<Bit>.Packed.Inline.Algebra {
+extension Set<Bit>.Vector.Inline.Algebra {
     /// Returns a new set with elements from both sets.
     ///
     /// - Parameter other: The set to form a union with.
     /// - Returns: A new set containing all elements from both sets.
     @inlinable
-    public func union(_ other: Set<Bit>.Packed.Inline<wordCount>) -> Set<Bit>.Packed.Inline<wordCount> {
+    public func union(_ other: Set<Bit>.Vector.Inline<wordCount>) -> Set<Bit>.Vector.Inline<wordCount> {
         var resultStorage = storage
         for i in 0..<wordCount {
             resultStorage[i] |= other.storage[i]
         }
-        return Set<Bit>.Packed.Inline<wordCount>(__storage: resultStorage)
+        return Set<Bit>.Vector.Inline<wordCount>(__storage: resultStorage)
     }
 
     /// Returns a new set with elements common to both sets.
@@ -68,12 +68,12 @@ extension Set<Bit>.Packed.Inline.Algebra {
     /// - Parameter other: The set to intersect with.
     /// - Returns: A new set containing only elements present in both sets.
     @inlinable
-    public func intersection(_ other: Set<Bit>.Packed.Inline<wordCount>) -> Set<Bit>.Packed.Inline<wordCount> {
+    public func intersection(_ other: Set<Bit>.Vector.Inline<wordCount>) -> Set<Bit>.Vector.Inline<wordCount> {
         var resultStorage = storage
         for i in 0..<wordCount {
             resultStorage[i] &= other.storage[i]
         }
-        return Set<Bit>.Packed.Inline<wordCount>(__storage: resultStorage)
+        return Set<Bit>.Vector.Inline<wordCount>(__storage: resultStorage)
     }
 
     /// Returns a new set with elements in self but not in other.
@@ -81,12 +81,12 @@ extension Set<Bit>.Packed.Inline.Algebra {
     /// - Parameter other: The set to subtract.
     /// - Returns: A new set with elements not in other.
     @inlinable
-    public func subtract(_ other: Set<Bit>.Packed.Inline<wordCount>) -> Set<Bit>.Packed.Inline<wordCount> {
+    public func subtract(_ other: Set<Bit>.Vector.Inline<wordCount>) -> Set<Bit>.Vector.Inline<wordCount> {
         var resultStorage = storage
         for i in 0..<wordCount {
             resultStorage[i] &= ~other.storage[i]
         }
-        return Set<Bit>.Packed.Inline<wordCount>(__storage: resultStorage)
+        return Set<Bit>.Vector.Inline<wordCount>(__storage: resultStorage)
     }
 
     /// Nested accessor for symmetric operations.
@@ -98,12 +98,12 @@ extension Set<Bit>.Packed.Inline.Algebra {
 
 // MARK: - Mutating Algebra Operations
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Applies an algebra operation and replaces self with the result.
     ///
     /// - Parameter operation: A closure that takes the algebra accessor and returns a new set.
     @inlinable
-    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Packed.Inline<wordCount>) {
+    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Vector.Inline<wordCount>) {
         self = operation(algebra)
     }
 }

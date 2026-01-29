@@ -13,8 +13,8 @@ import Testing
 @testable import Set_Primitives
 import Set_Primitives_Test_Support
 
-@Suite("Set<Bit>.Packed - Model Tests")
-struct SetBitPackedModelTests {
+@Suite("Set<Bit>.Vector - Model Tests")
+struct SetBitVectorModelTests {
 
     /// Linear congruential generator for deterministic randomness.
     struct LCG {
@@ -36,7 +36,7 @@ struct SetBitPackedModelTests {
     @Test
     func `Random operations match Swift.Set model`() throws {
         var rng = LCG(seed: 12345)
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
         var model = SetModel()
 
         for _ in 0..<1000 {
@@ -78,7 +78,7 @@ struct SetBitPackedModelTests {
 
     @Test
     func `Word boundary operations match model`() throws {
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
         var model = SetModel()
 
         // Test around word boundaries (0, 63, 64, 127, 128)
@@ -114,8 +114,8 @@ struct SetBitPackedModelTests {
     func `Union matches model`() throws {
         var rng = LCG(seed: 23456)
 
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -142,8 +142,8 @@ struct SetBitPackedModelTests {
     func `Intersection matches model`() throws {
         var rng = LCG(seed: 34567)
 
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -170,8 +170,8 @@ struct SetBitPackedModelTests {
     func `Subtracting matches model`() throws {
         var rng = LCG(seed: 45678)
 
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -198,8 +198,8 @@ struct SetBitPackedModelTests {
     func `Symmetric difference matches model`() throws {
         var rng = LCG(seed: 56789)
 
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -224,8 +224,8 @@ struct SetBitPackedModelTests {
 
     @Test
     func `isSubset matches model`() throws {
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -250,8 +250,8 @@ struct SetBitPackedModelTests {
 
     @Test
     func `isSuperset matches model`() throws {
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -270,8 +270,8 @@ struct SetBitPackedModelTests {
 
     @Test
     func `isDisjoint matches model`() throws {
-        var bitSetA = Set<Bit>.Packed()
-        var bitSetB = Set<Bit>.Packed()
+        var bitSetA = Set<Bit>.Vector()
+        var bitSetB = Set<Bit>.Vector()
         var modelA = SetModel()
         var modelB = SetModel()
 
@@ -296,7 +296,7 @@ struct SetBitPackedModelTests {
     @Test
     func `Min and max match model`() throws {
         var rng = LCG(seed: 67890)
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
         var model = SetModel()
 
         for _ in 0..<100 {
@@ -312,7 +312,7 @@ struct SetBitPackedModelTests {
     @Test
     func `Iteration produces sorted elements`() throws {
         var rng = LCG(seed: 78901)
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
 
         for _ in 0..<100 {
             try bitSet.insert(Bit.Index(Int(rng.next() % 500)))
@@ -330,7 +330,7 @@ struct SetBitPackedModelTests {
     @Test
     func `Large sparse set matches model`() throws {
         var rng = LCG(seed: 89012)
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
         var model = SetModel()
 
         // Insert sparse values across a wide range
@@ -368,7 +368,7 @@ struct SetBitPackedModelTests {
     @Test
     func `Heavy insert/remove cycles`() throws {
         var rng = LCG(seed: 90123)
-        var bitSet = Set<Bit>.Packed()
+        var bitSet = Set<Bit>.Vector()
         var model = SetModel()
 
         for cycle in 0..<10 {

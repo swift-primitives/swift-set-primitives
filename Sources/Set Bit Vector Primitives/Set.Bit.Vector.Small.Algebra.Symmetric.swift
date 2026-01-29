@@ -12,7 +12,7 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-extension Set<Bit>.Packed.Small.Algebra {
+extension Set<Bit>.Vector.Small.Algebra {
     /// Namespace for symmetric set operations.
     public struct Symmetric: Sendable {
         @usableFromInline
@@ -60,17 +60,17 @@ extension Set<Bit>.Packed.Small.Algebra {
 
 // MARK: - Symmetric Operations
 
-extension Set<Bit>.Packed.Small.Algebra.Symmetric {
+extension Set<Bit>.Vector.Small.Algebra.Symmetric {
     /// Returns a new set with elements in either set, but not both.
     ///
     /// - Parameter other: The other set.
     /// - Returns: A new set with elements in exactly one of the sets.
     @inlinable
-    public func difference(_ other: Set<Bit>.Packed.Small<inlineWordCount>) -> Set<Bit>.Packed.Small<inlineWordCount> {
-        var result = Set<Bit>.Packed.Small<inlineWordCount>()
+    public func difference(_ other: Set<Bit>.Vector.Small<inlineWordCount>) -> Set<Bit>.Vector.Small<inlineWordCount> {
+        var result = Set<Bit>.Vector.Small<inlineWordCount>()
 
         let maxCapacity = Swift.max(storedCapacity, other.storedCapacity)
-        if maxCapacity > Set<Bit>.Packed.Small<inlineWordCount>.inlineCapacity {
+        if maxCapacity > Set<Bit>.Vector.Small<inlineWordCount>.inlineCapacity {
             result.spillToHeap(toInclude: maxCapacity - 1)
         }
 

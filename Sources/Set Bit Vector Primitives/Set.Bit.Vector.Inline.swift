@@ -12,12 +12,12 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-// MARK: - Set<Bit>.Packed.Inline
+// MARK: - Set<Bit>.Vector.Inline
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// Fixed-capacity packed bit set with inline storage.
     ///
-    /// `Set<Bit>.Packed.Inline` uses zero-allocation inline storage with compile-time
+    /// `Set<Bit>.Vector.Inline` uses zero-allocation inline storage with compile-time
     /// capacity. Ideal for small bit sets where heap allocation is unnecessary.
     public struct Inline<let wordCount: Int>: Sendable {
         @usableFromInline
@@ -44,7 +44,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Properties
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     @inlinable
     public var capacity: Int { Self.capacity }
 
@@ -68,7 +68,7 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Membership
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Returns whether the set contains the given bit index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
@@ -88,18 +88,18 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Mutation
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Inserts a bit index into the set.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedInlineError) -> Bool {
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitVectorInlineError) -> Bool {
         try insert(Int(bitPattern: index.position))
     }
 
     /// Inserts an integer index into the set.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
+    public mutating func insert(_ index: Int) throws(__SetBitVectorInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
             if index >= Self.capacity {
                 throw .overflow(.init())
@@ -117,14 +117,14 @@ extension Set<Bit>.Packed.Inline {
     /// Removes a bit index from the set.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedInlineError) -> Bool {
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitVectorInlineError) -> Bool {
         try remove(Int(bitPattern: index.position))
     }
 
     /// Removes an integer index from the set.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__SetBitPackedInlineError) -> Bool {
+    public mutating func remove(_ index: Int) throws(__SetBitVectorInlineError) -> Bool {
         guard index >= 0 && index < Self.capacity else {
             throw .bounds(.init(index: index, capacity: Self.capacity))
         }
@@ -147,7 +147,7 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Iteration
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for wordIndex in 0..<wordCount {
@@ -164,7 +164,7 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Packed.Inline: Equatable {
+extension Set<Bit>.Vector.Inline: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         for i in 0..<wordCount {
@@ -176,7 +176,7 @@ extension Set<Bit>.Packed.Inline: Equatable {
 
 // MARK: - Hashable
 
-extension Set<Bit>.Packed.Inline: Hashable {
+extension Set<Bit>.Vector.Inline: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         for i in 0..<wordCount {

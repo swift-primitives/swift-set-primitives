@@ -30,7 +30,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// var storage = try Set<Payload>.Ordered.Bounded(capacity: Index<Payload>.Count(10))
     /// try storage.insert(payload)
     ///
-    /// var indexed = Set<Payload>.Ordered.Bounded.Indexed<NodeTag>(storage)
+    /// var indexed = Set.Ordered.Bounded.Indexed<NodeTag>(storage)
     /// let node: Index<NodeTag> = .zero
     /// indexed[node]  // Access via typed index
     /// guard node < indexed.count else { return }  // Typed bounds check
@@ -44,7 +44,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// enum GraphA {}
     /// enum GraphB {}
     ///
-    /// var storageA: Set<String>.Ordered.Bounded.Indexed<GraphA> = ...
+    /// var storageA: Set.Ordered.Bounded.Indexed<GraphA> = ...
     /// let nodeB: Index<GraphB> = .zero
     /// // storageA[nodeB]  // Compile error: cannot convert Index<GraphB> to Index<GraphA>
     /// ```

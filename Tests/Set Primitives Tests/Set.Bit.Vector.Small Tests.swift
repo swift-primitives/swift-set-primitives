@@ -13,23 +13,23 @@ import Testing
 @testable import Set_Primitives
 import Set_Primitives_Test_Support
 
-@Suite("Set<Bit>.Packed.Small")
-struct SetBitPackedSmallTests {
+@Suite("Set<Bit>.Vector.Small")
+struct SetBitVectorSmallTests {
 
     // MARK: - Basic Operations
 
     @Test
     func `Init creates inline storage`() {
-        let set = Set<Bit>.Packed.Small<2>()
+        let set = Set<Bit>.Vector.Small<2>()
         #expect(!set.isSpilled)
         #expect(set.isEmpty)
         #expect(set.count == 0)
-        #expect(Set<Bit>.Packed.Small<2>.inlineCapacity == 128)
+        #expect(Set<Bit>.Vector.Small<2>.inlineCapacity == 128)
     }
 
     @Test
     func `Insert within inline capacity`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
 
         #expect(try set.insert(0) == true)
         #expect(try set.insert(63) == true)
@@ -46,7 +46,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Insert beyond inline capacity triggers spill`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
 
         // Insert within inline capacity
         try set.insert(0)
@@ -66,7 +66,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Insert returns false for existing`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
 
         #expect(try set.insert(42) == true)
         #expect(try set.insert(42) == false)
@@ -74,7 +74,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Remove in inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
@@ -89,7 +89,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Remove in heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(200)  // Triggers spill
         try set.insert(300)
@@ -105,7 +105,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Negative element not contained`() {
-        let set = Set<Bit>.Packed.Small<2>()
+        let set = Set<Bit>.Vector.Small<2>()
         // Negative indices are invalid - they would throw on construction
         #expect(set.isEmpty)
     }
@@ -114,7 +114,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Clear resets to inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(200)  // Triggers spill
         #expect(set.isSpilled)
@@ -123,12 +123,12 @@ struct SetBitPackedSmallTests {
         #expect(!set.isSpilled)
         #expect(set.isEmpty)
         #expect(set.count == 0)
-        #expect(set.capacity == Set<Bit>.Packed.Small<2>.inlineCapacity)
+        #expect(set.capacity == Set<Bit>.Vector.Small<2>.inlineCapacity)
     }
 
     @Test
     func `RemoveAll keeps heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(200)  // Triggers spill
         #expect(set.isSpilled)
@@ -143,7 +143,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Count in inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         #expect(set.count == 0)
 
         try set.insert(0)
@@ -158,7 +158,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Count in heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(0)
         try set.insert(200)  // Triggers spill
         try set.insert(300)
@@ -168,7 +168,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Min and max in inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         #expect(set.min == nil)
         #expect(set.max == nil)
 
@@ -184,7 +184,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Min and max in heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(200)  // Triggers spill
         try set.insert(1000)
@@ -197,7 +197,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Iteration in inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(100)
         try set.insert(10)
         try set.insert(50)
@@ -210,7 +210,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Iteration in heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(10)
         try set.insert(200)  // Triggers spill
         try set.insert(50)
@@ -225,11 +225,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Union in inline mode`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(2)
         try b.insert(3)
 
@@ -242,10 +242,10 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Union triggers spill`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(200)  // Beyond inline capacity
 
         let result = a.algebra.union(b)
@@ -257,12 +257,12 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Intersection`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
         try a.insert(3)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(2)
         try b.insert(3)
         try b.insert(4)
@@ -277,12 +277,12 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Subtracting`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
         try a.insert(3)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(2)
 
         let result = a.algebra.subtract(b)
@@ -294,11 +294,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Symmetric difference`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(2)
         try b.insert(3)
 
@@ -313,11 +313,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `isSubset`() throws {
-        var small = Set<Bit>.Packed.Small<2>()
+        var small = Set<Bit>.Vector.Small<2>()
         try small.insert(1)
         try small.insert(2)
 
-        var large = Set<Bit>.Packed.Small<2>()
+        var large = Set<Bit>.Vector.Small<2>()
         try large.insert(1)
         try large.insert(2)
         try large.insert(3)
@@ -328,11 +328,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `isSuperset`() throws {
-        var small = Set<Bit>.Packed.Small<2>()
+        var small = Set<Bit>.Vector.Small<2>()
         try small.insert(1)
         try small.insert(2)
 
-        var large = Set<Bit>.Packed.Small<2>()
+        var large = Set<Bit>.Vector.Small<2>()
         try large.insert(1)
         try large.insert(2)
         try large.insert(3)
@@ -343,15 +343,15 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `isDisjoint`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(3)
         try b.insert(4)
 
-        var c = Set<Bit>.Packed.Small<2>()
+        var c = Set<Bit>.Vector.Small<2>()
         try c.insert(2)
         try c.insert(3)
 
@@ -363,15 +363,15 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Equality inline mode`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(1)
         try b.insert(2)
 
-        var c = Set<Bit>.Packed.Small<2>()
+        var c = Set<Bit>.Vector.Small<2>()
         try c.insert(1)
         try c.insert(3)
 
@@ -381,11 +381,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Equality heap mode`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(200)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(1)
         try b.insert(200)
 
@@ -394,11 +394,11 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Equality mixed modes`() throws {
-        var a = Set<Bit>.Packed.Small<2>()
+        var a = Set<Bit>.Vector.Small<2>()
         try a.insert(1)
         try a.insert(2)
 
-        var b = Set<Bit>.Packed.Small<2>()
+        var b = Set<Bit>.Vector.Small<2>()
         try b.insert(1)
         try b.insert(2)
         try b.insert(200)  // Triggers spill
@@ -412,22 +412,22 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Description inline mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(1)
         try set.insert(2)
 
         let desc = set.description
-        #expect(desc.contains("Set<Bit>.Packed.Small"))
+        #expect(desc.contains("Set<Bit>.Vector.Small"))
         #expect(!desc.contains("spilled"))
     }
 
     @Test
     func `Description heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(200)  // Triggers spill
 
         let desc = set.description
-        #expect(desc.contains("Set<Bit>.Packed.Small"))
+        #expect(desc.contains("Set<Bit>.Vector.Small"))
         #expect(desc.contains("spilled"))
     }
 
@@ -435,7 +435,7 @@ struct SetBitPackedSmallTests {
 
     @Test
     func `Large values in heap mode`() throws {
-        var set = Set<Bit>.Packed.Small<2>()
+        var set = Set<Bit>.Vector.Small<2>()
         try set.insert(1000)
         try set.insert(10000)
         try set.insert(100000)
@@ -466,7 +466,7 @@ struct SetBitPackedSmallTests {
     @Test
     func `Random operations match model`() throws {
         var rng = LCG(seed: 12345)
-        var small = Set<Bit>.Packed.Small<2>()
+        var small = Set<Bit>.Vector.Small<2>()
         var model = Swift.Set<Int>()
 
         for _ in 0..<500 {

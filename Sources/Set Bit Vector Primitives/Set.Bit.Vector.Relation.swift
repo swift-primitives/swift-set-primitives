@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Relation Accessor
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector {
     /// Nested accessor for set relation operations.
     ///
     /// ```swift
@@ -24,13 +24,13 @@ extension Set<Bit>.Packed.Bounded {
     /// ```
     @inlinable
     public var relation: Relation {
-        Relation(storage: storage, capacity: capacity)
+        Relation(storage: storage, capacity: storedCapacity)
     }
 }
 
 // MARK: - Relation Type
 
-extension Set<Bit>.Packed.Bounded {
+extension Set<Bit>.Vector {
     /// Namespace for set relation operations.
     public struct Relation: Sendable {
         @usableFromInline
@@ -49,17 +49,17 @@ extension Set<Bit>.Packed.Bounded {
 
 // MARK: - Relation Operations
 
-extension Set<Bit>.Packed.Bounded.Relation {
+extension Set<Bit>.Vector.Relation {
     /// Returns whether this set is a subset of another.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The potential superset.
     /// - Returns: `true` if every element in this set is also in `other`.
     @inlinable
-    public func isSubset(of other: Set<Bit>.Packed.Bounded) -> Bool {
-        precondition(capacity == other.capacity, "Capacities must match")
+    public func isSubset(of other: Set<Bit>.Vector) -> Bool {
         for i in 0..<storage.count {
-            if (storage[i] & ~other.storage[i]) != 0 {
+            let selfWord = storage[i]
+            let otherWord = i < other.storage.count ? other.storage[i] : 0
+            if (selfWord & ~otherWord) != 0 {
                 return false
             }
         }
@@ -68,23 +68,21 @@ extension Set<Bit>.Packed.Bounded.Relation {
 
     /// Returns whether this set is a superset of another.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The potential subset.
     /// - Returns: `true` if every element in `other` is also in this set.
     @inlinable
-    public func isSuperset(of other: Set<Bit>.Packed.Bounded) -> Bool {
-        other.relation.isSubset(of: Set<Bit>.Packed.Bounded(__storage: storage, capacity: capacity))
+    public func isSuperset(of other: Set<Bit>.Vector) -> Bool {
+        other.relation.isSubset(of: Set<Bit>.Vector(__storage: storage, capacity: capacity))
     }
 
     /// Returns whether this set is disjoint from another.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The other set.
     /// - Returns: `true` if the sets have no elements in common.
     @inlinable
-    public func isDisjoint(with other: Set<Bit>.Packed.Bounded) -> Bool {
-        precondition(capacity == other.capacity, "Capacities must match")
-        for i in 0..<storage.count {
+    public func isDisjoint(with other: Set<Bit>.Vector) -> Bool {
+        let minWords = Swift.min(storage.count, other.storage.count)
+        for i in 0..<minWords {
             if (storage[i] & other.storage[i]) != 0 {
                 return false
             }

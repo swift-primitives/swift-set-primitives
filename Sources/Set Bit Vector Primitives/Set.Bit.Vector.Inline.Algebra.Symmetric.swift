@@ -12,38 +12,32 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-extension Set<Bit>.Packed.Bounded.Algebra {
+extension Set<Bit>.Vector.Inline.Algebra {
     /// Namespace for symmetric set operations.
     public struct Symmetric: Sendable {
         @usableFromInline
-        let storage: ContiguousArray<UInt>
+        let storage: InlineArray<wordCount, UInt>
 
         @usableFromInline
-        let capacity: Int
-
-        @usableFromInline
-        init(storage: ContiguousArray<UInt>, capacity: Int) {
+        init(storage: InlineArray<wordCount, UInt>) {
             self.storage = storage
-            self.capacity = capacity
         }
     }
 }
 
 // MARK: - Symmetric Operations
 
-extension Set<Bit>.Packed.Bounded.Algebra.Symmetric {
+extension Set<Bit>.Vector.Inline.Algebra.Symmetric {
     /// Returns a new set with elements in either set, but not both.
     ///
-    /// - Precondition: Capacities must match.
     /// - Parameter other: The other set.
     /// - Returns: A new set with elements in exactly one of the sets.
     @inlinable
-    public func difference(_ other: Set<Bit>.Packed.Bounded) -> Set<Bit>.Packed.Bounded {
-        precondition(capacity == other.capacity, "Capacities must match")
+    public func difference(_ other: Set<Bit>.Vector.Inline<wordCount>) -> Set<Bit>.Vector.Inline<wordCount> {
         var resultStorage = storage
-        for i in 0..<resultStorage.count {
+        for i in 0..<wordCount {
             resultStorage[i] ^= other.storage[i]
         }
-        return Set<Bit>.Packed.Bounded(__storage: resultStorage, capacity: capacity)
+        return Set<Bit>.Vector.Inline<wordCount>(__storage: resultStorage)
     }
 }

@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Algebra Accessor
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Nested accessor for set algebra operations.
     ///
     /// ```swift
@@ -35,7 +35,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Algebra Type
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Namespace for set algebra operations.
     public struct Algebra: Sendable {
         @usableFromInline
@@ -83,17 +83,17 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Algebra Operations
 
-extension Set<Bit>.Packed.Small.Algebra {
+extension Set<Bit>.Vector.Small.Algebra {
     /// Returns a new set with elements from both sets.
     ///
     /// - Parameter other: The set to form a union with.
     /// - Returns: A new set containing all elements from both sets.
     @inlinable
-    public func union(_ other: Set<Bit>.Packed.Small<inlineWordCount>) -> Set<Bit>.Packed.Small<inlineWordCount> {
-        var result = Set<Bit>.Packed.Small<inlineWordCount>()
+    public func union(_ other: Set<Bit>.Vector.Small<inlineWordCount>) -> Set<Bit>.Vector.Small<inlineWordCount> {
+        var result = Set<Bit>.Vector.Small<inlineWordCount>()
 
         let maxCapacity = Swift.max(storedCapacity, other.storedCapacity)
-        if maxCapacity > Set<Bit>.Packed.Small<inlineWordCount>.inlineCapacity {
+        if maxCapacity > Set<Bit>.Vector.Small<inlineWordCount>.inlineCapacity {
             result.spillToHeap(toInclude: maxCapacity - 1)
         }
 
@@ -129,8 +129,8 @@ extension Set<Bit>.Packed.Small.Algebra {
     /// - Parameter other: The set to intersect with.
     /// - Returns: A new set containing only elements present in both sets.
     @inlinable
-    public func intersection(_ other: Set<Bit>.Packed.Small<inlineWordCount>) -> Set<Bit>.Packed.Small<inlineWordCount> {
-        var result = Set<Bit>.Packed.Small<inlineWordCount>()
+    public func intersection(_ other: Set<Bit>.Vector.Small<inlineWordCount>) -> Set<Bit>.Vector.Small<inlineWordCount> {
+        var result = Set<Bit>.Vector.Small<inlineWordCount>()
 
         let minWordCount = Swift.min(wordCount, other.wordCount)
 
@@ -156,10 +156,10 @@ extension Set<Bit>.Packed.Small.Algebra {
     /// - Parameter other: The set to subtract.
     /// - Returns: A new set with elements not in other.
     @inlinable
-    public func subtract(_ other: Set<Bit>.Packed.Small<inlineWordCount>) -> Set<Bit>.Packed.Small<inlineWordCount> {
-        var result = Set<Bit>.Packed.Small<inlineWordCount>()
+    public func subtract(_ other: Set<Bit>.Vector.Small<inlineWordCount>) -> Set<Bit>.Vector.Small<inlineWordCount> {
+        var result = Set<Bit>.Vector.Small<inlineWordCount>()
 
-        if storedCapacity > Set<Bit>.Packed.Small<inlineWordCount>.inlineCapacity {
+        if storedCapacity > Set<Bit>.Vector.Small<inlineWordCount>.inlineCapacity {
             result.spillToHeap(toInclude: storedCapacity - 1)
         }
 
@@ -202,12 +202,12 @@ extension Set<Bit>.Packed.Small.Algebra {
 
 // MARK: - Mutating Algebra Operations
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Applies an algebra operation and replaces self with the result.
     ///
     /// - Parameter operation: A closure that takes the algebra accessor and returns a new set.
     @inlinable
-    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Packed.Small<inlineWordCount>) {
+    public mutating func form(_ operation: (Algebra) -> Set<Bit>.Vector.Small<inlineWordCount>) {
         self = operation(algebra)
     }
 }

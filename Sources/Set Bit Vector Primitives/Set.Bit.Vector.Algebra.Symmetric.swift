@@ -12,7 +12,7 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-extension Set<Bit>.Packed.Algebra {
+extension Set<Bit>.Vector.Algebra {
     /// Namespace for symmetric set operations.
     public struct Symmetric: Sendable {
         @usableFromInline
@@ -37,14 +37,14 @@ extension Set<Bit>.Packed.Algebra {
 
 // MARK: - Symmetric Operations
 
-extension Set<Bit>.Packed.Algebra.Symmetric {
+extension Set<Bit>.Vector.Algebra.Symmetric {
     /// Returns a new set with elements in either set, but not both.
     ///
     /// - Parameter other: The other set.
     /// - Returns: A new set with elements in exactly one of the sets.
     /// - Complexity: O(n) where n is the number of words.
     @inlinable
-    public func difference(_ other: Set<Bit>.Packed) -> Set<Bit>.Packed {
+    public func difference(_ other: Set<Bit>.Vector) -> Set<Bit>.Vector {
         var resultStorage = storage
         var resultCapacity = capacity
 
@@ -67,6 +67,6 @@ extension Set<Bit>.Packed.Algebra.Symmetric {
             resultStorage[i] ^= other.storage[i]
         }
 
-        return Set<Bit>.Packed(__storage: resultStorage, capacity: resultCapacity)
+        return Set<Bit>.Vector(__storage: resultStorage, capacity: resultCapacity)
     }
 }

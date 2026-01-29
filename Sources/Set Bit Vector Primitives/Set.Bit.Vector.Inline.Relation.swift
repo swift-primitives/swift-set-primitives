@@ -14,7 +14,7 @@ public import Bit_Primitives
 
 // MARK: - Relation Accessor
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Nested accessor for set relation operations.
     ///
     /// ```swift
@@ -30,7 +30,7 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Relation Type
 
-extension Set<Bit>.Packed.Inline {
+extension Set<Bit>.Vector.Inline {
     /// Namespace for set relation operations.
     public struct Relation: Sendable {
         @usableFromInline
@@ -45,13 +45,13 @@ extension Set<Bit>.Packed.Inline {
 
 // MARK: - Relation Operations
 
-extension Set<Bit>.Packed.Inline.Relation {
+extension Set<Bit>.Vector.Inline.Relation {
     /// Returns whether this set is a subset of another.
     ///
     /// - Parameter other: The potential superset.
     /// - Returns: `true` if every element in this set is also in `other`.
     @inlinable
-    public func isSubset(of other: Set<Bit>.Packed.Inline<wordCount>) -> Bool {
+    public func isSubset(of other: Set<Bit>.Vector.Inline<wordCount>) -> Bool {
         for i in 0..<wordCount {
             if (storage[i] & ~other.storage[i]) != 0 {
                 return false
@@ -65,8 +65,8 @@ extension Set<Bit>.Packed.Inline.Relation {
     /// - Parameter other: The potential subset.
     /// - Returns: `true` if every element in `other` is also in this set.
     @inlinable
-    public func isSuperset(of other: Set<Bit>.Packed.Inline<wordCount>) -> Bool {
-        other.relation.isSubset(of: Set<Bit>.Packed.Inline<wordCount>(__storage: storage))
+    public func isSuperset(of other: Set<Bit>.Vector.Inline<wordCount>) -> Bool {
+        other.relation.isSubset(of: Set<Bit>.Vector.Inline<wordCount>(__storage: storage))
     }
 
     /// Returns whether this set is disjoint from another.
@@ -74,7 +74,7 @@ extension Set<Bit>.Packed.Inline.Relation {
     /// - Parameter other: The other set.
     /// - Returns: `true` if the sets have no elements in common.
     @inlinable
-    public func isDisjoint(with other: Set<Bit>.Packed.Inline<wordCount>) -> Bool {
+    public func isDisjoint(with other: Set<Bit>.Vector.Inline<wordCount>) -> Bool {
         for i in 0..<wordCount {
             if (storage[i] & other.storage[i]) != 0 {
                 return false

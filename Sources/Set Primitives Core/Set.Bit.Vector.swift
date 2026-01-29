@@ -11,22 +11,22 @@
 
 public import Bit_Primitives
 
-// MARK: - Set<Bit>.Packed
+// MARK: - Set<Bit>.Vector
 
 extension Set where Element == Bit {
     /// Packed bit set using word-sized storage.
     ///
-    /// `Set<Bit>.Packed` stores `Bit.Index` values as individual bits, providing O(1)
+    /// `Set<Bit>.Vector` stores `Bit.Index` values as individual bits, providing O(1)
     /// membership testing and efficient set algebra operations. Space usage
     /// is proportional to the maximum index stored, not the number of elements.
     ///
     /// ## Variants
     ///
-    /// - ``Set/Packed-swift.struct``: Dynamically-growing storage (this type)
-    /// - ``Set/Packed-swift.struct/Bounded``: Fixed-capacity, throws on overflow
-    /// - ``Set/Packed-swift.struct/Inline``: Zero-allocation inline storage with compile-time capacity
-    /// - ``Set/Packed-swift.struct/Small``: Inline storage with automatic spill to heap
-    public struct Packed: Sendable {
+    /// - ``Set/Vector-swift.struct``: Dynamically-growing storage (this type)
+    /// - ``Set/Vector-swift.struct/Fixed``: Fixed-capacity, throws on overflow
+    /// - ``Set/Vector-swift.struct/Inline``: Zero-allocation inline storage with compile-time capacity
+    /// - ``Set/Vector-swift.struct/Small``: Inline storage with automatic spill to heap
+    public struct Vector: Sendable {
         @inlinable
         public static var bitsPerWord: Int { UInt.bitWidth }
 
@@ -41,7 +41,7 @@ extension Set where Element == Bit {
         }
 
         @inlinable
-        public init(capacity: Int) throws(__SetBitPackedError) {
+        public init(capacity: Int) throws(__SetBitVectorError) {
             guard capacity >= 0 else {
                 throw .invalidCapacity(.init())
             }

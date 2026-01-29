@@ -15,7 +15,7 @@ import Ordinal_Primitives
 
 // MARK: - Iteration
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Calls the given closure on each set bit index.
     @inlinable
     public func forEach(_ body: (Bit.Index) -> Void) {
@@ -43,7 +43,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Sequence
 
-extension Set<Bit>.Packed.Small: Swift.Sequence {
+extension Set<Bit>.Vector.Small: Swift.Sequence {
     /// An iterator over the elements of a small bit set.
     public struct Iterator: IteratorProtocol {
         @usableFromInline

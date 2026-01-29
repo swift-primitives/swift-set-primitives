@@ -60,9 +60,9 @@ let package = Package(
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
             ]
         ),
-        // Internal: Set<Bit>.Packed functionality
+        // Internal: Set<Bit>.Vector functionality
         .target(
-            name: "Set Bit Packed Primitives",
+            name: "Set Bit Vector Primitives",
             dependencies: [
                 "Set Primitives Core",
                 .product(name: "Bit Primitives", package: "swift-bit-primitives"),
@@ -84,7 +84,7 @@ let package = Package(
             dependencies: [
                 "Set Primitives Core",
                 "Set Ordered Primitives",
-                "Set Bit Packed Primitives",
+                "Set Bit Vector Primitives",
                 "Set Primitives Sequence",
             ]
         ),

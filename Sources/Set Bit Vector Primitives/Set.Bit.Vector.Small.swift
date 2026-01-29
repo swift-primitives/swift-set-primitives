@@ -13,9 +13,9 @@ public import Set_Primitives_Core
 public import Bit_Primitives
 import Ordinal_Primitives
 
-// MARK: - Set<Bit>.Packed.Small
+// MARK: - Set<Bit>.Vector.Small
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// Packed bit set with small-buffer optimization.
     ///
     /// Uses inline storage until capacity is exceeded, then spills to heap.
@@ -30,7 +30,7 @@ extension Set<Bit>.Packed {
     ///
     /// ```swift
     /// // 2 words = 128 bits inline capacity
-    /// var set = Set<Bit>.Packed.Small<2>()
+    /// var set = Set<Bit>.Vector.Small<2>()
     ///
     /// // These fit in inline storage
     /// try set.insert(Bit.Index(__unchecked: 0))
@@ -51,7 +51,7 @@ extension Set<Bit>.Packed {
     /// ## Copyable
     ///
     /// Unlike `Stack.Small<Element>` which is `~Copyable` because it stores
-    /// potentially move-only elements, `Set<Bit>.Packed.Small` stores only `UInt`
+    /// potentially move-only elements, `Set<Bit>.Vector.Small` stores only `UInt`
     /// words (always trivial) and has no generic element type. Therefore it is
     /// unconditionally `Copyable`, enabling `Sequence`, `Equatable`, and `Hashable`.
     public struct Small<let inlineWordCount: Int>: Sendable {
@@ -99,7 +99,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Properties
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// The current capacity of the set.
     @inlinable
     public var capacity: Int { storedCapacity }
@@ -150,7 +150,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Membership
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Returns whether the set contains the given index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
@@ -185,17 +185,17 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Mutation
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// Inserts a bit index into the set.
     ///
     /// If the index exceeds inline capacity, the set spills to heap storage.
     ///
     /// - Parameter index: The bit index to insert.
     /// - Returns: `true` if the bit was newly inserted, `false` if already present.
-    /// - Throws: `__SetBitPackedSmallError.bounds` if the index is negative.
+    /// - Throws: `__SetBitVectorSmallError.bounds` if the index is negative.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitVectorSmallError) -> Bool {
         let i = Int(bitPattern: index.position)
         guard i >= 0 else {
             throw .bounds(.init(index: i, capacity: capacity))
@@ -224,7 +224,7 @@ extension Set<Bit>.Packed.Small {
     /// Inserts an integer index into the set.
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Int) throws(__SetBitPackedSmallError) -> Bool {
+    public mutating func insert(_ index: Int) throws(__SetBitVectorSmallError) -> Bool {
         try insert(Bit.Index(__unchecked: (), Ordinal(UInt(index))))
     }
 
@@ -232,10 +232,10 @@ extension Set<Bit>.Packed.Small {
     ///
     /// - Parameter index: The bit index to remove.
     /// - Returns: `true` if the bit was present and removed, `false` if not present.
-    /// - Throws: `__SetBitPackedSmallError.bounds` if the index is out of bounds.
+    /// - Throws: `__SetBitVectorSmallError.bounds` if the index is out of bounds.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedSmallError) -> Bool {
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitVectorSmallError) -> Bool {
         let i = Int(bitPattern: index.position)
         guard i >= 0 && i < capacity else {
             throw .bounds(.init(index: i, capacity: capacity))
@@ -259,7 +259,7 @@ extension Set<Bit>.Packed.Small {
     /// Removes an integer index from the set.
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Int) throws(__SetBitPackedSmallError) -> Bool {
+    public mutating func remove(_ index: Int) throws(__SetBitVectorSmallError) -> Bool {
         try remove(Bit.Index(__unchecked: (), Ordinal(UInt(index))))
     }
 
@@ -329,7 +329,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Additional Properties
 
-extension Set<Bit>.Packed.Small {
+extension Set<Bit>.Vector.Small {
     /// The smallest element in the set, or `nil` if empty.
     @inlinable
     public var min: Bit.Index? {
@@ -377,7 +377,7 @@ extension Set<Bit>.Packed.Small {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Packed.Small: Equatable {
+extension Set<Bit>.Vector.Small: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         let lhsWordCount = lhs.wordCount
@@ -417,7 +417,7 @@ extension Set<Bit>.Packed.Small: Equatable {
 
 // MARK: - Hashable
 
-extension Set<Bit>.Packed.Small: Hashable {
+extension Set<Bit>.Vector.Small: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         let wordCount = wordCount
@@ -435,11 +435,11 @@ extension Set<Bit>.Packed.Small: Hashable {
 
 // MARK: - CustomStringConvertible
 
-extension Set<Bit>.Packed.Small: CustomStringConvertible {
+extension Set<Bit>.Vector.Small: CustomStringConvertible {
     public var description: String {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
         let spilledMarker = isSpilled ? " (spilled)" : ""
-        return "Set<Bit>.Packed.Small<\(inlineWordCount)>(\(elements.map { "\($0.position)" }.joined(separator: ", "))\(suffix))\(spilledMarker)"
+        return "Set<Bit>.Vector.Small<\(inlineWordCount)>(\(elements.map { "\($0.position)" }.joined(separator: ", "))\(suffix))\(spilledMarker)"
     }
 }

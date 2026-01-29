@@ -15,7 +15,7 @@ import Ordinal_Primitives
 
 // MARK: - Properties
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     @inlinable
     public var capacity: Int { storedCapacity }
 
@@ -42,7 +42,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Membership
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
         let i = Int(bitPattern: index.position)
@@ -56,10 +56,10 @@ extension Set<Bit>.Packed {
 
 // MARK: - Mutation
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     @inlinable
     @discardableResult
-    public mutating func insert(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
+    public mutating func insert(_ index: Bit.Index) throws(__SetBitVectorError) -> Bool {
         let i = Int(bitPattern: index.position)
         guard i >= 0 else {
             throw .bounds(.init(index: i, capacity: capacity))
@@ -79,7 +79,7 @@ extension Set<Bit>.Packed {
 
     @inlinable
     @discardableResult
-    public mutating func remove(_ index: Bit.Index) throws(__SetBitPackedError) -> Bool {
+    public mutating func remove(_ index: Bit.Index) throws(__SetBitVectorError) -> Bool {
         let i = Int(bitPattern: index.position)
         guard i >= 0 && i < capacity else {
             throw .bounds(.init(index: i, capacity: capacity))
@@ -118,7 +118,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Additional Properties
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// The smallest element in the set, or `nil` if empty.
     ///
     /// - Complexity: O(n/w) where w is word bit width
@@ -162,7 +162,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Additional Initializers
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     /// Creates a bit set from a sequence of bit indices.
     ///
     /// - Parameter elements: The elements to include.
@@ -177,7 +177,7 @@ extension Set<Bit>.Packed {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Packed: Equatable {
+extension Set<Bit>.Vector: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.storage == rhs.storage && lhs.storedCapacity == rhs.storedCapacity
@@ -186,7 +186,7 @@ extension Set<Bit>.Packed: Equatable {
 
 // MARK: - Hashable
 
-extension Set<Bit>.Packed: Hashable {
+extension Set<Bit>.Vector: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         hasher.combine(storage)
@@ -196,10 +196,10 @@ extension Set<Bit>.Packed: Hashable {
 
 // MARK: - CustomStringConvertible
 
-extension Set<Bit>.Packed: CustomStringConvertible {
+extension Set<Bit>.Vector: CustomStringConvertible {
     public var description: String {
         let elements = Swift.Array(self.prefix(10))
         let suffix = count > 10 ? ", ..." : ""
-        return "Set<Bit>.Packed(\(elements.map { "\($0.position)" }.joined(separator: ", "))\(suffix))"
+        return "Set<Bit>.Vector(\(elements.map { "\($0.position)" }.joined(separator: ", "))\(suffix))"
     }
 }

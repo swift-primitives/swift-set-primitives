@@ -15,7 +15,7 @@ import Ordinal_Primitives
 
 // MARK: - Sequence
 
-extension Set<Bit>.Packed: Swift.Sequence {
+extension Set<Bit>.Vector: Swift.Sequence {
     /// An iterator over the elements of a bit set.
     ///
     /// Elements are yielded in ascending order.
@@ -64,7 +64,7 @@ extension Set<Bit>.Packed: Swift.Sequence {
 
 // MARK: - Iteration
 
-extension Set<Bit>.Packed {
+extension Set<Bit>.Vector {
     @inlinable
     public func forEach(_ body: (Bit.Index) -> Void) {
         for (wordIndex, var word) in storage.enumerated() {
