@@ -288,7 +288,7 @@ This is acyclic and well-ordered. The `Bit: Hash.Protocol` conformance lives in 
 - [ ] Rewrite Set.Ordered without Dictionary-based index lookup
 - [ ] Update ownership semantics (borrowing/consuming)
 - [ ] Move Sequence/Collection conformances to Sequence module
-- [ ] Update variant types (Bounded, Inline, Small)
+- [ ] Update variant types (Fixed, Inline, Small)
 - [ ] Update tests
 
 ### Phase 3: Dictionary Primitives Migration

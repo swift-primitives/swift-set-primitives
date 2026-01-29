@@ -52,8 +52,8 @@ extension __SetOrderedError: CustomStringConvertible {
     }
 }
 
-/// Hoisted implementation of ``Set/Ordered/Bounded/Error``.
-public enum __SetOrderedBoundedError: Swift.Error, Sendable, Equatable {
+/// Hoisted implementation of ``Set/Ordered/Fixed/Error``.
+public enum __SetOrderedFixedError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)
 
@@ -97,15 +97,15 @@ public enum __SetOrderedBoundedError: Swift.Error, Sendable, Equatable {
     }
 }
 
-extension __SetOrderedBoundedError: CustomStringConvertible {
+extension __SetOrderedFixedError: CustomStringConvertible {
     public var description: String {
         switch self {
         case .bounds(let e):
             return "index \(e.index) out of bounds for count \(e.count)"
         case .empty:
-            return "operation attempted on empty bounded set"
+            return "operation attempted on empty Fixed set"
         case .overflow:
-            return "bounded set is full"
+            return "Fixed set is full"
         case .invalidCapacity:
             return "invalid capacity"
         }
@@ -157,9 +157,9 @@ extension Set_Primitives_Core.Set.Ordered {
     public typealias Error = __SetOrderedError
 }
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
-    /// Errors that can occur during bounded ordered set operations.
-    public typealias Error = __SetOrderedBoundedError
+extension Set_Primitives_Core.Set.Ordered.Fixed {
+    /// Errors that can occur during Fixed ordered set operations.
+    public typealias Error = __SetOrderedFixedError
 }
 
 extension Set_Primitives_Core.Set.Ordered.Inline {

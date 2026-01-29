@@ -14,12 +14,12 @@ public import Index_Primitives
 public import Ordinal_Primitives
 public import Cardinal_Primitives
 
-// Note: Set.Ordered.Bounded is declared inside Set.Ordered (in Set.swift).
-// This file contains only extensions to Set.Ordered.Bounded.
+// Note: Set.Ordered.Fixed is declared inside Set.Ordered (in Set.swift).
+// This file contains only extensions to Set.Ordered.Fixed.
 
 // MARK: - Properties
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// The number of elements in the set.
     @inlinable
     public var count: Index<Element>.Count { elementStorage.count }
@@ -39,10 +39,10 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - Storage Uniqueness
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Ensures element storage is uniquely owned.
     ///
-    /// Since `Set.Ordered.Bounded` is `~Copyable`, storage is always unique.
+    /// Since `Set.Ordered.Fixed` is `~Copyable`, storage is always unique.
     /// This method exists for symmetry with other variants.
     @usableFromInline
     @inline(__always)
@@ -53,7 +53,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - Hash Table Operations
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Finds the position for an element with the given hash value.
     @usableFromInline
     func findPosition(forHash hashValue: Int, equals: (Index<Element>) -> Bool) -> Index<Element>? {
@@ -87,7 +87,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - Core Operations (Copyable elements)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
     public func index(_ element: Element) -> Index<Element>? {
@@ -108,7 +108,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// - Throws: ``Error/overflow`` if the set is full.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedBoundedError) -> (inserted: Bool, index: Index<Element>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index<Element>) {
         // Check for existing element
         if let existing = findPosition(
             forHash: element.hashValue,
@@ -208,10 +208,10 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
 
 // MARK: - Element Access (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Accesses the element at the specified index.
     @inlinable
-    public func element(at index: Index<Element>) throws(__SetOrderedBoundedError) -> Element {
+    public func element(at index: Index<Element>) throws(__SetOrderedFixedError) -> Element {
         guard index < count else {
             throw .bounds(.init(index: Int(bitPattern: index.position.rawValue), count: Int(bitPattern: count)))
         }
@@ -232,7 +232,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
 
 // MARK: - First/Last Accessors (Copyable only)
 
-extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
@@ -250,7 +250,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
 
 // MARK: - Borrowed Element Access
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Accesses the element at the given index via closure.
     @inlinable
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
@@ -290,11 +290,11 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - ~Copyable
 
-// Set.Ordered.Bounded is ~Copyable due to containing Hash.Table
+// Set.Ordered.Fixed is ~Copyable due to containing Hash.Table
 
 // MARK: - Span Access
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Provides read-only span access to the set's elements in insertion order.
     ///
     /// - Parameter body: A closure that receives the span.
@@ -341,7 +341,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 // MARK: - Buffer Access (Escape Hatch for C Interop)
 
 @_spi(Unsafe)
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Provides read-only access to the underlying contiguous storage.
     ///
     /// - Warning: Prefer `withSpan` for safe access.
@@ -385,12 +385,12 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - Hash.Protocol Conformance
 
-// Note: Set.Ordered.Bounded conforms to Hash.Protocol (from hash-primitives) which supports
+// Note: Set.Ordered.Fixed conforms to Hash.Protocol (from hash-primitives) which supports
 // ~Copyable types. Swift.Equatable and Swift.Hashable require Copyable and cannot
 // be used with ~Copyable containers.
 
-extension Set_Primitives_Core.Set.Ordered.Bounded: Hash.`Protocol` {
-    /// Compares two bounded ordered sets for element-wise equality.
+extension Set_Primitives_Core.Set.Ordered.Fixed: Hash.`Protocol` {
+    /// Compares two Fixed ordered sets for element-wise equality.
     @inlinable
     public static func == (lhs: borrowing Self, rhs: borrowing Self) -> Bool {
         guard lhs.count == rhs.count else { return false }

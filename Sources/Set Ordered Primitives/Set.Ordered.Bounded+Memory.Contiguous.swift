@@ -11,7 +11,7 @@
 
 // Note: Memory.Contiguous.Protocol conformance removed.
 //
-// Set.Ordered.Bounded uses closure-based span access (withSpan, withMutableSpan) rather than
+// Set.Ordered.Fixed uses closure-based span access (withSpan, withMutableSpan) rather than
 // direct span properties due to Span's ~Escapable lifetime requirements. The compiler
 // cannot safely verify that a Span returned from a property doesn't escape its scope.
 //

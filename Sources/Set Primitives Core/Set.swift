@@ -17,7 +17,7 @@
 /// ## Variants
 ///
 /// - ``Set/Ordered``: Dynamically-growing storage with CoW for Copyable elements
-/// - ``Set/Ordered/Bounded``: Fixed-capacity, throws on overflow
+/// - ``Set/Ordered/Fixed``: Fixed-capacity, throws on overflow
 /// - ``Set/Ordered/Inline``: Zero-allocation inline storage with compile-time capacity
 /// - ``Set/Ordered/Small``: Inline storage with automatic spill to heap (SmallVec pattern)
 ///
@@ -27,7 +27,7 @@
 ///
 /// ## Conditional Copyable
 ///
-/// Heap-based variants (`Ordered`, `Ordered.Bounded`) are conditionally `Copyable`:
+/// Heap-based variants (`Ordered`, `Ordered.Fixed`) are conditionally `Copyable`:
 /// when `Element` is `Copyable`, the container is also `Copyable` with copy-on-write
 /// semantics.
 ///
@@ -58,11 +58,11 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             self.hashTable = Hash.Table<Element>(minimumCapacity: .zero)
         }
 
-        // MARK: - Bounded (Fixed-Capacity, Heap-Allocated)
+        // MARK: - Fixed (Fixed-Capacity, Heap-Allocated)
 
         /// A fixed-capacity ordered set that throws on overflow.
         @safe
-        public struct Bounded {
+        public struct Fixed {
             /// Element storage using the Storage primitive.
             public var elementStorage: Storage<Element>
 
@@ -72,9 +72,9 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             /// The maximum number of elements the set can hold.
             public let maximumCapacity: Index_Primitives.Index<Element>.Count
 
-            /// Creates a bounded ordered set with the specified capacity.
+            /// Creates a Fixed ordered set with the specified capacity.
             @inlinable
-            public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedBoundedError) {
+            public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedFixedError) {
                 self.elementStorage = Storage<Element>.create(minimumCapacity: capacity)
                 self.hashTable = Hash.Table<Element>(minimumCapacity: capacity)
                 self.maximumCapacity = capacity
@@ -182,11 +182,11 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 // MARK: - Conditional Copyable
 
 extension Set.Ordered: Copyable where Element: Copyable {}
-extension Set.Ordered.Bounded: Copyable where Element: Copyable {}
+extension Set.Ordered.Fixed: Copyable where Element: Copyable {}
 
 // MARK: - Sendable
 
 extension Set.Ordered: @unchecked Sendable where Element: Sendable {}
-extension Set.Ordered.Bounded: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Fixed: @unchecked Sendable where Element: Sendable {}
 extension Set.Ordered.Inline: @unchecked Sendable where Element: Sendable {}
 extension Set.Ordered.Small: @unchecked Sendable where Element: Sendable {}

@@ -15,7 +15,7 @@ public import Bit_Primitives
 // MARK: - Error Typealiases for Variant Types
 
 extension Set<Bit>.Vector.Fixed {
-    /// Errors that can occur during bounded packed bit set operations.
+    /// Errors that can occur during Fixed packed bit set operations.
     public typealias Error = __SetBitVectorFixedError
 }
 

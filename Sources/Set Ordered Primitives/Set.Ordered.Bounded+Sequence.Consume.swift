@@ -15,13 +15,13 @@ public import Index_Primitives
 
 // MARK: - Consume Namespace
 
-extension Set_Primitives_Core.Set.Ordered.Bounded {
+extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Namespace for consuming iteration types.
     ///
     /// Use the `.consume().forEach { }` pattern:
     ///
     /// ```swift
-    /// let set = Set<Int>.Ordered.Bounded(capacity: Index<Int>.Count(10))
+    /// let set = Set<Int>.Ordered.Fixed(capacity: Index<Int>.Count(10))
     /// set.consume().forEach { element in
     ///     // element is owned, set is consumed
     /// }
@@ -31,7 +31,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded {
 
 // MARK: - Consume State
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Consume {
+extension Set_Primitives_Core.Set.Ordered.Fixed.Consume {
     /// State for consuming iteration.
     @safe
     public struct State: ~Copyable {
@@ -69,15 +69,15 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Consume {
 
 // MARK: - Sendable
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Consume.State: @unchecked Sendable where Element: Sendable {}
+extension Set_Primitives_Core.Set.Ordered.Fixed.Consume.State: @unchecked Sendable where Element: Sendable {}
 
 // MARK: - consume() Implementation
 
-extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Returns a consuming view: `.consume().forEach { }`
     ///
     /// ```swift
-    /// let set = Set<Int>.Ordered.Bounded(capacity: Index<Int>.Count(10))
+    /// let set = Set<Int>.Ordered.Fixed(capacity: Index<Int>.Count(10))
     /// set.consume().forEach { element in
     ///     // element is owned
     /// }

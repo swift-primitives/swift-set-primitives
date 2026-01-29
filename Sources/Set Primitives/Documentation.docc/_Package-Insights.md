@@ -229,7 +229,7 @@ Both types now have matching variant hierarchies:
 |-------------------|-----------------|---------|
 | `.init()` | `.init()` | Dynamic heap-backed |
 | `.Inline<N>` | `.Inline<N>` | Fixed inline capacity |
-| `.Bounded` | `.Bounded` | Fixed heap capacity |
+| `.Fixed` | `.Fixed` | Fixed heap capacity |
 | — | `.Small<N>` | Inline + heap spill |
 
 The `Small` variant exists for `Set<Bit>.Packed` but not yet for `Array<Bit>.Packed`. This is intentional: bit sets commonly need small-buffer optimization (tracking a handful of flags), while packed bit arrays are typically used for larger data (images, binary data).

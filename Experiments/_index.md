@@ -22,10 +22,10 @@
 - `Set.Ordered.Consuming.Iterator.swift` - `~Copyable` iterator
 - `Set.Ordered.Consuming.Counted.swift` - count + iterator wrapper
 
-**Files added for Set.Ordered.Bounded**:
-- `Set.Ordered.Bounded.Consuming.swift`
-- `Set.Ordered.Bounded.Consuming.Iterator.swift`
-- `Set.Ordered.Bounded.Consuming.Counted.swift`
+**Files added for Set.Ordered.Fixed**:
+- `Set.Ordered.Fixed.Consuming.swift`
+- `Set.Ordered.Fixed.Consuming.Iterator.swift`
+- `Set.Ordered.Fixed.Consuming.Counted.swift`
 
 **Files added for Set.Ordered.Inline**:
 - `Set.Ordered.Inline.Consuming.swift`

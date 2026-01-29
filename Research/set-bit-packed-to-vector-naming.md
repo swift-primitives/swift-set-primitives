@@ -17,7 +17,7 @@ The `swift-array-primitives` package recently renamed `Array<Bit>.Packed` to `Ar
 | Package | Type Family | Variants |
 |---------|-------------|----------|
 | swift-array-primitives | `Array<Bit>.Vector` | `.Fixed`, `.Inline` |
-| swift-set-primitives | `Set<Bit>.Packed` | `.Bounded`, `.Inline`, `.Small` |
+| swift-set-primitives | `Set<Bit>.Packed` | `.Fixed`, `.Inline`, `.Small` |
 
 ## Question
 
@@ -27,7 +27,7 @@ Should `Set<Bit>.Packed` be renamed to `Set<Bit>.Vector` to match the naming dec
 
 ### Option A: Rename to `Set<Bit>.Vector`
 
-**Description**: Rename `Set<Bit>.Packed` to `Set<Bit>.Vector`, with all nested types following: `Set<Bit>.Vector.Bounded`, `Set<Bit>.Vector.Inline`, `Set<Bit>.Vector.Small`.
+**Description**: Rename `Set<Bit>.Packed` to `Set<Bit>.Vector`, with all nested types following: `Set<Bit>.Vector.Fixed`, `Set<Bit>.Vector.Inline`, `Set<Bit>.Vector.Small`.
 
 **Advantages**:
 1. **Naming consistency**: Maintains parallel structure with `Array<Bit>.Vector`
@@ -111,7 +111,7 @@ The Swift Institute primitives follow the Extension Pattern, where container pac
 ```
 swift-bit-primitives:     Bit, Bit.Index, Bit.Order
 swift-array-primitives:   Array<Bit>.Vector, Array<Bit>.Vector.Fixed, Array<Bit>.Vector.Inline
-swift-set-primitives:     Set<Bit>.???, Set<Bit>.???.Bounded, Set<Bit>.???.Inline
+swift-set-primitives:     Set<Bit>.???, Set<Bit>.???.Fixed, Set<Bit>.???.Inline
 ```
 
 The question is whether `???` should be `Packed` or `Vector`.
@@ -126,12 +126,12 @@ Current variant names differ:
 
 | Array Variants | Set Variants |
 |----------------|--------------|
-| `.Fixed` | `.Bounded` |
+| `.Fixed` | `.Fixed` |
 | `.Inline` | `.Inline` |
 | — | `.Small` |
 
 If renaming the parent type, consider also aligning variant names:
-- `Set<Bit>.Vector.Fixed` (instead of `.Bounded`)
+- `Set<Bit>.Vector.Fixed` (instead of `.Fixed`)
 - `Set<Bit>.Vector.Inline` (unchanged)
 - `Set<Bit>.Vector.Small` (unchanged)
 
@@ -166,7 +166,7 @@ The rename is mechanical and low-risk, but does require coordinated updates.
 5. **Prior art is mixed**: While some libraries distinguish bit arrays from bit sets in naming, the distinction is in the Array/Set prefix, not in an additional suffix.
 
 **Additional recommendation**: Align variant names:
-- Rename `.Bounded` to `.Fixed` for consistency with array variants
+- Rename `.Fixed` to `.Fixed` for consistency with array variants
 
 **Migration path**:
 1. Add `typealias Set<Bit>.Vector = Set<Bit>.Packed` with deprecation warning

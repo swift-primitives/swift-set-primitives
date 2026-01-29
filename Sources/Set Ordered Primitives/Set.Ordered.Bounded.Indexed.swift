@@ -14,12 +14,12 @@ import Index_Primitives
 import Ordinal_Primitives
 import Cardinal_Primitives
 
-// MARK: - Set.Ordered.Bounded.Indexed
+// MARK: - Set.Ordered.Fixed.Indexed
 
-extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
-    /// A wrapper providing phantom-typed index access to bounded ordered set storage.
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
+    /// A wrapper providing phantom-typed index access to Fixed ordered set storage.
     ///
-    /// `Indexed<Tag>` wraps a `Set<Element>.Ordered.Bounded` and provides subscript
+    /// `Indexed<Tag>` wraps a `Set<Element>.Ordered.Fixed` and provides subscript
     /// access via `Index<Tag>` instead of `Index<Element>`, enabling type-safe indexing
     /// where the phantom type differs from the element type.
     ///
@@ -27,10 +27,10 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     ///
     /// ```swift
     /// enum NodeTag {}
-    /// var storage = try Set<Payload>.Ordered.Bounded(capacity: Index<Payload>.Count(10))
+    /// var storage = try Set<Payload>.Ordered.Fixed(capacity: Index<Payload>.Count(10))
     /// try storage.insert(payload)
     ///
-    /// var indexed = Set.Ordered.Bounded.Indexed<NodeTag>(storage)
+    /// var indexed = Set.Ordered.Fixed.Indexed<NodeTag>(storage)
     /// let node: Index<NodeTag> = .zero
     /// indexed[node]  // Access via typed index
     /// guard node < indexed.count else { return }  // Typed bounds check
@@ -44,7 +44,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// enum GraphA {}
     /// enum GraphB {}
     ///
-    /// var storageA: Set.Ordered.Bounded.Indexed<GraphA> = ...
+    /// var storageA: Set.Ordered.Fixed.Indexed<GraphA> = ...
     /// let nodeB: Index<GraphB> = .zero
     /// // storageA[nodeB]  // Compile error: cannot convert Index<GraphB> to Index<GraphA>
     /// ```
@@ -56,13 +56,13 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
     /// requiring protocols (which can't have `~Copyable` associated types).
     public struct Indexed<Tag: Copyable>: Copyable, @unchecked Sendable {
         @usableFromInline
-        var _storage: Set_Primitives_Core.Set<Element>.Ordered.Bounded
+        var _storage: Set_Primitives_Core.Set<Element>.Ordered.Fixed
 
         /// Creates an indexed wrapper around the given storage.
         ///
-        /// - Parameter storage: The bounded ordered set to wrap.
+        /// - Parameter storage: The Fixed ordered set to wrap.
         @inlinable
-        public init(_ storage: consuming Set_Primitives_Core.Set<Element>.Ordered.Bounded) {
+        public init(_ storage: consuming Set_Primitives_Core.Set<Element>.Ordered.Fixed) {
             self._storage = storage
         }
 
@@ -96,7 +96,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded where Element: Copyable {
 
 // MARK: - Passthrough Properties
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable {
     /// Whether the set is empty.
     @inlinable
     public var isEmpty: Bool { _storage.isEmpty }
@@ -114,7 +114,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyabl
 
 // MARK: - Membership Operations
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable {
     /// Returns whether the set contains the given element.
     @inlinable
     public func contains(_ element: Element) -> Bool {
@@ -131,7 +131,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyabl
 
 // MARK: - Mutating Operations
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable {
     /// Inserts an element into the set.
     ///
     /// - Parameter element: The element to insert.
@@ -139,7 +139,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyabl
     /// - Throws: ``Error/overflow`` if the set is full.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedBoundedError) -> (inserted: Bool, index: Index_Primitives.Index<Tag>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index_Primitives.Index<Tag>) {
         let result = try _storage.insert(element)
         return (result.inserted, Index_Primitives.Index<Tag>(__unchecked: (), result.index.position))
     }
@@ -165,7 +165,7 @@ extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyabl
 
 // MARK: - First/Last Accessors
 
-extension Set_Primitives_Core.Set.Ordered.Bounded.Indexed where Element: Copyable {
+extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? { _storage.first }

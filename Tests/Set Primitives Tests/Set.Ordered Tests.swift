@@ -424,11 +424,11 @@ struct OrderedSetTests {
         #expect(result == ["charlie", "alpha", "bravo"])
     }
 
-    // MARK: - Bounded Consuming Iteration
+    // MARK: - Fixed Consuming Iteration
 
     @Test
-    func `Bounded: consume().forEach yields all elements`() throws {
-        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+    func `Fixed: consume().forEach yields all elements`() throws {
+        var set = try Set<Int>.Ordered.Fixed(capacity: 10)
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
@@ -442,8 +442,8 @@ struct OrderedSetTests {
     }
 
     @Test
-    func `Bounded: consume().forEach processes all elements`() throws {
-        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+    func `Fixed: consume().forEach processes all elements`() throws {
+        var set = try Set<Int>.Ordered.Fixed(capacity: 10)
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
@@ -457,8 +457,8 @@ struct OrderedSetTests {
     }
 
     @Test
-    func `Bounded: consume() with manual iteration`() throws {
-        var set = try Set<String>.Ordered.Bounded(capacity: 10)
+    func `Fixed: consume() with manual iteration`() throws {
+        var set = try Set<String>.Ordered.Fixed(capacity: 10)
         try set.insert("a")
         try set.insert("b")
 
@@ -474,8 +474,8 @@ struct OrderedSetTests {
     }
 
     @Test
-    func `Bounded: consume() handles empty set`() throws {
-        let set = try Set<Int>.Ordered.Bounded(capacity: 10)
+    func `Fixed: consume() handles empty set`() throws {
+        let set = try Set<Int>.Ordered.Fixed(capacity: 10)
         var view = set.consume()
         let next = view.next()
         #expect(next == nil)
@@ -671,8 +671,8 @@ struct OrderedSetTests {
     }
 
     @Test
-    func `Bounded: partial consumption cleans up remaining`() throws {
-        var set = try Set<Int>.Ordered.Bounded(capacity: 10)
+    func `Fixed: partial consumption cleans up remaining`() throws {
+        var set = try Set<Int>.Ordered.Fixed(capacity: 10)
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
