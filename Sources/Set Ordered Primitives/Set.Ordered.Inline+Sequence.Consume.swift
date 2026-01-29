@@ -14,13 +14,13 @@ public import Sequence_Primitives
 
 // MARK: - Consume Namespace
 
-extension Set_Primitives_Core.Set.Ordered.Inline {
+extension Set_Primitives_Core.Set.Ordered.Static {
     /// Namespace for consuming iteration types.
     ///
     /// Use the `.consume().forEach { }` pattern:
     ///
     /// ```swift
-    /// let set = Set<Int>.Ordered.Inline<8>([1, 2, 3])
+    /// let set = Set<Int>.Ordered.Static<8>([1, 2, 3])
     /// set.consume().forEach { element in
     ///     // element is owned, set is consumed
     /// }
@@ -30,7 +30,7 @@ extension Set_Primitives_Core.Set.Ordered.Inline {
 
 // MARK: - Consume State
 
-extension Set_Primitives_Core.Set.Ordered.Inline.Consume {
+extension Set_Primitives_Core.Set.Ordered.Static.Consume {
     /// State for consuming iteration over inline storage.
     @safe
     public struct State: ~Copyable {
@@ -69,15 +69,15 @@ extension Set_Primitives_Core.Set.Ordered.Inline.Consume {
 
 // MARK: - Sendable
 
-extension Set_Primitives_Core.Set.Ordered.Inline.Consume.State: @unchecked Sendable where Element: Sendable {}
+extension Set_Primitives_Core.Set.Ordered.Static.Consume.State: @unchecked Sendable where Element: Sendable {}
 
 // MARK: - consume() Implementation
 
-extension Set_Primitives_Core.Set.Ordered.Inline {
+extension Set_Primitives_Core.Set.Ordered.Static {
     /// Returns a consuming view: `.consume().forEach { }`
     ///
     /// ```swift
-    /// let set = Set<Int>.Ordered.Inline<8>([1, 2, 3])
+    /// let set = Set<Int>.Ordered.Static<8>([1, 2, 3])
     /// set.consume().forEach { element in
     ///     // element is owned
     /// }

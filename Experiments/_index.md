@@ -27,10 +27,10 @@
 - `Set.Ordered.Fixed.Consuming.Iterator.swift`
 - `Set.Ordered.Fixed.Consuming.Counted.swift`
 
-**Files added for Set.Ordered.Inline**:
-- `Set.Ordered.Inline.Consuming.swift`
-- `Set.Ordered.Inline.Consuming.Iterator.swift`
-- `Set.Ordered.Inline.Consuming.Counted.swift`
+**Files added for Set.Ordered.Static**:
+- `Set.Ordered.Static.Consuming.swift`
+- `Set.Ordered.Static.Consuming.Iterator.swift`
+- `Set.Ordered.Static.Consuming.Counted.swift`
 
 **Files added for Set.Ordered.Small**:
 - `Set.Ordered.Small.Consuming.swift`

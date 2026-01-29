@@ -15,20 +15,20 @@ public import Property_Primitives
 
 // MARK: - Sequence.Drain.Protocol Conformance
 
-extension Set_Primitives_Core.Set.Ordered.Inline: Sequence.Drain.`Protocol` {
-    // drain(_ body:) method already exists in Set.Ordered.Inline.swift
+extension Set_Primitives_Core.Set.Ordered.Static: Sequence.Drain.`Protocol` {
+    // drain(_ body:) method already exists in Set.Ordered.Static.swift
 }
 
 // MARK: - Property Accessor
 
-extension Set_Primitives_Core.Set.Ordered.Inline {
+extension Set_Primitives_Core.Set.Ordered.Static {
     /// Property accessor for `.drain { }` syntax.
     ///
     /// Draining removes all elements from the set, passing each to the closure.
     /// The set survives but is empty after draining.
     ///
     /// ```swift
-    /// var set = Set<Int>.Ordered.Inline<8>([1, 2, 3])
+    /// var set = Set<Int>.Ordered.Static<8>([1, 2, 3])
     /// set.drain { print($0) }  // prints 1, 2, 3
     /// // set is now empty but still usable
     /// ```

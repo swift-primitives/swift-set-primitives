@@ -12,14 +12,14 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-// MARK: - Set<Bit>.Vector.Inline
+// MARK: - Set<Bit>.Vector.Static
 
 extension Set<Bit>.Vector {
     /// Fixed-capacity packed bit set with inline storage.
     ///
-    /// `Set<Bit>.Vector.Inline` uses zero-allocation inline storage with compile-time
+    /// `Set<Bit>.Vector.Static` uses zero-allocation inline storage with compile-time
     /// capacity. Ideal for small bit sets where heap allocation is unnecessary.
-    public struct Inline<let wordCount: Int>: Sendable {
+    public struct Static<let wordCount: Int>: Sendable {
         @usableFromInline
         static var bitsPerWord: Int { UInt.bitWidth }
 
@@ -44,7 +44,7 @@ extension Set<Bit>.Vector {
 
 // MARK: - Properties
 
-extension Set<Bit>.Vector.Inline {
+extension Set<Bit>.Vector.Static {
     @inlinable
     public var capacity: Int { Self.capacity }
 
@@ -68,7 +68,7 @@ extension Set<Bit>.Vector.Inline {
 
 // MARK: - Membership
 
-extension Set<Bit>.Vector.Inline {
+extension Set<Bit>.Vector.Static {
     /// Returns whether the set contains the given bit index.
     @inlinable
     public func contains(_ index: Bit.Index) -> Bool {
@@ -88,7 +88,7 @@ extension Set<Bit>.Vector.Inline {
 
 // MARK: - Mutation
 
-extension Set<Bit>.Vector.Inline {
+extension Set<Bit>.Vector.Static {
     /// Inserts a bit index into the set.
     @inlinable
     @discardableResult
@@ -147,7 +147,7 @@ extension Set<Bit>.Vector.Inline {
 
 // MARK: - Iteration
 
-extension Set<Bit>.Vector.Inline {
+extension Set<Bit>.Vector.Static {
     @inlinable
     public func forEach(_ body: (Int) -> Void) {
         for wordIndex in 0..<wordCount {
@@ -164,7 +164,7 @@ extension Set<Bit>.Vector.Inline {
 
 // MARK: - Equatable
 
-extension Set<Bit>.Vector.Inline: Equatable {
+extension Set<Bit>.Vector.Static: Equatable {
     @inlinable
     public static func == (lhs: Self, rhs: Self) -> Bool {
         for i in 0..<wordCount {
@@ -176,7 +176,7 @@ extension Set<Bit>.Vector.Inline: Equatable {
 
 // MARK: - Hashable
 
-extension Set<Bit>.Vector.Inline: Hashable {
+extension Set<Bit>.Vector.Static: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         for i in 0..<wordCount {

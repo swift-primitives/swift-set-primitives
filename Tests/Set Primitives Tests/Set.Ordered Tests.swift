@@ -485,7 +485,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: consume().forEach yields all elements`() throws {
-        var set = Set<Int>.Ordered.Inline<8>()
+        var set = Set<Int>.Ordered.Static<8>()
         try set.insert(10)
         try set.insert(20)
         try set.insert(30)
@@ -500,7 +500,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: consume().forEach processes all elements`() throws {
-        var set = Set<Int>.Ordered.Inline<8>()
+        var set = Set<Int>.Ordered.Static<8>()
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
@@ -515,7 +515,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: consume() with manual iteration`() throws {
-        var set = Set<String>.Ordered.Inline<8>()
+        var set = Set<String>.Ordered.Static<8>()
         try set.insert("a")
         try set.insert("b")
 
@@ -532,7 +532,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: consume() handles empty set`() {
-        let set = Set<Int>.Ordered.Inline<8>()
+        let set = Set<Int>.Ordered.Static<8>()
         var view = set.consume()
         let next = view.next()
         #expect(next == nil)
@@ -540,7 +540,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: consume() full capacity set`() throws {
-        var set = Set<Int>.Ordered.Inline<4>()
+        var set = Set<Int>.Ordered.Static<4>()
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)
@@ -690,7 +690,7 @@ struct OrderedSetTests {
 
     @Test
     func `Inline: partial consumption cleans up remaining`() throws {
-        var set = Set<Int>.Ordered.Inline<8>()
+        var set = Set<Int>.Ordered.Static<8>()
         try set.insert(1)
         try set.insert(2)
         try set.insert(3)

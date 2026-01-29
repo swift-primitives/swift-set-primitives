@@ -162,7 +162,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     public typealias Error = __SetOrderedFixedError
 }
 
-extension Set_Primitives_Core.Set.Ordered.Inline {
+extension Set_Primitives_Core.Set.Ordered.Static {
     /// Errors that can occur during inline ordered set operations.
     public typealias Error = __SetOrderedInlineError
 }

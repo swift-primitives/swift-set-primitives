@@ -19,7 +19,7 @@ extension Set<Bit>.Vector.Fixed {
     public typealias Error = __SetBitVectorFixedError
 }
 
-extension Set<Bit>.Vector.Inline {
+extension Set<Bit>.Vector.Static {
     /// Errors that can occur during inline packed bit set operations.
     public typealias Error = __SetBitVectorInlineError
 }

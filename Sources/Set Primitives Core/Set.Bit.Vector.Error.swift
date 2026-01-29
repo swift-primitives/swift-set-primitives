@@ -79,7 +79,7 @@ public enum __SetBitVectorFixedError: Swift.Error, Sendable, Equatable {
     }
 }
 
-/// Errors that can occur during `Set<Bit>.Vector.Inline` operations.
+/// Errors that can occur during `Set<Bit>.Vector.Static` operations.
 public enum __SetBitVectorInlineError: Swift.Error, Sendable, Equatable {
     /// The index is out of bounds.
     case bounds(Bounds)

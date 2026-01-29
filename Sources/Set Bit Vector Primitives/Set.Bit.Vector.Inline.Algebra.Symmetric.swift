@@ -12,7 +12,7 @@
 public import Set_Primitives_Core
 public import Bit_Primitives
 
-extension Set<Bit>.Vector.Inline.Algebra {
+extension Set<Bit>.Vector.Static.Algebra {
     /// Namespace for symmetric set operations.
     public struct Symmetric: Sendable {
         @usableFromInline
@@ -27,17 +27,17 @@ extension Set<Bit>.Vector.Inline.Algebra {
 
 // MARK: - Symmetric Operations
 
-extension Set<Bit>.Vector.Inline.Algebra.Symmetric {
+extension Set<Bit>.Vector.Static.Algebra.Symmetric {
     /// Returns a new set with elements in either set, but not both.
     ///
     /// - Parameter other: The other set.
     /// - Returns: A new set with elements in exactly one of the sets.
     @inlinable
-    public func difference(_ other: Set<Bit>.Vector.Inline<wordCount>) -> Set<Bit>.Vector.Inline<wordCount> {
+    public func difference(_ other: Set<Bit>.Vector.Static<wordCount>) -> Set<Bit>.Vector.Static<wordCount> {
         var resultStorage = storage
         for i in 0..<wordCount {
             resultStorage[i] ^= other.storage[i]
         }
-        return Set<Bit>.Vector.Inline<wordCount>(__storage: resultStorage)
+        return Set<Bit>.Vector.Static<wordCount>(__storage: resultStorage)
     }
 }

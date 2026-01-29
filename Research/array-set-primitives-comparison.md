@@ -133,7 +133,7 @@ Set<Bit>.Vector
 ### Structural Difference
 
 Array separates by *variant* (Dynamic, Fixed, Static, Small).
-Set separates by *family* (Ordered, Bit Vector) with variants inline.
+Set separates by *family* (Ordered, Bit Vector) with variants Static.
 
 **Rationale**: Array variants have more distinct implementations requiring separate constraint handling. Set variants share more code within each family.
 
@@ -280,7 +280,7 @@ a.relation.isSubset(of: b)      // Subset test
 
 | Aspect | Status |
 |--------|--------|
-| Bit type naming | `.Vector`, `.Vector.Fixed`, `.Vector.Inline` |
+| Bit type naming | `.Vector`, `.Vector.Fixed`, `.Vector.Static` |
 | Copyability model | Conditional + unconditional |
 | Error hoisting | Module-level with typealias |
 | File organization | One type per file |
@@ -311,12 +311,12 @@ a.relation.isSubset(of: b)      // Subset test
 | Base variant | `Array` | `Set.Ordered` | Both growable, heap |
 | Fixed-count heap | `Array.Fixed` | — | Array-specific |
 | Fixed-capacity heap | — | `Set.Ordered.Fixed` | Set-specific |
-| Variable inline | `Array.Static<N>` | `Set.Ordered.Inline<N>` | Different names |
+| Variable inline | `Array.Static<N>` | `Set.Ordered.Static<N>` | Different names |
 | All-initialized inline | `Array.Inline<N>` | — | Array-specific (typealias) |
 | Hybrid SmallVec | `Array.Small<N>` | `Set.Ordered.Small<N>` | Aligned |
 | Bit growable | `Array<Bit>.Vector` | `Set<Bit>.Vector` | Aligned |
 | Bit fixed | `Array<Bit>.Vector.Fixed` | `Set<Bit>.Vector.Fixed` | Aligned |
-| Bit inline | `Array<Bit>.Vector.Inline<W>` | `Set<Bit>.Vector.Inline<W>` | Aligned |
+| Bit inline | `Array<Bit>.Vector.Static<W>` | `Set<Bit>.Vector.Static<W>` | Aligned |
 | Bit SmallVec | — | `Set<Bit>.Vector.Small<W>` | Set has extra |
 | Phantom indexing | `Array.Indexed<Tag>` | `Set.Ordered.Indexed<Tag>` | Aligned pattern |
 | Error hoisting | `__ArrayXXXError` | `__SetXXXError` | Aligned pattern |

@@ -27,7 +27,7 @@ Should `Set<Bit>.Packed` be renamed to `Set<Bit>.Vector` to match the naming dec
 
 ### Option A: Rename to `Set<Bit>.Vector`
 
-**Description**: Rename `Set<Bit>.Packed` to `Set<Bit>.Vector`, with all nested types following: `Set<Bit>.Vector.Fixed`, `Set<Bit>.Vector.Inline`, `Set<Bit>.Vector.Small`.
+**Description**: Rename `Set<Bit>.Packed` to `Set<Bit>.Vector`, with all nested types following: `Set<Bit>.Vector.Fixed`, `Set<Bit>.Vector.Static`, `Set<Bit>.Vector.Small`.
 
 **Advantages**:
 1. **Naming consistency**: Maintains parallel structure with `Array<Bit>.Vector`
@@ -110,7 +110,7 @@ The Swift Institute primitives follow the Extension Pattern, where container pac
 
 ```
 swift-bit-primitives:     Bit, Bit.Index, Bit.Order
-swift-array-primitives:   Array<Bit>.Vector, Array<Bit>.Vector.Fixed, Array<Bit>.Vector.Inline
+swift-array-primitives:   Array<Bit>.Vector, Array<Bit>.Vector.Fixed, Array<Bit>.Vector.Static
 swift-set-primitives:     Set<Bit>.???, Set<Bit>.???.Fixed, Set<Bit>.???.Inline
 ```
 
@@ -132,7 +132,7 @@ Current variant names differ:
 
 If renaming the parent type, consider also aligning variant names:
 - `Set<Bit>.Vector.Fixed` (instead of `.Fixed`)
-- `Set<Bit>.Vector.Inline` (unchanged)
+- `Set<Bit>.Vector.Static` (unchanged)
 - `Set<Bit>.Vector.Small` (unchanged)
 
 This would achieve full parity with the array type family.

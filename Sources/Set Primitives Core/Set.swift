@@ -31,7 +31,7 @@
 /// when `Element` is `Copyable`, the container is also `Copyable` with copy-on-write
 /// semantics.
 ///
-/// Inline-storage variants (`Ordered.Inline`, `Ordered.Small`) are unconditionally
+/// Inline-storage variants (`Ordered.Static`, `Ordered.Small`) are unconditionally
 /// `~Copyable` because they require a `deinit` for cleanup.
 public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 
@@ -84,7 +84,7 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         // MARK: - Inline (Fixed-Capacity, Inline Storage)
 
         /// A fixed-capacity, inline-storage ordered set with compile-time capacity.
-        public struct Inline<let capacity: Int>: ~Copyable {
+        public struct Static<let capacity: Int>: ~Copyable {
             @inlinable
             public static var maxElementStride: Int { 64 }
 
@@ -188,5 +188,5 @@ extension Set.Ordered.Fixed: Copyable where Element: Copyable {}
 
 extension Set.Ordered: @unchecked Sendable where Element: Sendable {}
 extension Set.Ordered.Fixed: @unchecked Sendable where Element: Sendable {}
-extension Set.Ordered.Inline: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Static: @unchecked Sendable where Element: Sendable {}
 extension Set.Ordered.Small: @unchecked Sendable where Element: Sendable {}
