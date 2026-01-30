@@ -76,7 +76,6 @@ let package = Package(
                 "Set Primitives Core",
                 "Set Ordered Primitives",
                 "Set Bit Vector Primitives",
-                "Set Primitives Sequence",
             ]
         ),
         // Test Support: Re-exports test support from dependencies
