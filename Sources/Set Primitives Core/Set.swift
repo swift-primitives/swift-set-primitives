@@ -81,43 +81,58 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             }
         }
 
-        // MARK: - Inline (Fixed-Capacity, Inline Storage)
+        // MARK: - Static (Fixed-Capacity, Inline Storage)
 
         /// A fixed-capacity, inline-storage ordered set with compile-time capacity.
+        ///
+        /// Uses `Storage.Inline` for element storage and `Hash.Table.Static` for O(1)
+        /// membership testing. This provides proper layering where Set composes
+        /// the lower-level primitives.
+        ///
+        /// - Precondition: `capacity` must be a power of two (required by Hash.Table.Static).
+        ///
+        /// - Note: This type is declared inside `Ordered` (not in an extension) due to a
+        ///   Swift compiler bug where nested types with value generic parameters declared
+        ///   in extensions do not properly inherit `~Copyable` constraints from the outer type.
         public struct Static<let capacity: Int>: ~Copyable {
-            @inlinable
-            public static var maxElementStride: Int { 64 }
+            /// Element storage using Storage.Inline from storage-primitives.
+            @usableFromInline
+            package var _storage: Storage<Element>.Static<capacity>
 
-            public var elements: InlineArray<capacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+            /// Hash table for O(1) position lookup.
+            @usableFromInline
+            package var _hashTable: Hash.Table<Element>.Static<capacity>
 
-            public var storedCount: Int
-
-            public var _deinitWorkaround: AnyObject? = nil
+            /// Workaround for Swift compiler bug where deinit element cleanup
+            /// fails for ~Copyable structs that contain only value-type properties.
+            /// See: https://github.com/swiftlang/swift/issues/86652
+            @usableFromInline
+            package var _deinitWorkaround: AnyObject? = nil
 
             /// Creates an empty inline ordered set.
+            ///
+            /// - Precondition: `capacity` must be a power of two.
             @inlinable
             public init() {
-                precondition(
-                    MemoryLayout<Element>.stride <= Self.maxElementStride,
-                    "Element stride exceeds inline storage slot size"
-                )
-                self.elements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
-                self.storedCount = 0
+                // Storage.Inline.init() validates element stride/alignment
+                do {
+                    self._storage = try Storage<Element>.Static<capacity>()
+                } catch {
+                    switch error {
+                    case .strideExceedsSlotSize(let stride, let max):
+                        preconditionFailure("Element stride (\(stride)) exceeds inline storage slot size (\(max) bytes)")
+                    case .alignmentExceedsStorageAlignment(let alignment, let max):
+                        preconditionFailure("Element alignment (\(alignment)) exceeds inline storage alignment (\(max))")
+                    }
+                }
+                // Hash.Table.Static.init() validates power-of-two capacity
+                self._hashTable = Hash.Table<Element>.Static<capacity>()
             }
 
             deinit {
-                let count = storedCount
-                guard count > 0 else { return }
-
-                let stride = MemoryLayout<Element>.stride
-                unsafe Swift.withUnsafeBytes(of: elements) { bytes in
-                    let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
-                    for i in 0..<count {
-                        let elementPtr = unsafe (basePtr + i * stride)
-                            .assumingMemoryBound(to: Element.self)
-                        unsafe elementPtr.deinitialize(count: 1)
-                    }
-                }
+                let count = _hashTable.count
+                guard count > .zero else { return }
+                _storage.deinitialize(count: count)
             }
         }
 
