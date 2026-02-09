@@ -64,12 +64,6 @@ let package = Package(
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
             ],
             exclude: [
-                "Set.Ordered+Sequence.Consume.swift",
-                "Set.Ordered+Sequence.Drain.swift",
-                "Set.Ordered.Fixed+Sequence.Consume.swift",
-                "Set.Ordered.Fixed+Sequence.Drain.swift",
-                "Set.Ordered.Static+Sequence.Consume.swift",
-                "Set.Ordered.Static+Sequence.Drain.swift",
             ]
         ),
         // Public: Re-exports all modules for users
@@ -86,6 +80,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Bit Primitives Test Support", package: "swift-bit-primitives"),
                 .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
+                .product(name: "Buffer Primitives Test Support", package: "swift-buffer-primitives"),
             ],
             path: "Tests/Support"
         ),

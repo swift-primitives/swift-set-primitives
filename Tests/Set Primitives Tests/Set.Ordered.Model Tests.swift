@@ -32,7 +32,7 @@ func verifyInvariants<Element: Hashable>(
 
     // Invariant 3: Elements at indices match expected order
     for i in 0..<expectedElements.count {
-        let idx: Index<Element> = try! Index(i)
+        let idx = Index<Element>(__unchecked: (), Ordinal(UInt(i)))
         #expect(set[idx] == expectedElements[i], "Element at index \(i) mismatch", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
     }
 
@@ -344,14 +344,14 @@ struct OrderedSetModelTests {
         let count = orderedSet.count
         let countInt = Int(bitPattern: count)
         for i in 0..<countInt {
-            let idx: Index<Int> = try! Index(i)
+            let idx = Index<Int>(__unchecked: (), Ordinal(UInt(i)))
             #expect(orderedSet[idx] == model.elements[i], "Index \(i) mismatch")
         }
 
         // Random access verification
         for _ in 0..<100 {
             let i = rng.nextInt(countInt)
-            let idx: Index<Int> = try! Index(i)
+            let idx = Index<Int>(__unchecked: (), Ordinal(UInt(i)))
             #expect(orderedSet[idx] == model.elements[i], "Random access mismatch at \(i)")
         }
     }

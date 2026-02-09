@@ -113,7 +113,16 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
             ) else { return nil }
 
             let removed = _buffer.remove(at: removedPosition)
-            _heapHashTable!.positions.decrement(after: removedPosition)
+
+            // WORKAROUND: Extract hash table to local for .positions.decrement() call.
+            // Direct `_heapHashTable!.positions.decrement(after:)` crashes the
+            // DiagnoseStaticExclusivity SIL pass on generic ~Copyable structs.
+            // WHEN TO REMOVE: When swiftlang/swift fixes exclusivity analysis for
+            // mutating coroutine accessor chains on stored properties of ~Copyable generics.
+            var ht = _heapHashTable!
+            ht.positions.decrement(after: removedPosition)
+            _heapHashTable = ht
+
             return removed
         } else {
             guard let idx = index(element) else { return nil }
@@ -126,7 +135,15 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     public mutating func clear(keepingCapacity: Bool = false) {
         _buffer.removeAll(keepingCapacity: keepingCapacity)
         if keepingCapacity {
-            _heapHashTable?.remove.all(keepingCapacity: true)
+            // WORKAROUND: Extract hash table to local for .remove.all() call.
+            // Direct `_heapHashTable?.remove.all(keepingCapacity:)` crashes the
+            // DiagnoseStaticExclusivity SIL pass on generic ~Copyable structs.
+            // WHEN TO REMOVE: When swiftlang/swift fixes exclusivity analysis for
+            // mutating coroutine accessor chains on stored properties of ~Copyable generics.
+            if var ht = _heapHashTable {
+                ht.remove.all(keepingCapacity: true)
+                _heapHashTable = ht
+            }
         } else {
             _heapHashTable = nil
         }
@@ -226,7 +243,16 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         while !_buffer.isEmpty {
             body(_buffer.consumeFront())
         }
-        _heapHashTable?.remove.all(keepingCapacity: true)
+
+        // WORKAROUND: Extract hash table to local for .remove.all() call.
+        // Direct `_heapHashTable?.remove.all(keepingCapacity:)` crashes the
+        // DiagnoseStaticExclusivity SIL pass on generic ~Copyable structs.
+        // WHEN TO REMOVE: When swiftlang/swift fixes exclusivity analysis for
+        // mutating coroutine accessor chains on stored properties of ~Copyable generics.
+        if var ht = _heapHashTable {
+            ht.remove.all(keepingCapacity: true)
+            _heapHashTable = ht
+        }
     }
 }
 
