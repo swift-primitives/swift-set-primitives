@@ -70,8 +70,6 @@ let package = Package(
                 "Set.Ordered.Fixed+Sequence.Drain.swift",
                 "Set.Ordered.Static+Sequence.Consume.swift",
                 "Set.Ordered.Static+Sequence.Drain.swift",
-                "Set.Ordered.Small+Sequence.Consume.swift",
-                "Set.Ordered.Small+Sequence.Drain.swift",
             ]
         ),
         // Public: Re-exports all modules for users

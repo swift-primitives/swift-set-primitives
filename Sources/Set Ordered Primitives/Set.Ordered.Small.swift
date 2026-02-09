@@ -20,14 +20,12 @@ public import Memory_Primitives_Core
 //
 // ## Design Note
 //
-// Small sets use inline storage until capacity is exceeded, then spill to heap.
+// Small sets compose Buffer<Element>.Linear.Small<inlineCapacity> for element
+// storage. The buffer handles inline/heap dispatch internally. The set layer
+// adds hash table management (activated on spill) and deduplication.
+//
 // - Inline mode: linear search O(n) for membership (no hash table overhead)
 // - Heap mode: O(1) hash table lookup
-//
-// ## Composition
-//
-// Inline: Buffer<Element>.Linear.Inline<inlineCapacity>         (no hash table)
-// Heap:   Buffer<Element>.Linear + Hash.Table<Element>          (after spill)
 
 // ============================================================================
 // MARK: - Properties
@@ -37,7 +35,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     /// The number of elements in the set.
     @inlinable
     public var count: Index<Element>.Count {
-        isSpilled ? _heapBuffer!.count : _inlineBuffer.count
+        _buffer.count
     }
 
     /// Whether the set is empty.
@@ -47,7 +45,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     /// The current capacity of the set.
     @inlinable
     public var capacity: Index<Element>.Count {
-        isSpilled ? _heapBuffer!.capacity : Index<Element>.Count(Cardinal(UInt(inlineCapacity)))
+        _buffer.capacity
     }
 }
 
@@ -62,13 +60,13 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         if isSpilled {
             return _heapHashTable!.position(
                 forHash: element.hashValue,
-                equals: { idx in _heapBuffer![idx] == element }
+                equals: { idx in _buffer[idx] == element }
             )
         } else {
             var idx: Index<Element> = .zero
-            let end = _inlineBuffer.count.map(Ordinal.init)
+            let end = _buffer.count.map(Ordinal.init)
             while idx < end {
-                if _inlineBuffer[idx] == element { return idx }
+                if _buffer[idx] == element { return idx }
                 idx += .one
             }
             return nil
@@ -91,22 +89,17 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
             return (false, existing)
         }
 
-        if isSpilled {
-            let index = _heapBuffer!.count.map(Ordinal.init)
-            _heapBuffer!.append(element)
+        let wasSpilled = _buffer.isSpilled
+        let index = _buffer.count.map(Ordinal.init)
+        _buffer.append(element)
+
+        if wasSpilled {
             _heapHashTable!.insert(__unchecked: (), position: index, hashValue: element.hashValue)
-            return (true, index)
-        } else if !_inlineBuffer.isFull {
-            let index = _inlineBuffer.count.map(Ordinal.init)
-            _ = _inlineBuffer.append(element)
-            return (true, index)
-        } else {
-            spillToHeap()
-            let index = _heapBuffer!.count.map(Ordinal.init)
-            _heapBuffer!.append(element)
-            _heapHashTable!.insert(__unchecked: (), position: index, hashValue: element.hashValue)
-            return (true, index)
+        } else if _buffer.isSpilled {
+            _buildHashTable()
         }
+
+        return (true, index)
     }
 
     /// Removes an element from the set.
@@ -116,62 +109,46 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         if isSpilled {
             guard let removedPosition = _heapHashTable!.remove(
                 hashValue: element.hashValue,
-                equals: { idx in _heapBuffer![idx] == element }
+                equals: { idx in _buffer[idx] == element }
             ) else { return nil }
 
-            let removed = _heapBuffer!.remove(at: removedPosition)
+            let removed = _buffer.remove(at: removedPosition)
             _heapHashTable!.positions.decrement(after: removedPosition)
             return removed
         } else {
             guard let idx = index(element) else { return nil }
-            return _inlineBuffer.remove(at: idx)
+            return _buffer.remove(at: idx)
         }
     }
 
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
-        if isSpilled {
-            _heapBuffer!.removeAll()
-            if keepingCapacity {
-                _heapHashTable!.remove.all(keepingCapacity: true)
-            } else {
-                _heapHashTable!.remove.all(keepingCapacity: false)
-                _heapBuffer = nil
-                _heapHashTable = nil
-            }
+        _buffer.removeAll(keepingCapacity: keepingCapacity)
+        if keepingCapacity {
+            _heapHashTable?.remove.all(keepingCapacity: true)
         } else {
-            _inlineBuffer.removeAll()
+            _heapHashTable = nil
         }
     }
 }
 
 // ============================================================================
-// MARK: - Spill to Heap
+// MARK: - Build Hash Table
 // ============================================================================
 
 extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
-    /// Copies inline elements to heap storage and activates hash table.
+    /// Builds a hash table over all elements after spill.
     @usableFromInline
-    mutating func spillToHeap() {
-        let currentCount = _inlineBuffer.count
-        let newCapacity = Index<Element>.Count(Cardinal(UInt(inlineCapacity * 2)))
-        var newBuffer = Buffer<Element>.Linear(minimumCapacity: newCapacity)
-        var newHashTable = Hash.Table<Element>(minimumCapacity: newCapacity)
-
+    mutating func _buildHashTable() {
+        let count = _buffer.count
+        _heapHashTable = Hash.Table<Element>(minimumCapacity: count)
         var idx: Index<Element> = .zero
-        let end = currentCount.map(Ordinal.init)
+        let end = count.map(Ordinal.init)
         while idx < end {
-            let element = _inlineBuffer[idx]
-            let position = newBuffer.count.map(Ordinal.init)
-            newBuffer.append(element)
-            newHashTable.insert(__unchecked: (), position: position, hashValue: element.hashValue)
+            _heapHashTable!.insert(__unchecked: (), position: idx, hashValue: _buffer[idx].hashValue)
             idx += .one
         }
-        _inlineBuffer.removeAll()
-
-        _heapBuffer = newBuffer
-        _heapHashTable = newHashTable
     }
 }
 
@@ -184,22 +161,14 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     @inlinable
     public func element(at index: Index<Element>) -> Element? {
         guard index < count else { return nil }
-        if isSpilled {
-            return _heapBuffer![index]
-        } else {
-            return _inlineBuffer[index]
-        }
+        return _buffer[index]
     }
 
     /// Subscript access to elements by index.
     @inlinable
     public subscript(index: Index<Element>) -> Element {
         precondition(index < count, "Index out of bounds")
-        if isSpilled {
-            return _heapBuffer![index]
-        } else {
-            return _inlineBuffer[index]
-        }
+        return _buffer[index]
     }
 }
 
@@ -212,11 +181,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     @inlinable
     public var first: Element? {
         guard count > .zero else { return nil }
-        if isSpilled {
-            return _heapBuffer![.zero]
-        } else {
-            return _inlineBuffer[.zero]
-        }
+        return _buffer[.zero]
     }
 
     /// The last element, or `nil` if the set is empty.
@@ -224,11 +189,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     public var last: Element? {
         guard count > .zero else { return nil }
         let lastIndex = count.subtract.saturating(.one).map(Ordinal.init)
-        if isSpilled {
-            return _heapBuffer![lastIndex]
-        } else {
-            return _inlineBuffer[lastIndex]
-        }
+        return _buffer[lastIndex]
     }
 }
 
@@ -241,11 +202,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     @inlinable
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
         precondition(index < count, "Index out of bounds")
-        if isSpilled {
-            return body(_heapBuffer![index])
-        } else {
-            return body(_inlineBuffer[index])
-        }
+        return body(_buffer[index])
     }
 
     /// Iterates over all elements in the set.
@@ -256,11 +213,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         var index: Index<Element> = .zero
         let end = count.map(Ordinal.init)
         while index < end {
-            if isSpilled {
-                try body(_heapBuffer![index])
-            } else {
-                try body(_inlineBuffer[index])
-            }
+            try body(_buffer[index])
             index += .one
         }
     }
@@ -270,16 +223,10 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public mutating func drain(_ body: (consuming Element) -> Void) {
         guard count > .zero else { return }
 
-        if isSpilled {
-            while !_heapBuffer!.isEmpty {
-                body(_heapBuffer!.consumeFront())
-            }
-            _heapHashTable!.remove.all(keepingCapacity: true)
-        } else {
-            while !_inlineBuffer.isEmpty {
-                body(_inlineBuffer.consumeFront())
-            }
+        while !_buffer.isEmpty {
+            body(_buffer.consumeFront())
         }
+        _heapHashTable?.remove.all(keepingCapacity: true)
     }
 }
 
@@ -297,11 +244,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        if isSpilled {
-            try body(_heapBuffer!.span)
-        } else {
-            try body(_inlineBuffer.span)
-        }
+        try body(_buffer.span)
     }
 
     /// Safe, bounds-checked write access to contiguous storage via closure.
@@ -312,13 +255,8 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
-        if isSpilled {
-            var span = _heapBuffer!.mutableSpan
-            return try body(&span)
-        } else {
-            var span = _inlineBuffer.mutableSpan
-            return try body(&span)
-        }
+        var span = _buffer.mutableSpan
+        return try body(&span)
     }
 }
 
@@ -326,50 +264,28 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 // MARK: - Buffer Access (Escape Hatch for C Interop)
 // ============================================================================
 
-// @_spi(Unsafe)
-// extension Set_Primitives_Core.Set.Ordered.Small {
-//     /// Provides read-only access to the underlying contiguous storage.
-//     ///
-//     /// - Warning: Prefer ``withSpan(_:)`` for safe access.
-//     @unsafe
-//     @inlinable
-//     public func withUnsafeBufferPointer<R, E: Swift.Error>(
-//         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
-//     ) throws(E) -> R {
-//         if count > .zero {
-//             if isSpilled {
-//                 let span = _heapBuffer!.span
-//                 return try unsafe span.withUnsafeBufferPointer(body)
-//             } else {
-//                 let span = _inlineBuffer.span
-//                 return try unsafe span.withUnsafeBufferPointer(body)
-//             }
-//         } else {
-//             let nilPtr: UnsafePointer<Element>? = nil
-//             return try unsafe body(UnsafeBufferPointer(start: nilPtr, count: 0))
-//         }
-//     }
-//
-//     /// Provides mutable access to the underlying contiguous storage.
-//     ///
-//     /// - Warning: Prefer ``withMutableSpan(_:)`` for safe access.
-//     /// - Warning: Modifying elements may invalidate uniqueness.
-//     @unsafe
-//     @inlinable
-//     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
-//         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
-//     ) throws(E) -> R {
-//         if count > .zero {
-//             if isSpilled {
-//                 var span = _heapBuffer!.mutableSpan
-//                 return try unsafe span.withUnsafeMutableBufferPointer(body)
-//             } else {
-//                 var span = _inlineBuffer.mutableSpan
-//                 return try unsafe span.withUnsafeMutableBufferPointer(body)
-//             }
-//         } else {
-//             let nilPtr: UnsafeMutablePointer<Element>? = nil
-//             return try unsafe body(UnsafeMutableBufferPointer(start: nilPtr, count: 0))
-//         }
-//     }
-// }
+@_spi(Unsafe)
+extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
+    /// Provides read-only access to the underlying contiguous storage.
+    ///
+    /// - Warning: Prefer ``withSpan(_:)`` for safe access.
+    @unsafe
+    @inlinable
+    public func withUnsafeBufferPointer<R, E: Swift.Error>(
+        _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        try unsafe _buffer.withUnsafeBufferPointer(body)
+    }
+
+    /// Provides mutable access to the underlying contiguous storage.
+    ///
+    /// - Warning: Prefer ``withMutableSpan(_:)`` for safe access.
+    /// - Warning: Modifying elements may invalidate uniqueness.
+    @unsafe
+    @inlinable
+    public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
+        _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
+    ) throws(E) -> R {
+        try unsafe _buffer.withUnsafeMutableBufferPointer(body)
+    }
+}

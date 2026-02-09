@@ -134,19 +134,15 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 
         /// An ordered set with small-buffer optimization (SmallVec pattern).
         ///
-        /// Composes `Buffer<Element>.Linear.Inline<inlineCapacity>` for inline storage
-        /// and `Buffer<Element>.Linear` + `Hash.Table<Element>` after spill.
+        /// Composes `Buffer<Element>.Linear.Small<inlineCapacity>` for element storage
+        /// and `Hash.Table<Element>` after spill.
         ///
         /// Inline mode uses O(n) linear scan — no hash table overhead for small sizes.
         /// Hash table activates only on spill.
         public struct Small<let inlineCapacity: Int>: ~Copyable {
-            /// Inline element storage — active when not spilled.
+            /// Element storage — handles inline/heap dispatch internally.
             @usableFromInline
-            package var _inlineBuffer: Buffer<Element>.Linear.Inline<inlineCapacity>
-
-            /// Heap element storage — non-nil after spill.
-            @usableFromInline
-            package var _heapBuffer: Buffer<Element>.Linear?
+            package var _buffer: Buffer<Element>.Linear.Small<inlineCapacity>
 
             /// Heap hash table — non-nil after spill.
             @usableFromInline
@@ -161,20 +157,18 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             /// Creates an empty small ordered set.
             @inlinable
             public init() {
-                self._inlineBuffer = Buffer<Element>.Linear.Inline<inlineCapacity>()
-                self._heapBuffer = nil
+                self._buffer = Buffer<Element>.Linear.Small<inlineCapacity>()
                 self._heapHashTable = nil
             }
 
             deinit {
-                // Buffer.Linear.Inline's deinit handles inline element cleanup via Storage.Inline._slots.
-                // Buffer.Linear's Storage.Heap deinit handles heap element cleanup.
-                // No manual cleanup needed — each component manages its own lifecycle.
+                // Buffer.Linear.Small's deinit handles element cleanup for both modes.
+                // No manual cleanup needed — the composed buffer manages its own lifecycle.
             }
 
             /// Whether the set has spilled to heap storage.
             @inlinable
-            public var isSpilled: Bool { _heapBuffer != nil }
+            public var isSpilled: Bool { _buffer.isSpilled }
         }
     }
 }
