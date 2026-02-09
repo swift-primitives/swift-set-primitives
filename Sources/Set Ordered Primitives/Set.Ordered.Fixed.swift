@@ -49,47 +49,13 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     }
 }
 
-// MARK: - Hash Table Operations
-
-extension Set_Primitives_Core.Set.Ordered.Fixed {
-    /// Finds the position for an element with the given hash value.
-    @usableFromInline
-    func findPosition(forHash hashValue: Int, equals: (Index<Element>) -> Bool) -> Index<Element>? {
-        hashTable.position(forHash: hashValue, equals: equals)
-    }
-
-    /// Inserts a position into the hash table without checking for duplicates.
-    @usableFromInline
-    mutating func insertPosition(position: Index<Element>, hashValue: Int) {
-        hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
-    }
-
-    /// Removes a position from the hash table.
-    @usableFromInline
-    mutating func removePosition(hashValue: Int, equals: (Index<Element>) -> Bool) -> Index<Element>? {
-        hashTable.remove(hashValue: hashValue, equals: equals)
-    }
-
-    /// Updates positions after an element is removed from element storage.
-    @usableFromInline
-    mutating func decrementPositions(after removedPosition: Index<Element>) {
-        hashTable.positions.decrement(after: removedPosition)
-    }
-
-    /// Removes all entries from the hash table.
-    @usableFromInline
-    mutating func clearIndices(keepingCapacity: Bool) {
-        hashTable.remove.all(keepingCapacity: keepingCapacity)
-    }
-}
-
 // MARK: - Core Operations (Copyable elements)
 
 extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
     public func index(_ element: Element) -> Index<Element>? {
-        findPosition(
+        hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         )
@@ -103,8 +69,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     @inlinable
     @discardableResult
     public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index<Element>) {
-        // Check for existing element
-        if let existing = findPosition(
+        if let existing = hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) {
@@ -118,7 +83,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         makeUnique()
         let index = currentCount.map(Ordinal.init)
         _ = buffer.append(element)
-        insertPosition(position: index, hashValue: element.hashValue)
+        hashTable.insert(__unchecked: (), position: index, hashValue: element.hashValue)
 
         return (true, index)
     }
@@ -132,7 +97,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     public mutating func remove(_ element: Element) -> Element? {
         makeUnique()
 
-        guard let removedPosition = removePosition(
+        guard let removedPosition = hashTable.remove(
             hashValue: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) else {
@@ -140,7 +105,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         }
 
         let removed = buffer.remove(at: removedPosition)
-        decrementPositions(after: removedPosition)
+        hashTable.positions.decrement(after: removedPosition)
 
         return removed
     }
@@ -148,7 +113,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Returns whether the set contains the given element.
     @inlinable
     public func contains(_ element: Element) -> Bool {
-        findPosition(
+        hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) != nil
@@ -159,7 +124,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
         buffer.removeAll()
-        clearIndices(keepingCapacity: keepingCapacity)
+        hashTable.remove.all(keepingCapacity: keepingCapacity)
     }
 }
 
@@ -231,7 +196,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
         while !buffer.isEmpty {
             body(buffer.consumeFront())
         }
-        clearIndices(keepingCapacity: true)
+        hashTable.remove.all(keepingCapacity: true)
     }
 }
 
@@ -270,14 +235,8 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let countInt = Int(bitPattern: buffer.count)
-        if countInt > 0 {
-            let ptr = unsafe buffer.storage.pointer(at: .zero)
-            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr), count: countInt))
-        } else {
-            let nilPtr: UnsafePointer<Element>? = nil
-            return try unsafe body(UnsafeBufferPointer<Element>(start: nilPtr, count: 0))
-        }
+        let span = buffer.span
+        return try unsafe span.withUnsafeBufferPointer(body)
     }
 
     /// Provides mutable access to the underlying contiguous storage.
@@ -287,14 +246,8 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R where Element: Copyable {
         makeUnique()
-        let countInt = Int(bitPattern: buffer.count)
-        if countInt > 0 {
-            let ptr = unsafe buffer.storage.pointer(at: .zero)
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr, count: countInt))
-        } else {
-            let nilPtr: UnsafeMutablePointer<Element>? = nil
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: nilPtr, count: 0))
-        }
+        var span = buffer.mutableSpan
+        return try unsafe span.withUnsafeMutableBufferPointer(body)
     }
 }
 

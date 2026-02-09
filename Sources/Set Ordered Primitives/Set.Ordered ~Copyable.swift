@@ -33,42 +33,6 @@ extension Set.Ordered {
 }
 
 // ============================================================================
-// MARK: - Hash Table Operations
-// ============================================================================
-
-extension Set.Ordered {
-    /// Finds the position for an element with the given hash value.
-    @usableFromInline
-    func findPosition(forHash hashValue: Int, equals: (Index<Element>) -> Bool) -> Index<Element>? {
-        hashTable.position(forHash: hashValue, equals: equals)
-    }
-
-    /// Inserts a position into the hash table without checking for duplicates.
-    @usableFromInline
-    mutating func insertPosition(position: Index<Element>, hashValue: Int) {
-        hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
-    }
-
-    /// Removes a position from the hash table.
-    @usableFromInline
-    mutating func removePosition(hashValue: Int, equals: (Index<Element>) -> Bool) -> Index<Element>? {
-        hashTable.remove(hashValue: hashValue, equals: equals)
-    }
-
-    /// Updates positions after an element is removed from element storage.
-    @usableFromInline
-    mutating func decrementPositions(after removedPosition: Index<Element>) {
-        hashTable.positions.decrement(after: removedPosition)
-    }
-
-    /// Removes all entries from the hash table.
-    @usableFromInline
-    mutating func clearIndices(keepingCapacity: Bool) {
-        hashTable.remove.all(keepingCapacity: keepingCapacity)
-    }
-}
-
-// ============================================================================
 // MARK: - Reserve Capacity
 // ============================================================================
 
@@ -144,24 +108,8 @@ extension Set.Ordered {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let countInt = Int(bitPattern: buffer.count)
-        if countInt > 0 {
-            let ptr = unsafe buffer.storage.pointer(at: .zero)
-            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr), count: countInt))
-        } else {
-            let nilPtr: UnsafePointer<Element>? = nil
-            return try unsafe body(UnsafeBufferPointer<Element>(start: nilPtr, count: 0))
-        }
+        let span = buffer.span
+        return try unsafe span.withUnsafeBufferPointer(body)
     }
 }
 
-// ============================================================================
-// MARK: - Internal Identity (for testing)
-// ============================================================================
-
-extension Set.Ordered {
-    @usableFromInline
-    internal var _identity: ObjectIdentifier {
-        ObjectIdentifier(buffer.storage)
-    }
-}

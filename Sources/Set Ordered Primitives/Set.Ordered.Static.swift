@@ -52,9 +52,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public mutating func index(_ element: Element) -> Int? {
         let hashValue = element.hashValue
         guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
-            _buffer.withElement(at: idx) { stored in
-                stored == element
-            }
+            _buffer[idx] == element
         }) else {
             return nil
         }
@@ -68,9 +66,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public mutating func contains(_ element: Element) -> Bool {
         let hashValue = element.hashValue
         return _hashTable.contains(hashValue: hashValue, equals: { idx in
-            _buffer.withElement(at: idx) { stored in
-                stored == element
-            }
+            _buffer[idx] == element
         })
     }
 
@@ -87,9 +83,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 
         // Check for existing element
         if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
-            _buffer.withElement(at: idx) { stored in
-                stored == element
-            }
+            _buffer[idx] == element
         }) {
             return (false, Int(bitPattern: existingPosition.position.rawValue))
         }
@@ -119,9 +113,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 
         // Find and remove from hash table
         guard let removedPosition = _hashTable.remove(hashValue: hashValue, equals: { idx in
-            _buffer.withElement(at: idx) { stored in
-                stored == element
-            }
+            _buffer[idx] == element
         }) else {
             return nil
         }
@@ -130,7 +122,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         let removed = _buffer.remove(at: removedPosition)
 
         // Update positions in hash table for shifted elements
-        _hashTable.decrementPositions(after: removedPosition)
+        _hashTable.positions.decrement(after: removedPosition)
 
         return removed
     }
@@ -140,7 +132,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public mutating func clear() {
         guard _hashTable.count > .zero else { return }
         _buffer.removeAll()
-        _hashTable.removeAll()
+        _hashTable.remove.all()
     }
 }
 
@@ -149,14 +141,13 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 extension Set_Primitives_Core.Set.Ordered.Static {
     /// Accesses the element at the specified index.
     @inlinable
-    public mutating func element(at index: Int) throws(__SetOrderedInlineError) -> Element {
+    public func element(at index: Int) throws(__SetOrderedInlineError) -> Element {
         guard index >= 0 && index < count else {
             throw .bounds(.init(index: index, count: count))
         }
         let idx = Index<Element>(Ordinal(UInt(index)))
-        return _buffer.withElement(at: idx) { $0 }
+        return _buffer[idx]
     }
-
 }
 
 // MARK: - First/Last Accessors
@@ -166,7 +157,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     @inlinable
     public func getFirst() -> Element? {
         guard Int(bitPattern: _hashTable.count) > 0 else { return nil }
-        return _buffer.withElement(at: .zero) { $0 }
+        return _buffer[Index<Element>.zero]
     }
 
     /// Returns the last element, or `nil` if the set is empty.
@@ -175,7 +166,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         let c = Int(bitPattern: _hashTable.count)
         guard c > 0 else { return nil }
         let lastIndex = Index<Element>(Ordinal(UInt(c - 1)))
-        return _buffer.withElement(at: lastIndex) { $0 }
+        return _buffer[lastIndex]
     }
 }
 
@@ -187,7 +178,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public func withElement<R>(at index: Int, _ body: (borrowing Element) -> R) -> R {
         precondition(index >= 0 && index < Int(bitPattern: _hashTable.count), "Index out of bounds")
         let idx = Index<Element>(Ordinal(UInt(index)))
-        return _buffer.withElement(at: idx, body)
+        return body(_buffer[idx])
     }
 
     /// Iterates over all elements in the set.
@@ -198,7 +189,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         var index: Index<Element> = .zero
         let end = count.map(Ordinal.init)
         while index < end {
-            try _buffer.withElement(at: index, body)
+            try body(_buffer[index])
             index += .one
         }
     }
@@ -213,7 +204,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
 
         // Clear hash table
-        _hashTable.removeAll()
+        _hashTable.remove.all()
     }
 }
 

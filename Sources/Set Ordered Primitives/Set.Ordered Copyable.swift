@@ -65,7 +65,7 @@ extension Set.Ordered where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
     public func index(_ element: Element) -> Index<Element>? {
-        findPosition(
+        hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         )
@@ -75,7 +75,7 @@ extension Set.Ordered where Element: Copyable {
     @inlinable
     @discardableResult
     public mutating func insert(_ element: Element) -> (inserted: Bool, index: Index<Element>) {
-        if let existing = findPosition(
+        if let existing = hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) {
@@ -85,7 +85,7 @@ extension Set.Ordered where Element: Copyable {
         makeUnique()
         let index = buffer.count.map(Ordinal.init)
         buffer.append(element)
-        insertPosition(position: index, hashValue: element.hashValue)
+        hashTable.insert(__unchecked: (), position: index, hashValue: element.hashValue)
 
         return (true, index)
     }
@@ -96,7 +96,7 @@ extension Set.Ordered where Element: Copyable {
     public mutating func remove(_ element: Element) -> Element? {
         makeUnique()
 
-        guard let removedPosition = removePosition(
+        guard let removedPosition = hashTable.remove(
             hashValue: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) else {
@@ -104,7 +104,7 @@ extension Set.Ordered where Element: Copyable {
         }
 
         let removed = buffer.remove(at: removedPosition)
-        decrementPositions(after: removedPosition)
+        hashTable.positions.decrement(after: removedPosition)
 
         return removed
     }
@@ -112,7 +112,7 @@ extension Set.Ordered where Element: Copyable {
     /// Returns whether the set contains the given element.
     @inlinable
     public func contains(_ element: Element) -> Bool {
-        findPosition(
+        hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
         ) != nil
@@ -123,7 +123,7 @@ extension Set.Ordered where Element: Copyable {
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
         buffer.removeAll()
-        clearIndices(keepingCapacity: keepingCapacity)
+        hashTable.remove.all(keepingCapacity: keepingCapacity)
     }
 }
 
@@ -182,7 +182,7 @@ extension Set.Ordered where Element: Copyable {
         while !buffer.isEmpty {
             body(buffer.consumeFront())
         }
-        clearIndices(keepingCapacity: true)
+        hashTable.remove.all(keepingCapacity: true)
     }
 }
 
@@ -218,14 +218,8 @@ extension Set.Ordered where Element: Copyable {
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
         makeUnique()
-        let countInt = Int(bitPattern: buffer.count)
-        if countInt > 0 {
-            let ptr = unsafe buffer.storage.pointer(at: .zero)
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr, count: countInt))
-        } else {
-            let nilPtr: UnsafeMutablePointer<Element>? = nil
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: nilPtr, count: 0))
-        }
+        var span = buffer.mutableSpan
+        return try unsafe span.withUnsafeMutableBufferPointer(body)
     }
 }
 
