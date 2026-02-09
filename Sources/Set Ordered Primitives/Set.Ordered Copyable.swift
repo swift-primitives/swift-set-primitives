@@ -41,39 +41,19 @@ extension Set.Ordered where Element: Copyable {
 }
 
 // ============================================================================
-// MARK: - Storage Uniqueness (CoW)
+// MARK: - Coordinated CoW
 // ============================================================================
 
 extension Set.Ordered where Element: Copyable {
-    /// Ensures element storage is uniquely owned (copy-on-write).
+    /// Ensures both buffer and hash table are uniquely owned.
+    ///
+    /// Each component is independently checked — fixes the latent bug where
+    /// `reserve()` could make the buffer unique while the hash table remained shared.
     @usableFromInline
     @inline(__always)
     mutating func makeUnique() {
-        if !isKnownUniquelyReferenced(&elementStorage) {
-            elementStorage = elementStorage.copy()
-            hashTable = copyHashTable()
-        }
-    }
-}
-
-// ============================================================================
-// MARK: - Hash Table Copy Helper
-// ============================================================================
-
-extension Set.Ordered where Element: Copyable {
-    /// Copies the hash table by re-inserting all elements.
-    ///
-    /// Used for CoW when the element storage is copied.
-    @usableFromInline
-    func copyHashTable() -> Hash.Table<Element> {
-        var new = Hash.Table<Element>(minimumCapacity: count)
-        for index in .zero..<count {
-            let hash = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                unsafe elements[index].hashValue
-            }
-            new.insert(__unchecked: (), position: index, hashValue: hash)
-        }
-        return new
+        buffer.ensureUnique()
+        hashTable.ensureUnique()
     }
 }
 
@@ -87,11 +67,7 @@ extension Set.Ordered where Element: Copyable {
     public func index(_ element: Element) -> Index<Element>? {
         findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         )
     }
 
@@ -101,22 +77,14 @@ extension Set.Ordered where Element: Copyable {
     public mutating func insert(_ element: Element) -> (inserted: Bool, index: Index<Element>) {
         if let existing = findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         ) {
             return (false, existing)
         }
 
         makeUnique()
-        let index = Index<Element>(elementStorage.count)
-        let newCount = elementStorage.count + .one
-        ensureCapacity(newCount)
-        elementStorage.initialize(to: element, at: index)
-        elementStorage.count = newCount
-
+        let index = buffer.count.map(Ordinal.init)
+        buffer.append(element)
         insertPosition(position: index, hashValue: element.hashValue)
 
         return (true, index)
@@ -128,23 +96,14 @@ extension Set.Ordered where Element: Copyable {
     public mutating func remove(_ element: Element) -> Element? {
         makeUnique()
 
-        let hashValue = element.hashValue
-        let storage = elementStorage  // Capture reference to avoid overlapping access
         guard let removedPosition = removePosition(
-            hashValue: hashValue,
-            equals: { idx in
-                unsafe storage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            hashValue: element.hashValue,
+            equals: { idx in buffer[idx] == element }
         ) else {
             return nil
         }
 
-        let currentCount = elementStorage.count
-        let removed = elementStorage.move(at: removedPosition)
-        shiftLeft(removedAt: removedPosition, count: currentCount)
-
+        let removed = buffer.remove(at: removedPosition)
         decrementPositions(after: removedPosition)
 
         return removed
@@ -155,11 +114,7 @@ extension Set.Ordered where Element: Copyable {
     public func contains(_ element: Element) -> Bool {
         findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         ) != nil
     }
 
@@ -167,28 +122,8 @@ extension Set.Ordered where Element: Copyable {
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
-        elementStorage.deinitialize()
+        buffer.removeAll()
         clearIndices(keepingCapacity: keepingCapacity)
-        if !keepingCapacity {
-            elementStorage = Storage<Element>.create(minimumCapacity: .zero)
-        }
-    }
-
-    /// Shifts elements left after removal.
-    @usableFromInline
-    mutating func shiftLeft(removedAt index: Index<Element>, count: Index<Element>.Count) {
-        let indexInt = Int(bitPattern: index.position)
-        let countInt = Int(bitPattern: count)
-        guard indexInt < countInt - 1 else {
-            elementStorage.count = Index<Element>.Count(Cardinal(UInt(countInt - 1)))
-            return
-        }
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            for i in indexInt..<(countInt - 1) {
-                unsafe (elements + i).initialize(to: (elements + i + 1).move())
-            }
-        }
-        elementStorage.count = Index<Element>.Count(Cardinal(UInt(countInt - 1)))
     }
 }
 
@@ -203,18 +138,14 @@ extension Set.Ordered where Element: Copyable {
         guard index < count else {
             throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
         }
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            unsafe elements[index]
-        }
+        return buffer[index]
     }
 
     /// Subscript access to elements by index.
     @inlinable
     public subscript(index: Index<Element>) -> Element {
         precondition(index < count, "Index out of bounds")
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            unsafe elements[index]
-        }
+        return buffer[index]
     }
 }
 
@@ -226,15 +157,15 @@ extension Set.Ordered where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
-        count > .zero ? unsafe elementStorage.withUnsafeMutablePointerToElements { unsafe $0[.zero] } : nil
+        count > .zero ? buffer[.zero] : nil
     }
 
     /// The last element, or `nil` if the set is empty.
     @inlinable
     public var last: Element? {
         guard count > .zero else { return nil }
-        let lastIndex = Index<Element>(__unchecked: (), Ordinal(count.rawValue.rawValue - 1))
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { unsafe $0[lastIndex] }
+        let lastIndex = count.subtract.saturating(.one).map(Ordinal.init)
+        return buffer[lastIndex]
     }
 }
 
@@ -246,15 +177,11 @@ extension Set.Ordered where Element: Copyable {
     /// Removes and consumes all elements.
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
-        let count = elementStorage.count
         guard count > .zero else { return }
         makeUnique()
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            (.zero..<count).forEach { index in
-                unsafe body((elements + index).move())
-            }
+        while !buffer.isEmpty {
+            body(buffer.consumeFront())
         }
-        elementStorage.count = .zero
         clearIndices(keepingCapacity: true)
     }
 }
@@ -268,30 +195,13 @@ extension Set.Ordered where Element: Copyable {
     ///
     /// - Warning: Modifying elements through this span may invalidate the hash table.
     ///   Only use for in-place updates that preserve element identity/hash.
-    ///
-    /// - Parameter body: A closure that receives the mutable span.
-    /// - Returns: The value returned by the closure.
-    /// - Throws: Rethrows any error thrown by the closure.
     @inlinable
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
         makeUnique()
-        let count = elementStorage.count
-        var thrown: E? = nil
-        let result: R? = unsafe elementStorage.withUnsafeMutablePointerToElements { base in
-            var span = unsafe MutableSpan(_unsafeStart: base, count: Int(bitPattern: count))
-            do {
-                return try body(&span)
-            } catch let e as E {
-                thrown = e
-                return nil
-            } catch {
-                preconditionFailure("unexpected error type")
-            }
-        }
-        if let thrown { throw thrown }
-        return result!
+        var span = buffer.mutableSpan
+        return try body(&span)
     }
 }
 
@@ -308,11 +218,10 @@ extension Set.Ordered where Element: Copyable {
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
         makeUnique()
-        let count = elementStorage.count
-        let countInt = Int(bitPattern: count)
+        let countInt = Int(bitPattern: buffer.count)
         if countInt > 0 {
-            let ptr = unsafe elementStorage.pointer(at: .zero)
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr.base, count: countInt))
+            let ptr = unsafe buffer.storage.pointer(at: .zero)
+            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr, count: countInt))
         } else {
             let nilPtr: UnsafeMutablePointer<Element>? = nil
             return try unsafe body(UnsafeMutableBufferPointer<Element>(start: nilPtr, count: 0))
@@ -331,29 +240,27 @@ extension Set.Ordered: Hash.`Protocol` {
         guard lhs.count == rhs.count else { return false }
         let count = lhs.count
         guard count > .zero else { return true }
-        return unsafe lhs.elementStorage.withUnsafeMutablePointerToElements { lhsElements in
-            unsafe rhs.elementStorage.withUnsafeMutablePointerToElements { rhsElements in
-                var matches = true
-                for index in Index<Element>.zero..<count {
-                    if unsafe lhsElements[index] != rhsElements[index] {
-                        matches = false
-                    }
-                }
-                return matches
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if lhs.buffer[index] != rhs.buffer[index] {
+                return false
             }
+            index += .one
         }
+        return true
     }
 
     /// Hashes the essential components of this set.
     @inlinable
     public borrowing func hash(into hasher: inout Hasher) {
         hasher.combine(Int(bitPattern: count))
-        let count = elementStorage.count
         guard count > .zero else { return }
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                unsafe elements[index].hash(into: &hasher)
-            }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            buffer[index].hash(into: &hasher)
+            index += .one
         }
     }
 }
@@ -367,14 +274,14 @@ extension Set.Ordered where Element: Copyable {
     /// A textual representation of the set.
     public var description: String {
         var result = "Set.Ordered(["
-        var first = true
-        let count = elementStorage.count
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            (.zero..<count).forEach { index in
-                if !first { result += ", " }
-                result += String(describing: unsafe elements[index])
-                first = false
-            }
+        var isFirst = true
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if !isFirst { result += ", " }
+            result += String(describing: buffer[index])
+            isFirst = false
+            index += .one
         }
         result += "])"
         return result

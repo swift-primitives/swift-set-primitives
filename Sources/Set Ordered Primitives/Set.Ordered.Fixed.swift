@@ -22,32 +22,30 @@ public import Cardinal_Primitives
 extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// The number of elements in the set.
     @inlinable
-    public var count: Index<Element>.Count { elementStorage.count }
+    public var count: Index<Element>.Count { buffer.count }
 
     /// Whether the set is empty.
     @inlinable
-    public var isEmpty: Bool { elementStorage.count == .zero }
+    public var isEmpty: Bool { buffer.isEmpty }
 
     /// Whether the set is at full capacity.
     @inlinable
-    public var isFull: Bool { elementStorage.count >= maximumCapacity }
+    public var isFull: Bool { buffer.count >= maximumCapacity }
 
     /// The maximum capacity (alias for API consistency).
     @inlinable
     public var capacity: Index<Element>.Count { maximumCapacity }
 }
 
-// MARK: - Storage Uniqueness
+// MARK: - Coordinated CoW
 
-extension Set_Primitives_Core.Set.Ordered.Fixed {
-    /// Ensures element storage is uniquely owned.
-    ///
-    /// Since `Set.Ordered.Fixed` is `~Copyable`, storage is always unique.
-    /// This method exists for symmetry with other variants.
+extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
+    /// Ensures both buffer and hash table are uniquely owned.
     @usableFromInline
     @inline(__always)
     mutating func makeUnique() {
-        // No-op: ~Copyable struct always has unique storage
+        buffer.ensureUnique()
+        hashTable.ensureUnique()
     }
 }
 
@@ -75,13 +73,13 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Updates positions after an element is removed from element storage.
     @usableFromInline
     mutating func decrementPositions(after removedPosition: Index<Element>) {
-        hashTable.decrementPositions(after: removedPosition)
+        hashTable.positions.decrement(after: removedPosition)
     }
 
     /// Removes all entries from the hash table.
     @usableFromInline
     mutating func clearIndices(keepingCapacity: Bool) {
-        hashTable.removeAll(keepingCapacity: keepingCapacity)
+        hashTable.remove.all(keepingCapacity: keepingCapacity)
     }
 }
 
@@ -93,11 +91,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     public func index(_ element: Element) -> Index<Element>? {
         findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         )
     }
 
@@ -112,25 +106,18 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         // Check for existing element
         if let existing = findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         ) {
             return (false, existing)
         }
 
-        let currentCount = elementStorage.count
+        let currentCount = buffer.count
         guard currentCount < maximumCapacity else {
             throw .overflow(.init())
         }
         makeUnique()
-        let index = Index<Element>(__unchecked: (), Ordinal(currentCount.rawValue.rawValue))
-        elementStorage.initialize(to: element, at: index)
-        elementStorage.count = Index<Element>.Count(Cardinal(currentCount.rawValue.rawValue + 1))
-
-        // Insert position into hash table
+        let index = currentCount.map(Ordinal.init)
+        _ = buffer.append(element)
         insertPosition(position: index, hashValue: element.hashValue)
 
         return (true, index)
@@ -143,25 +130,16 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
-        let hashValue = element.hashValue
-        let storage = elementStorage  // Capture reference to avoid overlapping access
+        makeUnique()
+
         guard let removedPosition = removePosition(
-            hashValue: hashValue,
-            equals: { idx in
-                unsafe storage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            hashValue: element.hashValue,
+            equals: { idx in buffer[idx] == element }
         ) else {
             return nil
         }
 
-        makeUnique()
-        let currentCount = elementStorage.count
-        let removed = elementStorage.move(at: removedPosition)
-        shiftLeft(removedAt: removedPosition, count: currentCount)
-
-        // Update hash table positions after removal
+        let removed = buffer.remove(at: removedPosition)
         decrementPositions(after: removedPosition)
 
         return removed
@@ -172,11 +150,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     public func contains(_ element: Element) -> Bool {
         findPosition(
             forHash: element.hashValue,
-            equals: { idx in
-                unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[idx] == element
-                }
-            }
+            equals: { idx in buffer[idx] == element }
         ) != nil
     }
 
@@ -184,25 +158,8 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
         makeUnique()
-        elementStorage.deinitialize()
+        buffer.removeAll()
         clearIndices(keepingCapacity: keepingCapacity)
-    }
-
-    /// Shifts elements left after removal.
-    @usableFromInline
-    mutating func shiftLeft(removedAt index: Index<Element>, count: Index<Element>.Count) {
-        let indexInt = Int(bitPattern: index.position.rawValue)
-        let countInt = Int(bitPattern: count)
-        guard indexInt < countInt - 1 else {
-            elementStorage.count = Index<Element>.Count(Cardinal(UInt(countInt - 1)))
-            return
-        }
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            for i in indexInt..<(countInt - 1) {
-                unsafe (elements + i).initialize(to: (elements + i + 1).move())
-            }
-        }
-        elementStorage.count = Index<Element>.Count(Cardinal(UInt(countInt - 1)))
     }
 }
 
@@ -215,18 +172,14 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         guard index < count else {
             throw .bounds(.init(index: Int(bitPattern: index.position.rawValue), count: Int(bitPattern: count)))
         }
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            unsafe elements[index]
-        }
+        return buffer[index]
     }
 
     /// Subscript access to elements by index.
     @inlinable
     public subscript(index: Index<Element>) -> Element {
         precondition(index < count, "Index out of bounds")
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            unsafe elements[index]
-        }
+        return buffer[index]
     }
 }
 
@@ -236,15 +189,15 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// The first element, or `nil` if the set is empty.
     @inlinable
     public var first: Element? {
-        count > .zero ? unsafe elementStorage.withUnsafeMutablePointerToElements { unsafe $0[.zero] } : nil
+        count > .zero ? buffer[.zero] : nil
     }
 
     /// The last element, or `nil` if the set is empty.
     @inlinable
     public var last: Element? {
         guard count > .zero else { return nil }
-        let lastIndex = Index<Element>(__unchecked: (), Ordinal(count.rawValue.rawValue - 1))
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { unsafe $0[lastIndex] }
+        let lastIndex = count.subtract.saturating(.one).map(Ordinal.init)
+        return buffer[lastIndex]
     }
 }
 
@@ -255,86 +208,55 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     @inlinable
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
         precondition(index < count, "Index out of bounds")
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            body(unsafe (elements + index).pointee)
-        }
+        return body(buffer[index])
     }
 
     /// Iterates over all elements in the set.
     @inlinable
     public func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E) {
-        let count = elementStorage.count
+        let count = buffer.count
         guard count > .zero else { return }
-        _ = try unsafe elementStorage.withUnsafeMutablePointerToElements { (elements) throws(E) in
-            for index in Index<Element>.zero..<count {
-                try unsafe body((elements + index).pointee)
-            }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            try body(buffer[index])
+            index += .one
         }
     }
 
     /// Removes and consumes all elements.
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
-        let count = elementStorage.count
-        guard count > .zero else { return }
-        makeUnique()
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                unsafe body((elements + index).move())
-            }
+        guard buffer.count > .zero else { return }
+        while !buffer.isEmpty {
+            body(buffer.consumeFront())
         }
-        elementStorage.count = .zero
         clearIndices(keepingCapacity: true)
     }
 }
-
-// MARK: - ~Copyable
-
-// Set.Ordered.Fixed is ~Copyable due to containing Hash.Table
 
 // MARK: - Span Access
 
 extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Provides read-only span access to the set's elements in insertion order.
-    ///
-    /// - Parameter body: A closure that receives the span.
-    /// - Returns: The value returned by the closure.
-    /// - Throws: Rethrows any error thrown by the closure.
     @inlinable
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        try elementStorage.withSpan(body)
+        try body(buffer.span)
     }
 
     /// Provides mutable span access to the set's elements in insertion order.
     ///
     /// - Warning: Modifying elements through this span may invalidate the hash table.
     ///   Only use for in-place updates that preserve element identity/hash.
-    ///
-    /// - Parameter body: A closure that receives the mutable span.
-    /// - Returns: The value returned by the closure.
-    /// - Throws: Rethrows any error thrown by the closure.
     @inlinable
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ body: (inout MutableSpan<Element>) throws(E) -> R
-    ) throws(E) -> R {
+    ) throws(E) -> R where Element: Copyable {
         makeUnique()
-        let count = elementStorage.count
-        var thrown: E? = nil
-        let result: R? = unsafe elementStorage.withUnsafeMutablePointerToElements { base in
-            var span = unsafe MutableSpan(_unsafeStart: base, count: Int(bitPattern: count))
-            do {
-                return try body(&span)
-            } catch let e as E {
-                thrown = e
-                return nil
-            } catch {
-                preconditionFailure("unexpected error type")
-            }
-        }
-        if let thrown { throw thrown }
-        return result!
+        var span = buffer.mutableSpan
+        return try body(&span)
     }
 }
 
@@ -343,18 +265,15 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
 @_spi(Unsafe)
 extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// Provides read-only access to the underlying contiguous storage.
-    ///
-    /// - Warning: Prefer `withSpan` for safe access.
     @unsafe
     @inlinable
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = elementStorage.count
-        let countInt = Int(bitPattern: count)
+        let countInt = Int(bitPattern: buffer.count)
         if countInt > 0 {
-            let ptr = unsafe elementStorage.pointer(at: .zero)
-            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr.base), count: countInt))
+            let ptr = unsafe buffer.storage.pointer(at: .zero)
+            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr), count: countInt))
         } else {
             let nilPtr: UnsafePointer<Element>? = nil
             return try unsafe body(UnsafeBufferPointer<Element>(start: nilPtr, count: 0))
@@ -362,20 +281,16 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     }
 
     /// Provides mutable access to the underlying contiguous storage.
-    ///
-    /// - Warning: Prefer `withMutableSpan` for safe access.
-    /// - Warning: Modifying elements may invalidate the hash table.
     @unsafe
     @inlinable
     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
-    ) throws(E) -> R {
+    ) throws(E) -> R where Element: Copyable {
         makeUnique()
-        let count = elementStorage.count
-        let countInt = Int(bitPattern: count)
+        let countInt = Int(bitPattern: buffer.count)
         if countInt > 0 {
-            let ptr = unsafe elementStorage.pointer(at: .zero)
-            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr.base, count: countInt))
+            let ptr = unsafe buffer.storage.pointer(at: .zero)
+            return try unsafe body(UnsafeMutableBufferPointer<Element>(start: ptr, count: countInt))
         } else {
             let nilPtr: UnsafeMutablePointer<Element>? = nil
             return try unsafe body(UnsafeMutableBufferPointer<Element>(start: nilPtr, count: 0))
@@ -385,10 +300,6 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
 
 // MARK: - Hash.Protocol Conformance
 
-// Note: Set.Ordered.Fixed conforms to Hash.Protocol (from hash-primitives) which supports
-// ~Copyable types. Swift.Equatable and Swift.Hashable require Copyable and cannot
-// be used with ~Copyable containers.
-
 extension Set_Primitives_Core.Set.Ordered.Fixed: Hash.`Protocol` {
     /// Compares two Fixed ordered sets for element-wise equality.
     @inlinable
@@ -396,29 +307,27 @@ extension Set_Primitives_Core.Set.Ordered.Fixed: Hash.`Protocol` {
         guard lhs.count == rhs.count else { return false }
         let count = lhs.count
         guard count > .zero else { return true }
-        return unsafe lhs.elementStorage.withUnsafeMutablePointerToElements { lhsElements in
-            unsafe rhs.elementStorage.withUnsafeMutablePointerToElements { rhsElements in
-                var matches = true
-                for index in Index<Element>.zero..<count {
-                    if unsafe lhsElements[index] != rhsElements[index] {
-                        matches = false
-                    }
-                }
-                return matches
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if lhs.buffer[index] != rhs.buffer[index] {
+                return false
             }
+            index += .one
         }
+        return true
     }
 
     /// Hashes the essential components of this set by feeding them into the given hasher.
     @inlinable
     public borrowing func hash(into hasher: inout Hasher) {
         hasher.combine(Int(bitPattern: count))
-        let count = elementStorage.count
         guard count > .zero else { return }
-        _ = unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                unsafe elements[index].hash(into: &hasher)
-            }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            buffer[index].hash(into: &hasher)
+            index += .one
         }
     }
 }

@@ -10,7 +10,6 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Storage_Primitives
 public import Index_Primitives
 
 // MARK: - Algebra Accessor
@@ -26,7 +25,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// ```
     @inlinable
     public var algebra: Algebra {
-        Algebra(storage: elementStorage)
+        Algebra(buffer: buffer)
     }
 }
 
@@ -38,19 +37,19 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Algebra operations require `Element: Copyable` since they create new sets
     /// and copy elements between sets.
     ///
-    /// Note: This stores the Storage reference (a class, Copyable) rather than
-    /// the Set.Ordered directly (which is ~Copyable due to Hash.Table).
+    /// Note: This stores the Buffer.Linear (a CoW value type) rather than
+    /// the Set.Ordered directly (which would require consuming or mutation).
     public struct Algebra {
         @usableFromInline
-        let storage: Storage_Primitives.Storage<Element>
+        let buffer: Buffer<Element>.Linear
 
         @usableFromInline
-        init(storage: Storage_Primitives.Storage<Element>) {
-            self.storage = storage
+        init(buffer: Buffer<Element>.Linear) {
+            self.buffer = buffer
         }
 
         @usableFromInline
-        var count: Index<Element>.Count { storage.count }
+        var count: Index<Element>.Count { buffer.count }
     }
 }
 
@@ -69,16 +68,18 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     public func union(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
         // Add elements from self
-        _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                result.insert(unsafe elements[index])
-            }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            result.insert(buffer[index])
+            index += .one
         }
         // Add elements from other
-        _ = unsafe other.elementStorage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<other.count {
-                result.insert(unsafe elements[index])
-            }
+        var otherIndex: Index<Element> = .zero
+        let otherEnd = other.count.map(Ordinal.init)
+        while otherIndex < otherEnd {
+            result.insert(other.buffer[otherIndex])
+            otherIndex += .one
         }
         return result
     }
@@ -93,13 +94,14 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     @inlinable
     public func intersection(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
-        _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                let element = unsafe elements[index]
-                if other.contains(element) {
-                    result.insert(element)
-                }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            let element = buffer[index]
+            if other.contains(element) {
+                result.insert(element)
             }
+            index += .one
         }
         return result
     }
@@ -114,13 +116,14 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     @inlinable
     public func subtract(_ other: borrowing Set_Primitives_Core.Set<Element>.Ordered) -> Set_Primitives_Core.Set<Element>.Ordered {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
-        _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
-            for index in Index<Element>.zero..<count {
-                let element = unsafe elements[index]
-                if !other.contains(element) {
-                    result.insert(element)
-                }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            let element = buffer[index]
+            if !other.contains(element) {
+                result.insert(element)
             }
+            index += .one
         }
         return result
     }
@@ -128,7 +131,7 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Nested accessor for symmetric operations.
     @inlinable
     public var symmetric: Symmetric {
-        Symmetric(storage: storage)
+        Symmetric(buffer: buffer)
     }
 }
 

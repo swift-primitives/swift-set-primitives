@@ -23,6 +23,7 @@ let package = Package(
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-hash-primitives"),
         .package(path: "../swift-hash-table-primitives"),
+        .package(path: "../swift-buffer-primitives"),
         .package(path: "../swift-storage-primitives"),
         .package(path: "../swift-collection-primitives"),
         .package(path: "../swift-sequence-primitives"),
@@ -42,6 +43,8 @@ let package = Package(
                 .product(name: "Hash Primitives", package: "swift-hash-primitives"),
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
                 .product(name: "Storage Primitives", package: "swift-storage-primitives"),
+                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
+                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
         // Internal: Set.Ordered functionality
@@ -58,6 +61,7 @@ let package = Package(
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
                 .product(name: "Storage Primitives", package: "swift-storage-primitives"),
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
+                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
             ]
         ),
         // Internal: Set<Bit>.Vector functionality

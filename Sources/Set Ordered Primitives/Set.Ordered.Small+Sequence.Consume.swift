@@ -12,6 +12,7 @@
 public import Set_Primitives_Core
 public import Sequence_Primitives
 public import Index_Primitives
+public import Memory_Primitives_Core
 
 // MARK: - Consume Namespace
 
@@ -82,11 +83,12 @@ extension Set_Primitives_Core.Set.Ordered.Small.Consume {
                 }
             } else {
                 // Inline mode: deinitialize remaining elements in inline storage
-                let stride = MemoryLayout<Element>.stride
                 unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
                     let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
                     for i in index..<count {
-                        let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                        let idx = Index<Element>(__unchecked: (), Ordinal(UInt(i)))
+                        let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: idx) * .stride).vector.rawValue)
+                            .assumingMemoryBound(to: Element.self)
                         unsafe elementPtr.deinitialize(count: 1)
                     }
                 }
@@ -112,7 +114,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// ```
     @inlinable
     public consuming func consume() -> Sequence.Consume.View<Element, Consume.State> {
-        let count = storedCount
+        let count = Int(bitPattern: storedCount)
         let isSpilled = heapStorage != nil
 
         let state: Consume.State
@@ -137,7 +139,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         }
 
         // Zero out count to prevent set's deinit from double-freeing
-        storedCount = 0
+        storedCount = .zero
 
         return Sequence.Consume.View(
             state: state,
@@ -151,10 +153,11 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
                     element = state.heapStorage!.move(at: idx)
                 } else {
                     // Inline mode
-                    let stride = MemoryLayout<Element>.stride
+                    let idx = Index<Element>(__unchecked: (), Ordinal(UInt(state.index)))
                     element = unsafe Swift.withUnsafeMutablePointer(to: &state.inlineElements) { storagePtr in
                         let basePtr = UnsafeMutableRawPointer(storagePtr)
-                        let elementPtr = unsafe (basePtr + state.index * stride).assumingMemoryBound(to: Element.self)
+                        let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: idx) * .stride).vector.rawValue)
+                            .assumingMemoryBound(to: Element.self)
                         return unsafe elementPtr.move()
                     }
                 }

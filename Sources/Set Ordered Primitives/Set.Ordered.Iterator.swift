@@ -27,7 +27,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         var index: Index<Element>
 
         @usableFromInline
-        let storage: Storage<Element>
+        let buffer: Buffer<Element>.Linear
 
         @usableFromInline
         let count: Index<Element>.Count
@@ -35,17 +35,15 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         @usableFromInline
         init(_ ordered: borrowing Set_Primitives_Core.Set<Element>.Ordered) {
             self.index = .zero
-            self.storage = ordered.elementStorage
-            self.count = storage.count
+            self.buffer = ordered.buffer
+            self.count = buffer.count
         }
 
         @inlinable
         public mutating func next() -> Element? {
             guard index < count else { return nil }
-            let element = unsafe storage.withUnsafeMutablePointerToElements { elements in
-                unsafe elements[index]
-            }
-            index = index + .one
+            let element = buffer[index]
+            index += .one
             return element
         }
     }

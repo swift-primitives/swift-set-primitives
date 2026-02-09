@@ -38,13 +38,16 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
     // MARK: - Ordered (Dynamically-Growing, Heap-Allocated)
 
     /// An ordered set that preserves insertion order with O(1) membership testing.
+    ///
+    /// Composes `Buffer<Element>.Linear` for element storage and
+    /// `Hash.Table<Element>` for O(1) position lookup.
     @safe
     public struct Ordered {
 
         // MARK: - Stored Properties
 
-        /// Element storage using the Storage primitive.
-        public var elementStorage: Storage<Element>
+        /// Element storage using Buffer.Linear from buffer-primitives.
+        public var buffer: Buffer<Element>.Linear
 
         /// Hash table for O(1) position lookup.
         public var hashTable: Hash.Table<Element>
@@ -54,17 +57,20 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         /// Creates an empty ordered set.
         @inlinable
         public init() {
-            self.elementStorage = Storage<Element>.create(minimumCapacity: .zero)
+            self.buffer = Buffer<Element>.Linear(minimumCapacity: .zero)
             self.hashTable = Hash.Table<Element>(minimumCapacity: .zero)
         }
 
         // MARK: - Fixed (Fixed-Capacity, Heap-Allocated)
 
         /// A fixed-capacity ordered set that throws on overflow.
+        ///
+        /// Composes `Buffer<Element>.Linear.Bounded` for element storage and
+        /// `Hash.Table<Element>` for O(1) position lookup.
         @safe
         public struct Fixed {
-            /// Element storage using the Storage primitive.
-            public var elementStorage: Storage<Element>
+            /// Element storage using Buffer.Linear.Bounded from buffer-primitives.
+            public var buffer: Buffer<Element>.Linear.Bounded
 
             /// Hash table for O(1) position lookup.
             public var hashTable: Hash.Table<Element>
@@ -75,7 +81,7 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             /// Creates a Fixed ordered set with the specified capacity.
             @inlinable
             public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedFixedError) {
-                self.elementStorage = Storage<Element>.create(minimumCapacity: capacity)
+                self.buffer = Buffer<Element>.Linear.Bounded(minimumCapacity: capacity)
                 self.hashTable = Hash.Table<Element>(minimumCapacity: capacity)
                 self.maximumCapacity = capacity
             }
@@ -85,9 +91,8 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 
         /// A fixed-capacity, inline-storage ordered set with compile-time capacity.
         ///
-        /// Uses `Storage.Inline` for element storage and `Hash.Table.Static` for O(1)
-        /// membership testing. This provides proper layering where Set composes
-        /// the lower-level primitives.
+        /// Composes `Buffer<Element>.Linear.Inline<capacity>` for element storage and
+        /// `Hash.Table<Element>.Static<capacity>` for O(1) position lookup.
         ///
         /// - Precondition: `capacity` must be a power of two (required by Hash.Table.Static).
         ///
@@ -95,9 +100,9 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         ///   Swift compiler bug where nested types with value generic parameters declared
         ///   in extensions do not properly inherit `~Copyable` constraints from the outer type.
         public struct Static<let capacity: Int>: ~Copyable {
-            /// Element storage using Storage.Inline from storage-primitives.
+            /// Element storage using Buffer.Linear.Inline from buffer-primitives.
             @usableFromInline
-            package var _storage: Storage<Element>.Static<capacity>
+            package var _buffer: Buffer<Element>.Linear.Inline<capacity>
 
             /// Hash table for O(1) position lookup.
             @usableFromInline
@@ -114,25 +119,13 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             /// - Precondition: `capacity` must be a power of two.
             @inlinable
             public init() {
-                // Storage.Inline.init() validates element stride/alignment
-                do {
-                    self._storage = try Storage<Element>.Static<capacity>()
-                } catch {
-                    switch error {
-                    case .strideExceedsSlotSize(let stride, let max):
-                        preconditionFailure("Element stride (\(stride)) exceeds inline storage slot size (\(max) bytes)")
-                    case .alignmentExceedsStorageAlignment(let alignment, let max):
-                        preconditionFailure("Element alignment (\(alignment)) exceeds inline storage alignment (\(max))")
-                    }
-                }
+                self._buffer = Buffer<Element>.Linear.Inline<capacity>()
                 // Hash.Table.Static.init() validates power-of-two capacity
                 self._hashTable = Hash.Table<Element>.Static<capacity>()
             }
 
             deinit {
-                let count = _hashTable.count
-                guard count > .zero else { return }
-                _storage.deinitialize(count: count)
+                _buffer.removeAll()
             }
         }
 
@@ -146,7 +139,7 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 
             public var inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
 
-            public var storedCount: Int
+            public var storedCount: Index_Primitives.Index<Element>.Count
 
             public var heapStorage: Storage<Element>?
 
@@ -162,26 +155,29 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
                     "Element stride exceeds inline storage slot size"
                 )
                 self.inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
-                self.storedCount = 0
+                self.storedCount = .zero
                 self.heapStorage = nil
                 self.heapHashTable = nil
             }
 
             deinit {
                 let count = storedCount
-                guard count > 0 else { return }
+                guard count > .zero else { return }
 
                 if heapStorage != nil {
                     // Storage deinit handles cleanup via its count property
-                    heapStorage!.count = Index_Primitives.Index<Element>.Count(UInt(count))
+                    heapStorage!.count = count
                 } else {
-                    let stride = MemoryLayout<Element>.stride
                     unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
                         let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
-                        for i in 0..<count {
-                            let elementPtr = unsafe (basePtr + i * stride)
+                        var slot: Index_Primitives.Index<Element> = .zero
+                        let end = count.map(Ordinal.init)
+                        while slot < end {
+                            let elementPtr = unsafe basePtr
+                                .advanced(by: Index_Primitives.Index<Element>.Offset(fromZero: slot) * .stride)
                                 .assumingMemoryBound(to: Element.self)
                             unsafe elementPtr.deinitialize(count: 1)
+                            slot += .one
                         }
                     }
                 }

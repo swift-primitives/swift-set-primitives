@@ -13,6 +13,7 @@ public import Set_Primitives_Core
 public import Index_Primitives
 public import Ordinal_Primitives
 public import Cardinal_Primitives
+public import Memory_Primitives_Core
 
 // Note: Set.Ordered.Small is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Small.
@@ -28,11 +29,11 @@ public import Cardinal_Primitives
 extension Set_Primitives_Core.Set.Ordered.Small {
     /// The number of elements in the set.
     @inlinable
-    public var count: Index<Element>.Count { Index<Element>.Count(Cardinal(UInt(storedCount))) }
+    public var count: Index<Element>.Count { storedCount }
 
     /// Whether the set is empty.
     @inlinable
-    public var isEmpty: Bool { storedCount == 0 }
+    public var isEmpty: Bool { storedCount == .zero }
 
     /// The current capacity of the set.
     @inlinable
@@ -50,11 +51,10 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     /// Returns a pointer to the element at the given index in inline storage (for reading).
     @usableFromInline
     func inlineReadPointer(at index: Index<Element>) -> UnsafePointer<Element> {
-        let stride = MemoryLayout<Element>.stride
-        let indexInt = Int(bitPattern: index.position.rawValue)
         return unsafe withUnsafePointer(to: inlineElements) { storagePtr in
             let basePtr = UnsafeRawPointer(storagePtr)
-            return unsafe (basePtr + indexInt * stride).assumingMemoryBound(to: Element.self)
+            return unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                .assumingMemoryBound(to: Element.self)
         }
     }
 }
@@ -117,25 +117,26 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         var newHashTable = Hash.Table<Element>(minimumCapacity: newCapacity)
 
         // Copy elements from inline to heap
-        let stride = MemoryLayout<Element>.stride
         unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
             let basePtr = UnsafeMutableRawPointer(storagePtr)
             unsafe newStorage.withUnsafeMutablePointerToElements { heapElements in
-                for i in 0..<storedCount {
-                    let inlinePtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                (.zero..<storedCount).forEach { (index: Index<Element>) in
+                    let inlinePtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
+                    let i = Int(bitPattern: index.position.rawValue)
                     unsafe (heapElements + i).initialize(to: inlinePtr.move())
                 }
             }
         }
-        newStorage.count = Index<Element>.Count(Cardinal(UInt(storedCount)))
+        newStorage.count = storedCount
 
         // Rebuild hash table
-        for i in 0..<storedCount {
+        (.zero..<storedCount).forEach { (index: Index<Element>) in
             _ = unsafe newStorage.withUnsafeMutablePointerToElements { elements in
+                let i = Int(bitPattern: index.position.rawValue)
                 let elem = unsafe (elements + i).pointee
                 let hashValue = elem.hashValue
-                let position = Index<Element>(__unchecked: (), Ordinal(UInt(i)))
-                newHashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
+                newHashTable.insert(__unchecked: (), position: index, hashValue: hashValue)
             }
         }
 
@@ -163,14 +164,17 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
             )
         } else {
             // Linear search in inline storage
-            let stride = MemoryLayout<Element>.stride
             return unsafe Swift.withUnsafePointer(to: inlineElements) { storagePtr in
                 let basePtr = unsafe UnsafeRawPointer(storagePtr)
-                for i in 0..<storedCount {
-                    let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                var index: Index<Element> = .zero
+                let end = storedCount.map(Ordinal.init)
+                while index < end {
+                    let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
                     if unsafe elementPtr.pointee == element {
-                        return Index<Element>(__unchecked: (), Ordinal(UInt(i)))
+                        return index
                     }
+                    index += .one
                 }
                 return nil
             }
@@ -204,31 +208,32 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
             // Insert position into hash table
             insertHeapPosition(position: index, hashValue: element.hashValue)
 
-            storedCount += 1
+            storedCount = storedCount + .one
             return (true, index)
-        } else if storedCount < inlineCapacity {
+        } else if Int(bitPattern: storedCount) < inlineCapacity {
             // Inline mode with room
-            let stride = MemoryLayout<Element>.stride
-            let idx = storedCount
+            let insertIndex = storedCount.map(Ordinal.init)
             unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                 let basePtr = UnsafeMutableRawPointer(storagePtr)
-                let elementPtr = unsafe (basePtr + idx * stride).assumingMemoryBound(to: Element.self)
+                let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: insertIndex) * .stride).vector.rawValue)
+                    .assumingMemoryBound(to: Element.self)
                 unsafe elementPtr.initialize(to: element)
             }
-            storedCount += 1
-            return (true, Index<Element>(__unchecked: (), Ordinal(UInt(idx))))
+            storedCount = storedCount + .one
+            return (true, insertIndex)
         } else {
             // Need to spill
-            spillToHeap(minimumCapacity: Index<Element>.Count(Cardinal(UInt(storedCount + 1))))
-            let index = Index<Element>(__unchecked: (), Ordinal(UInt(storedCount)))
+            let newCount = storedCount + .one
+            spillToHeap(minimumCapacity: newCount)
+            let index = storedCount.map(Ordinal.init)
             heapStorage!.initialize(to: element, at: index)
-            heapStorage!.count = Index<Element>.Count(Cardinal(UInt(storedCount + 1)))
+            heapStorage!.count = newCount
 
             // Insert position into hash table
             insertHeapPosition(position: index, hashValue: element.hashValue)
 
-            storedCount += 1
-            return (true, Index<Element>(__unchecked: (), Ordinal(UInt(storedCount - 1))))
+            storedCount = newCount
+            return (true, index)
         }
     }
 
@@ -258,7 +263,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
             // Update hash table positions after removal
             decrementHeapPositions(after: removedPosition)
 
-            storedCount -= 1
+            storedCount = storedCount.subtract.saturating(.one)
             return removed
         } else {
             // Inline mode: linear search
@@ -266,22 +271,27 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
                 return nil
             }
 
-            let idxInt = Int(bitPattern: idx.position.rawValue)
-            let stride = MemoryLayout<Element>.stride
             let removed: Element = unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                 let basePtr = UnsafeMutableRawPointer(storagePtr)
-                let elementPtr = unsafe (basePtr + idxInt * stride).assumingMemoryBound(to: Element.self)
+                let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: idx) * .stride).vector.rawValue)
+                    .assumingMemoryBound(to: Element.self)
                 let value = unsafe elementPtr.move()
 
                 // Shift remaining elements left
-                for i in idxInt..<(storedCount - 1) {
-                    let src = unsafe (basePtr + (i + 1) * stride).assumingMemoryBound(to: Element.self)
-                    let dst = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                let lastIndex = storedCount.subtract.saturating(.one).map(Ordinal.init)
+                var current = idx
+                while current < lastIndex {
+                    let next = current + .one
+                    let src = unsafe (basePtr + (Index<Element>.Offset(fromZero: next) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
+                    let dst = unsafe (basePtr + (Index<Element>.Offset(fromZero: current) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
                     unsafe dst.initialize(to: src.move())
+                    current = next
                 }
                 return value
             }
-            storedCount -= 1
+            storedCount = storedCount.subtract.saturating(.one)
             return removed
         }
     }
@@ -289,7 +299,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
-        guard storedCount > 0 else { return }
+        guard storedCount > .zero else { return }
 
         if heapStorage != nil {
             heapStorage!.deinitialize()
@@ -299,16 +309,16 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
                 heapHashTable = nil
             }
         } else {
-            let stride = MemoryLayout<Element>.stride
             unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                 let basePtr = UnsafeMutableRawPointer(storagePtr)
-                for i in 0..<storedCount {
-                    let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                (.zero..<storedCount).forEach { (index: Index<Element>) in
+                    let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
                     unsafe elementPtr.deinitialize(count: 1)
                 }
             }
         }
-        storedCount = 0
+        storedCount = .zero
     }
 
     /// Shifts heap elements left after removal.
@@ -447,13 +457,16 @@ extension Set_Primitives_Core.Set.Ordered.Small {
             }
             try heapResult.get()
         } else {
-            let stride = MemoryLayout<Element>.stride
             let inlineResult: Result<Void, E> = unsafe withUnsafePointer(to: inlineElements) { storagePtr in
                 let basePtr = unsafe UnsafeRawPointer(storagePtr)
                 do throws(E) {
-                    for i in 0..<storedCount {
-                        let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                    var index: Index<Element> = .zero
+                    let end = storedCount.map(Ordinal.init)
+                    while index < end {
+                        let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                            .assumingMemoryBound(to: Element.self)
                         try unsafe body(elementPtr.pointee)
+                        index += .one
                     }
                     return .success(())
                 } catch {
@@ -467,27 +480,28 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     /// Removes and consumes all elements.
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
-        guard storedCount > 0 else { return }
+        guard storedCount > .zero else { return }
 
         if let heapStorage = heapStorage {
             _ = unsafe heapStorage.withUnsafeMutablePointerToElements { elements in
-                for i in 0..<storedCount {
+                (.zero..<storedCount).forEach { (index: Index<Element>) in
+                    let i = Int(bitPattern: index.position.rawValue)
                     unsafe body((elements + i).move())
                 }
             }
             heapStorage.count = .zero
             clearHeapIndices(keepingCapacity: true)
         } else {
-            let stride = MemoryLayout<Element>.stride
             unsafe Swift.withUnsafeMutablePointer(to: &inlineElements) { storagePtr in
                 let basePtr = UnsafeMutableRawPointer(storagePtr)
-                for i in 0..<storedCount {
-                    let elementPtr = unsafe (basePtr + i * stride).assumingMemoryBound(to: Element.self)
+                (.zero..<storedCount).forEach { (index: Index<Element>) in
+                    let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: index) * .stride).vector.rawValue)
+                        .assumingMemoryBound(to: Element.self)
                     unsafe body(elementPtr.move())
                 }
             }
         }
-        storedCount = 0
+        storedCount = .zero
     }
 }
 
@@ -514,12 +528,12 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         if count > .zero {
             if let heapStorage = heapStorage {
                 let ptr = unsafe heapStorage.pointer(at: .zero)
-                return try body(unsafe Span(_unsafeStart: UnsafePointer(ptr.base), count: Int(bitPattern: count)))
+                return try body(unsafe Span(_unsafeStart: UnsafePointer(ptr.base), count: count))
             } else {
                 let result: Result<R, E> = unsafe withUnsafePointer(to: inlineElements) { storagePtr in
                     let basePtr = unsafe UnsafeRawPointer(storagePtr)
                     let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
-                    let span = unsafe Span(_unsafeStart: elementPtr, count: Int(bitPattern: count))
+                    let span = unsafe Span(_unsafeStart: elementPtr, count: count)
                     do throws(E) {
                         return .success(try body(span))
                     } catch {
@@ -548,7 +562,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public mutating func withMutableSpan<R, E: Swift.Error>(
         _ body: (inout MutableSpan<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let elementCount = storedCount
+        let elementCount = Int(bitPattern: storedCount)
         if elementCount > 0 {
             if let heapStorage = heapStorage {
                 let ptr = unsafe heapStorage.pointer(at: .zero)
@@ -589,12 +603,12 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         if count > .zero {
             if let heapStorage = heapStorage {
                 let ptr = unsafe heapStorage.pointer(at: .zero)
-                return try unsafe body(UnsafeBufferPointer(start: UnsafePointer(ptr.base), count: Int(bitPattern: count)))
+                return try unsafe body(UnsafeBufferPointer(start: UnsafePointer(ptr.base), count: count))
             } else {
                 return try unsafe withUnsafePointer(to: inlineElements) { (storagePtr) throws(E) -> R in
                     let basePtr = unsafe UnsafeRawPointer(storagePtr)
                     let elementPtr = unsafe basePtr.assumingMemoryBound(to: Element.self)
-                    return try unsafe body(UnsafeBufferPointer(start: elementPtr, count: Int(bitPattern: count)))
+                    return try unsafe body(UnsafeBufferPointer(start: elementPtr, count: count))
                 }
             }
         } else {
@@ -612,7 +626,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let elementCount = storedCount
+        let elementCount = Int(bitPattern: storedCount)
         if elementCount > 0 {
             if let heapStorage = heapStorage {
                 let ptr = unsafe heapStorage.pointer(at: .zero)

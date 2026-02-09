@@ -10,25 +10,24 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Storage_Primitives
 public import Index_Primitives
 
 extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Namespace for symmetric set operations.
     ///
-    /// Note: This stores the Storage reference (a class, Copyable) rather than
-    /// the Set.Ordered directly (which is ~Copyable due to Hash.Table).
+    /// Note: This stores the Buffer.Linear (a CoW value type) rather than
+    /// the Set.Ordered directly (which would require consuming or mutation).
     public struct Symmetric {
         @usableFromInline
-        let storage: Storage_Primitives.Storage<Element>
+        let buffer: Buffer<Element>.Linear
 
         @usableFromInline
-        init(storage: Storage_Primitives.Storage<Element>) {
-            self.storage = storage
+        init(buffer: Buffer<Element>.Linear) {
+            self.buffer = buffer
         }
 
         @usableFromInline
-        var count: Index<Element>.Count { storage.count }
+        var count: Index<Element>.Count { buffer.count }
     }
 }
 
@@ -48,33 +47,35 @@ extension Set_Primitives_Core.Set.Ordered.Algebra.Symmetric {
         var result = Set_Primitives_Core.Set<Element>.Ordered()
 
         // Elements in self but not in other
-        _ = unsafe storage.withUnsafeMutablePointerToElements { selfElements in
-            for index in Index<Element>.zero..<count {
-                let element = unsafe selfElements[index]
-                if !other.contains(element) {
-                    result.insert(element)
-                }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            let element = buffer[index]
+            if !other.contains(element) {
+                result.insert(element)
             }
+            index += .one
         }
 
         // Elements in other but not in self
-        _ = unsafe other.elementStorage.withUnsafeMutablePointerToElements { otherElements in
-            unsafe storage.withUnsafeMutablePointerToElements { selfElements in
-                for otherIndex in Index<Element>.zero..<other.count {
-                    let element = unsafe otherElements[otherIndex]
-                    // Check if element is in self by iterating
-                    var found = false
-                    for selfIndex in Index<Element>.zero..<count {
-                        if unsafe selfElements[selfIndex] == element {
-                            found = true
-                            break
-                        }
-                    }
-                    if !found {
-                        result.insert(element)
-                    }
+        var otherIndex: Index<Element> = .zero
+        let otherEnd = other.count.map(Ordinal.init)
+        while otherIndex < otherEnd {
+            let element = other.buffer[otherIndex]
+            // Check if element is in self by iterating
+            var found = false
+            var selfIndex: Index<Element> = .zero
+            while selfIndex < end {
+                if buffer[selfIndex] == element {
+                    found = true
+                    break
                 }
+                selfIndex += .one
             }
+            if !found {
+                result.insert(element)
+            }
+            otherIndex += .one
         }
 
         return result

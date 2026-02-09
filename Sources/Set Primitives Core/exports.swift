@@ -7,4 +7,6 @@
 @_exported public import Hash_Primitives
 @_exported public import Hash_Table_Primitives
 @_exported public import Storage_Primitives
+@_exported public import Buffer_Primitives
+@_exported public import Memory_Primitives
 @_exported public import Collection_Primitives

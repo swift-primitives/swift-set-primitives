@@ -86,9 +86,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
             get {
                 let elementIndex = Index<Element>(__unchecked: (), index.position)
                 precondition(elementIndex < _storage.count, "Index out of bounds")
-                return unsafe _storage.elementStorage.withUnsafeMutablePointerToElements { elements in
-                    unsafe elements[elementIndex]
-                }
+                return _storage.buffer[elementIndex]
             }
         }
     }

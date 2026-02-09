@@ -21,17 +21,15 @@ public import Cardinal_Primitives
 extension Set.Ordered {
     /// The number of elements in the set.
     @inlinable
-    public var count: Index<Element>.Count { elementStorage.count }
+    public var count: Index<Element>.Count { buffer.count }
 
     /// Whether the set is empty.
     @inlinable
-    public var isEmpty: Bool { elementStorage.count == .zero }
+    public var isEmpty: Bool { buffer.isEmpty }
 
     /// The current capacity of the set.
     @inlinable
-    public var capacity: Index<Element>.Count {
-        Index<Element>.Count(Cardinal(UInt(elementStorage.capacity)))
-    }
+    public var capacity: Index<Element>.Count { buffer.capacity }
 }
 
 // ============================================================================
@@ -60,41 +58,25 @@ extension Set.Ordered {
     /// Updates positions after an element is removed from element storage.
     @usableFromInline
     mutating func decrementPositions(after removedPosition: Index<Element>) {
-        hashTable.decrementPositions(after: removedPosition)
+        hashTable.positions.decrement(after: removedPosition)
     }
 
     /// Removes all entries from the hash table.
     @usableFromInline
     mutating func clearIndices(keepingCapacity: Bool) {
-        hashTable.removeAll(keepingCapacity: keepingCapacity)
+        hashTable.remove.all(keepingCapacity: keepingCapacity)
     }
 }
 
 // ============================================================================
-// MARK: - Capacity Management
+// MARK: - Reserve Capacity
 // ============================================================================
 
 extension Set.Ordered {
-    @usableFromInline
-    mutating func ensureCapacity(_ minimumCapacity: Index<Element>.Count) {
-        let currentCapacity = Index<Element>.Count(Cardinal(UInt(elementStorage.capacity)))
-        guard currentCapacity < minimumCapacity else { return }
-
-        let minCapInt = Int(bitPattern: minimumCapacity)
-        let currentCapInt = elementStorage.capacity
-        let newCapacity = Index<Element>.Count(Cardinal(UInt(Swift.max(minCapInt, currentCapInt * 2, 4))))
-        let newStorage = Storage<Element>.create(minimumCapacity: newCapacity)
-        let currentCount = elementStorage.count
-
-        elementStorage.move(to: newStorage, count: currentCount)
-        newStorage.count = currentCount
-        elementStorage = newStorage
-    }
-
     /// Reserves enough space to store the specified number of elements.
     @inlinable
     public mutating func reserve(_ minimumCapacity: Index<Element>.Count) {
-        ensureCapacity(minimumCapacity)
+        buffer.reserveCapacity(minimumCapacity)
     }
 }
 
@@ -113,9 +95,7 @@ extension Set.Ordered {
     @inlinable
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
         precondition(index < count, "Index out of bounds")
-        return unsafe elementStorage.withUnsafeMutablePointerToElements { elements in
-            body(unsafe (elements + index).pointee)
-        }
+        return body(buffer[index])
     }
 
     /// Iterates over all elements in the set.
@@ -123,12 +103,13 @@ extension Set.Ordered {
     /// - Parameter body: A closure that receives each borrowed element.
     @inlinable
     public func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E) {
-        let count = elementStorage.count
+        let count = buffer.count
         guard count > .zero else { return }
-        _ = try unsafe elementStorage.withUnsafeMutablePointerToElements { (elements) throws(E) in
-            for index in Index<Element>.zero..<count {
-                try unsafe body((elements + index).pointee)
-            }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            try body(buffer[index])
+            index += .one
         }
     }
 }
@@ -147,7 +128,7 @@ extension Set.Ordered {
     public func withSpan<R, E: Swift.Error>(
         _ body: (Span<Element>) throws(E) -> R
     ) throws(E) -> R {
-        try elementStorage.withSpan(body)
+        try body(buffer.span)
     }
 }
 
@@ -163,11 +144,10 @@ extension Set.Ordered {
     public func withUnsafeBufferPointer<R, E: Swift.Error>(
         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
     ) throws(E) -> R {
-        let count = elementStorage.count
-        let countInt = Int(bitPattern: count)
+        let countInt = Int(bitPattern: buffer.count)
         if countInt > 0 {
-            let ptr = unsafe elementStorage.pointer(at: .zero)
-            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr.base), count: countInt))
+            let ptr = unsafe buffer.storage.pointer(at: .zero)
+            return try unsafe body(UnsafeBufferPointer<Element>(start: UnsafePointer(ptr), count: countInt))
         } else {
             let nilPtr: UnsafePointer<Element>? = nil
             return try unsafe body(UnsafeBufferPointer<Element>(start: nilPtr, count: 0))
@@ -182,6 +162,6 @@ extension Set.Ordered {
 extension Set.Ordered {
     @usableFromInline
     internal var _identity: ObjectIdentifier {
-        ObjectIdentifier(elementStorage)
+        ObjectIdentifier(buffer.storage)
     }
 }

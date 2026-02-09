@@ -18,12 +18,12 @@ public import Index_Primitives
 // ## Architecture
 //
 // Set.Ordered.Static composes two lower-level primitives:
-// - Storage.Inline<capacity>: Element storage with 64-byte slots
+// - Buffer.Linear.Inline<capacity>: Element storage
 // - Hash.Table.Static<capacity>: O(1) position lookup by hash
 //
 // This layering ensures single responsibility:
 // - Hash table logic lives in Hash.Table.Static
-// - Storage management lives in Storage.Inline
+// - Buffer management lives in Buffer.Linear.Inline
 // - Set provides the unified API
 
 // MARK: - Properties
@@ -52,7 +52,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public mutating func index(_ element: Element) -> Int? {
         let hashValue = element.hashValue
         guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
-            _storage.withElement(at: idx) { stored in
+            _buffer.withElement(at: idx) { stored in
                 stored == element
             }
         }) else {
@@ -68,7 +68,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public mutating func contains(_ element: Element) -> Bool {
         let hashValue = element.hashValue
         return _hashTable.contains(hashValue: hashValue, equals: { idx in
-            _storage.withElement(at: idx) { stored in
+            _buffer.withElement(at: idx) { stored in
                 stored == element
             }
         })
@@ -87,7 +87,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 
         // Check for existing element
         if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
-            _storage.withElement(at: idx) { stored in
+            _buffer.withElement(at: idx) { stored in
                 stored == element
             }
         }) {
@@ -101,7 +101,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 
         // Insert at next available position
         let position = Index<Element>(Ordinal(_hashTable.count.rawValue.rawValue))
-        _storage.initialize(to: element, at: position)
+        _ = _buffer.append(element)
         _hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
 
         return (true, Int(bitPattern: position.position.rawValue))
@@ -119,21 +119,15 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 
         // Find and remove from hash table
         guard let removedPosition = _hashTable.remove(hashValue: hashValue, equals: { idx in
-            _storage.withElement(at: idx) { stored in
+            _buffer.withElement(at: idx) { stored in
                 stored == element
             }
         }) else {
             return nil
         }
 
-        // Move element out of storage
-        let removed = _storage.move(at: removedPosition)
-
-        // Get count before removal (hash table already decremented)
-        let countBeforeRemoval = Index<Element>.Count(Cardinal(_hashTable.count.rawValue.rawValue + 1))
-
-        // Shift remaining elements left
-        _storage.shift.left(removedAt: removedPosition, count: countBeforeRemoval)
+        // Remove element from buffer (shifts remaining elements left)
+        let removed = _buffer.remove(at: removedPosition)
 
         // Update positions in hash table for shifted elements
         _hashTable.decrementPositions(after: removedPosition)
@@ -144,9 +138,8 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear() {
-        let currentCount = _hashTable.count
-        guard currentCount > .zero else { return }
-        _storage.deinitialize(count: currentCount)
+        guard _hashTable.count > .zero else { return }
+        _buffer.removeAll()
         _hashTable.removeAll()
     }
 }
@@ -161,7 +154,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
             throw .bounds(.init(index: index, count: count))
         }
         let idx = Index<Element>(Ordinal(UInt(index)))
-        return _storage.withElement(at: idx) { $0 }
+        return _buffer.withElement(at: idx) { $0 }
     }
 
 }
@@ -173,7 +166,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     @inlinable
     public func getFirst() -> Element? {
         guard Int(bitPattern: _hashTable.count) > 0 else { return nil }
-        return _storage.withElement(at: .zero) { $0 }
+        return _buffer.withElement(at: .zero) { $0 }
     }
 
     /// Returns the last element, or `nil` if the set is empty.
@@ -182,7 +175,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         let c = Int(bitPattern: _hashTable.count)
         guard c > 0 else { return nil }
         let lastIndex = Index<Element>(Ordinal(UInt(c - 1)))
-        return _storage.withElement(at: lastIndex) { $0 }
+        return _buffer.withElement(at: lastIndex) { $0 }
     }
 }
 
@@ -194,25 +187,29 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     public func withElement<R>(at index: Int, _ body: (borrowing Element) -> R) -> R {
         precondition(index >= 0 && index < Int(bitPattern: _hashTable.count), "Index out of bounds")
         let idx = Index<Element>(Ordinal(UInt(index)))
-        return _storage.withElement(at: idx, body)
+        return _buffer.withElement(at: idx, body)
     }
 
     /// Iterates over all elements in the set.
     @inlinable
     public func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E) {
-        try _storage.forEach(count: _hashTable.count, body)
+        let count = _buffer.count
+        guard count > .zero else { return }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            try _buffer.withElement(at: index, body)
+            index += .one
+        }
     }
 
     /// Removes and consumes all elements.
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
-        let currentCount = _hashTable.count
-        guard currentCount > .zero else { return }
+        guard _hashTable.count > .zero else { return }
 
-        // Move each element out and pass to body
-        (.zero..<currentCount).forEach { idx in
-            let element = _storage.move(at: idx)
-            body(element)
+        while !_buffer.isEmpty {
+            body(_buffer.consumeFront())
         }
 
         // Clear hash table
