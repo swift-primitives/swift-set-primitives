@@ -62,15 +62,16 @@ let package = Package(
                 .product(name: "Storage Primitives", package: "swift-storage-primitives"),
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
-            ]
-        ),
-        // Internal: Set<Bit>.Vector functionality
-        .target(
-            name: "Set Bit Vector Primitives",
-            dependencies: [
-                "Set Primitives Core",
-                .product(name: "Bit Primitives", package: "swift-bit-primitives"),
-                .product(name: "Ordinal Primitives", package: "swift-ordinal-primitives"),
+            ],
+            exclude: [
+                "Set.Ordered+Sequence.Consume.swift",
+                "Set.Ordered+Sequence.Drain.swift",
+                "Set.Ordered.Fixed+Sequence.Consume.swift",
+                "Set.Ordered.Fixed+Sequence.Drain.swift",
+                "Set.Ordered.Static+Sequence.Consume.swift",
+                "Set.Ordered.Static+Sequence.Drain.swift",
+                "Set.Ordered.Small+Sequence.Consume.swift",
+                "Set.Ordered.Small+Sequence.Drain.swift",
             ]
         ),
         // Public: Re-exports all modules for users
@@ -79,7 +80,6 @@ let package = Package(
             dependencies: [
                 "Set Primitives Core",
                 "Set Ordered Primitives",
-                "Set Bit Vector Primitives",
             ]
         ),
         // Test Support: Re-exports test support from dependencies

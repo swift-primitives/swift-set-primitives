@@ -326,50 +326,50 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 // MARK: - Buffer Access (Escape Hatch for C Interop)
 // ============================================================================
 
-@_spi(Unsafe)
-extension Set_Primitives_Core.Set.Ordered.Small {
-    /// Provides read-only access to the underlying contiguous storage.
-    ///
-    /// - Warning: Prefer ``withSpan(_:)`` for safe access.
-    @unsafe
-    @inlinable
-    public func withUnsafeBufferPointer<R, E: Swift.Error>(
-        _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
-    ) throws(E) -> R {
-        if count > .zero {
-            if isSpilled {
-                let span = _heapBuffer!.span
-                return try unsafe span.withUnsafeBufferPointer(body)
-            } else {
-                let span = _inlineBuffer.span
-                return try unsafe span.withUnsafeBufferPointer(body)
-            }
-        } else {
-            let nilPtr: UnsafePointer<Element>? = nil
-            return try unsafe body(UnsafeBufferPointer(start: nilPtr, count: 0))
-        }
-    }
-
-    /// Provides mutable access to the underlying contiguous storage.
-    ///
-    /// - Warning: Prefer ``withMutableSpan(_:)`` for safe access.
-    /// - Warning: Modifying elements may invalidate uniqueness.
-    @unsafe
-    @inlinable
-    public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
-        _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
-    ) throws(E) -> R {
-        if count > .zero {
-            if isSpilled {
-                var span = _heapBuffer!.mutableSpan
-                return try unsafe span.withUnsafeMutableBufferPointer(body)
-            } else {
-                var span = _inlineBuffer.mutableSpan
-                return try unsafe span.withUnsafeMutableBufferPointer(body)
-            }
-        } else {
-            let nilPtr: UnsafeMutablePointer<Element>? = nil
-            return try unsafe body(UnsafeMutableBufferPointer(start: nilPtr, count: 0))
-        }
-    }
-}
+// @_spi(Unsafe)
+// extension Set_Primitives_Core.Set.Ordered.Small {
+//     /// Provides read-only access to the underlying contiguous storage.
+//     ///
+//     /// - Warning: Prefer ``withSpan(_:)`` for safe access.
+//     @unsafe
+//     @inlinable
+//     public func withUnsafeBufferPointer<R, E: Swift.Error>(
+//         _ body: (UnsafeBufferPointer<Element>) throws(E) -> R
+//     ) throws(E) -> R {
+//         if count > .zero {
+//             if isSpilled {
+//                 let span = _heapBuffer!.span
+//                 return try unsafe span.withUnsafeBufferPointer(body)
+//             } else {
+//                 let span = _inlineBuffer.span
+//                 return try unsafe span.withUnsafeBufferPointer(body)
+//             }
+//         } else {
+//             let nilPtr: UnsafePointer<Element>? = nil
+//             return try unsafe body(UnsafeBufferPointer(start: nilPtr, count: 0))
+//         }
+//     }
+//
+//     /// Provides mutable access to the underlying contiguous storage.
+//     ///
+//     /// - Warning: Prefer ``withMutableSpan(_:)`` for safe access.
+//     /// - Warning: Modifying elements may invalidate uniqueness.
+//     @unsafe
+//     @inlinable
+//     public mutating func withUnsafeMutableBufferPointer<R, E: Swift.Error>(
+//         _ body: (UnsafeMutableBufferPointer<Element>) throws(E) -> R
+//     ) throws(E) -> R {
+//         if count > .zero {
+//             if isSpilled {
+//                 var span = _heapBuffer!.mutableSpan
+//                 return try unsafe span.withUnsafeMutableBufferPointer(body)
+//             } else {
+//                 var span = _inlineBuffer.mutableSpan
+//                 return try unsafe span.withUnsafeMutableBufferPointer(body)
+//             }
+//         } else {
+//             let nilPtr: UnsafeMutablePointer<Element>? = nil
+//             return try unsafe body(UnsafeMutableBufferPointer(start: nilPtr, count: 0))
+//         }
+//     }
+// }
