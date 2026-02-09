@@ -13,65 +13,10 @@ public import Set_Primitives_Core
 public import Sequence_Primitives
 public import Index_Primitives
 
-// MARK: - Consume Namespace
-
-extension Set_Primitives_Core.Set.Ordered.Fixed {
-    /// Namespace for consuming iteration types.
-    ///
-    /// Use the `.consume().forEach { }` pattern:
-    ///
-    /// ```swift
-    /// let set = Set<Int>.Ordered.Fixed(capacity: Index<Int>.Count(10))
-    /// set.consume().forEach { element in
-    ///     // element is owned, set is consumed
-    /// }
-    /// ```
-    public enum Consume: ~Copyable {}
-}
-
-// MARK: - Consume State
-
-extension Set_Primitives_Core.Set.Ordered.Fixed.Consume {
-    /// State for consuming iteration.
-    @safe
-    public struct State: ~Copyable {
-        @usableFromInline
-        let storage: Storage<Element>
-
-        @usableFromInline
-        var index: Index<Element>
-
-        @usableFromInline
-        let count: Index<Element>.Count
-
-        @usableFromInline
-        init(storage: Storage<Element>, count: Index<Element>.Count) {
-            self.storage = storage
-            self.index = .zero
-            self.count = count
-        }
-
-        deinit {
-            guard index < count else { return }
-            let indexInt = Int(bitPattern: index.position.rawValue)
-            let countInt = Int(bitPattern: count)
-            let remaining = countInt - indexInt
-            if remaining > 0 {
-                _ = unsafe storage.withUnsafeMutablePointerToElements { elements in
-                    for i in indexInt..<countInt {
-                        unsafe (elements + i).deinitialize(count: 1)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Sendable
-
-extension Set_Primitives_Core.Set.Ordered.Fixed.Consume.State: @unchecked Sendable where Element: Sendable {}
-
 // MARK: - consume() Implementation
+//
+// Set.Ordered.Fixed delegates consuming iteration entirely to Buffer.Linear.Bounded.
+// Same swap pattern as Set.Ordered — buffer owns the full pipeline.
 
 extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Returns a consuming view: `.consume().forEach { }`
@@ -82,28 +27,14 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     ///     // element is owned
     /// }
     /// ```
+    ///
+    /// - Complexity: O(1) to create the view. O(1) per element during iteration.
     @inlinable
-    public consuming func consume() -> Sequence.Consume.View<Element, Consume.State> {
+    public consuming func consume() -> Sequence.Consume.View<Element, Buffer<Element>.Linear.Bounded.ConsumeState> {
         var mutableSelf = self
         mutableSelf.makeUnique()
-
-        let count = mutableSelf.elementStorage.count
-
-        let state = Consume.State(
-            storage: mutableSelf.elementStorage,
-            count: count
-        )
-
-        mutableSelf.elementStorage.count = .zero
-
-        return Sequence.Consume.View(
-            state: state,
-            next: { state in
-                guard state.index < state.count else { return nil }
-                let element = state.storage.move(at: state.index)
-                state.index = Index<Element>(__unchecked: (), Ordinal(state.index.position.rawValue + 1))
-                return element
-            }
-        )
+        var consumeBuffer = Buffer<Element>.Linear.Bounded(minimumCapacity: .zero)
+        Swift.swap(&mutableSelf.buffer, &consumeBuffer)
+        return consumeBuffer.consume()
     }
 }

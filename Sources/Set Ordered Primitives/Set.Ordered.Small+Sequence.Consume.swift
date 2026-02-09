@@ -12,14 +12,22 @@
 public import Set_Primitives_Core
 public import Sequence_Primitives
 public import Index_Primitives
-public import Memory_Primitives_Core
 
-// MARK: - Consume Namespace
+// MARK: - consume() Implementation
+//
+// Set.Ordered.Small delegates consuming iteration to Buffer.Linear.
+// Both inline and heap paths produce the same ConsumeState type —
+// no mode branching in the iteration hot path.
+//
+// Inline path: copy elements to a temporary heap buffer, then consume it.
+// Heap path: swap out the heap buffer directly, then consume it.
 
-extension Set_Primitives_Core.Set.Ordered.Small {
-    /// Namespace for consuming iteration types.
+extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
+    /// Returns a consuming view: `.consume().forEach { }`
     ///
-    /// Use the `.consume().forEach { }` pattern:
+    /// Both inline and heap storage paths produce a unified
+    /// `Buffer<Element>.Linear.ConsumeState` — no dual-mode branching
+    /// in the iteration hot path.
     ///
     /// ```swift
     /// let set = Set<Int>.Ordered.Small<4>([1, 2, 3])
@@ -27,143 +35,28 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     ///     // element is owned, set is consumed
     /// }
     /// ```
-    public enum Consume: ~Copyable {}
-}
-
-// MARK: - Consume State
-
-extension Set_Primitives_Core.Set.Ordered.Small.Consume {
-    /// State for consuming iteration.
     ///
-    /// Handles both inline and heap-spilled storage transparently.
-    @safe
-    public struct State: ~Copyable {
-        /// Inline storage (used when set hasn't spilled to heap).
-        @usableFromInline
-        var inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
-
-        /// Heap storage (used when set has spilled).
-        @usableFromInline
-        let heapStorage: Storage<Element>?
-
-        @usableFromInline
-        var index: Int
-
-        @usableFromInline
-        let count: Int
-
-        /// Whether we're iterating from heap storage.
-        @usableFromInline
-        let isSpilled: Bool
-
-        @usableFromInline
-        init(
-            inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>,
-            heapStorage: Storage<Element>?,
-            count: Int,
-            isSpilled: Bool
-        ) {
-            self.inlineElements = inlineElements
-            self.heapStorage = heapStorage
-            self.index = 0
-            self.count = count
-            self.isSpilled = isSpilled
-        }
-
-        deinit {
-            let remaining = count - index
-            guard remaining > 0 else { return }
-
-            if isSpilled {
-                // Heap mode: deinitialize remaining elements in heap storage
-                _ = unsafe heapStorage!.withUnsafeMutablePointerToElements { elements in
-                    for i in index..<count {
-                        unsafe (elements + i).deinitialize(count: 1)
-                    }
-                }
-            } else {
-                // Inline mode: deinitialize remaining elements in inline storage
-                unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
-                    let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
-                    for i in index..<count {
-                        let idx = Index<Element>(__unchecked: (), Ordinal(UInt(i)))
-                        let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: idx) * .stride).vector.rawValue)
-                            .assumingMemoryBound(to: Element.self)
-                        unsafe elementPtr.deinitialize(count: 1)
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Sendable
-
-extension Set_Primitives_Core.Set.Ordered.Small.Consume.State: @unchecked Sendable where Element: Sendable {}
-
-// MARK: - consume() Implementation
-
-extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
-    /// Returns a consuming view: `.consume().forEach { }`
-    ///
-    /// ```swift
-    /// let set = Set<Int>.Ordered.Small<4>([1, 2, 3])
-    /// set.consume().forEach { element in
-    ///     // element is owned
-    /// }
-    /// ```
+    /// - Complexity: O(n) to create the view (copies inline elements). O(1) per element during iteration.
     @inlinable
-    public consuming func consume() -> Sequence.Consume.View<Element, Consume.State> {
-        let count = Int(bitPattern: storedCount)
-        let isSpilled = heapStorage != nil
-
-        let state: Consume.State
-        if isSpilled {
-            // Heap mode: take the heap storage
-            state = Consume.State(
-                inlineElements: InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0)),
-                heapStorage: heapStorage,
-                count: count,
-                isSpilled: true
-            )
-            // Mark heap storage as empty so its deinit won't double-free
-            heapStorage!.count = .zero
+    public consuming func consume() -> Sequence.Consume.View<Element, Buffer<Element>.Linear.ConsumeState> {
+        var mutableSelf = self
+        if mutableSelf.isSpilled {
+            // Heap path: extract heap buffer directly
+            var consumeBuffer = Buffer<Element>.Linear(minimumCapacity: .zero)
+            Swift.swap(&mutableSelf._heapBuffer!, &consumeBuffer)
+            mutableSelf._heapHashTable = nil
+            return consumeBuffer.consume()
         } else {
-            // Inline mode: copy inline storage
-            state = Consume.State(
-                inlineElements: inlineElements,
-                heapStorage: nil,
-                count: count,
-                isSpilled: false
-            )
-        }
-
-        // Zero out count to prevent set's deinit from double-freeing
-        storedCount = .zero
-
-        return Sequence.Consume.View(
-            state: state,
-            next: { state in
-                guard state.index < state.count else { return nil }
-
-                let element: Element
-                if state.isSpilled {
-                    // Heap mode
-                    let idx = Index<Element>(__unchecked: (), Ordinal(UInt(state.index)))
-                    element = state.heapStorage!.move(at: idx)
-                } else {
-                    // Inline mode
-                    let idx = Index<Element>(__unchecked: (), Ordinal(UInt(state.index)))
-                    element = unsafe Swift.withUnsafeMutablePointer(to: &state.inlineElements) { storagePtr in
-                        let basePtr = UnsafeMutableRawPointer(storagePtr)
-                        let elementPtr = unsafe (basePtr + (Index<Element>.Offset(fromZero: idx) * .stride).vector.rawValue)
-                            .assumingMemoryBound(to: Element.self)
-                        return unsafe elementPtr.move()
-                    }
-                }
-                state.index += 1
-                return element
+            // Inline path: copy to heap buffer, then consume
+            var consumeBuffer = Buffer<Element>.Linear(minimumCapacity: mutableSelf._inlineBuffer.count)
+            var idx: Index<Element> = .zero
+            let end = mutableSelf._inlineBuffer.count.map(Ordinal.init)
+            while idx < end {
+                consumeBuffer.append(mutableSelf._inlineBuffer[idx])
+                idx += .one
             }
-        )
+            mutableSelf._inlineBuffer.removeAll()
+            return consumeBuffer.consume()
+        }
     }
 }

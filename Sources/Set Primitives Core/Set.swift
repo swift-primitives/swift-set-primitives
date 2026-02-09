@@ -125,67 +125,56 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             }
 
             deinit {
-                _buffer.removeAll()
+                // Storage<Element>.Inline's own deinit handles element cleanup
+                // via _slots bit vector — no explicit removeAll() needed.
             }
         }
 
         // MARK: - Small (SmallVec Pattern)
 
         /// An ordered set with small-buffer optimization (SmallVec pattern).
-        @safe
+        ///
+        /// Composes `Buffer<Element>.Linear.Inline<inlineCapacity>` for inline storage
+        /// and `Buffer<Element>.Linear` + `Hash.Table<Element>` after spill.
+        ///
+        /// Inline mode uses O(n) linear scan — no hash table overhead for small sizes.
+        /// Hash table activates only on spill.
         public struct Small<let inlineCapacity: Int>: ~Copyable {
-            @inlinable
-            public static var maxElementStride: Int { 64 }
+            /// Inline element storage — active when not spilled.
+            @usableFromInline
+            package var _inlineBuffer: Buffer<Element>.Linear.Inline<inlineCapacity>
 
-            public var inlineElements: InlineArray<inlineCapacity, (Int, Int, Int, Int, Int, Int, Int, Int)>
+            /// Heap element storage — non-nil after spill.
+            @usableFromInline
+            package var _heapBuffer: Buffer<Element>.Linear?
 
-            public var storedCount: Index_Primitives.Index<Element>.Count
+            /// Heap hash table — non-nil after spill.
+            @usableFromInline
+            package var _heapHashTable: Hash.Table<Element>?
 
-            public var heapStorage: Storage<Element>?
-
-            public var heapHashTable: Hash.Table<Element>?
-
-            public var _deinitWorkaround: AnyObject? = nil
+            /// Workaround for Swift compiler bug where deinit element cleanup
+            /// fails for ~Copyable structs that contain only value-type properties.
+            /// See: https://github.com/swiftlang/swift/issues/86652
+            @usableFromInline
+            package var _deinitWorkaround: AnyObject? = nil
 
             /// Creates an empty small ordered set.
             @inlinable
             public init() {
-                precondition(
-                    MemoryLayout<Element>.stride <= Self.maxElementStride,
-                    "Element stride exceeds inline storage slot size"
-                )
-                self.inlineElements = InlineArray(repeating: (0, 0, 0, 0, 0, 0, 0, 0))
-                self.storedCount = .zero
-                self.heapStorage = nil
-                self.heapHashTable = nil
+                self._inlineBuffer = Buffer<Element>.Linear.Inline<inlineCapacity>()
+                self._heapBuffer = nil
+                self._heapHashTable = nil
             }
 
             deinit {
-                let count = storedCount
-                guard count > .zero else { return }
-
-                if heapStorage != nil {
-                    // Storage deinit handles cleanup via its count property
-                    heapStorage!.count = count
-                } else {
-                    unsafe Swift.withUnsafeBytes(of: inlineElements) { bytes in
-                        let basePtr = unsafe UnsafeMutableRawPointer(mutating: bytes.baseAddress!)
-                        var slot: Index_Primitives.Index<Element> = .zero
-                        let end = count.map(Ordinal.init)
-                        while slot < end {
-                            let elementPtr = unsafe basePtr
-                                .advanced(by: Index_Primitives.Index<Element>.Offset(fromZero: slot) * .stride)
-                                .assumingMemoryBound(to: Element.self)
-                            unsafe elementPtr.deinitialize(count: 1)
-                            slot += .one
-                        }
-                    }
-                }
+                // Buffer.Linear.Inline's deinit handles inline element cleanup via Storage.Inline._slots.
+                // Buffer.Linear's Storage.Heap deinit handles heap element cleanup.
+                // No manual cleanup needed — each component manages its own lifecycle.
             }
 
             /// Whether the set has spilled to heap storage.
             @inlinable
-            public var isSpilled: Bool { heapStorage != nil }
+            public var isSpilled: Bool { _heapBuffer != nil }
         }
     }
 }
