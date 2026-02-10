@@ -31,6 +31,7 @@ let package = Package(
         .package(path: "../swift-memory-primitives"),
         .package(path: "../swift-ordinal-primitives"),
         .package(path: "../swift-cardinal-primitives"),
+        .package(path: "../swift-finite-primitives"),
     ],
     targets: [
         // Internal: Core types with ~Copyable support (type declarations only)
@@ -62,6 +63,7 @@ let package = Package(
                 .product(name: "Storage Primitives", package: "swift-storage-primitives"),
                 .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
                 .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
+                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ],
             exclude: [
             ]

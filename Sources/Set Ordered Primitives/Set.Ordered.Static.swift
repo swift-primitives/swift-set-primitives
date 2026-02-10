@@ -11,6 +11,7 @@
 
 public import Set_Primitives_Core
 import Index_Primitives
+import Finite_Primitives
 
 // Note: Set.Ordered.Static is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Static.
@@ -45,18 +46,20 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 // MARK: - Core Operations
 
 extension Set_Primitives_Core.Set.Ordered.Static {
-    /// Returns the index of the given element, or `nil` if not present.
+    /// Returns the bounded index of the given element, or `nil` if not present.
+    ///
+    /// The returned index is guaranteed to be in [0, capacity).
     ///
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
-    public mutating func index(_ element: Element) -> Index<Element>? {
+    public mutating func index(_ element: Element) -> Index<Element>.Bounded<capacity>? {
         let hashValue = element.hashValue
         guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
         }) else {
             return nil
         }
-        return position
+        return .init(position)
     }
 
     /// Returns whether the set contains the given element.
@@ -73,19 +76,19 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// Inserts an element into the set.
     ///
     /// - Parameter element: The element to insert.
-    /// - Returns: A tuple indicating whether insertion occurred and the element's index.
+    /// - Returns: A tuple indicating whether insertion occurred and the element's bounded index.
     /// - Throws: ``Error/overflow`` if the set is full.
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError) -> (inserted: Bool, index: Index<Element>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError) -> (inserted: Bool, index: Index<Element>.Bounded<capacity>) {
         let hashValue = element.hashValue
 
         // Check for existing element
         if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
         }) {
-            return (false, existingPosition)
+            return (false, .init(existingPosition)!)
         }
 
         // Check capacity
@@ -93,12 +96,12 @@ extension Set_Primitives_Core.Set.Ordered.Static {
             throw .overflow(.init())
         }
 
-        // Insert at next available position
+        // Insert at next available position (count < capacity since !isFull)
         let position = _buffer.count.map(Ordinal.init)
         _ = _buffer.append(element)
         _hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
 
-        return (true, position)
+        return (true, .init(position)!)
     }
 
     /// Removes an element from the set.
