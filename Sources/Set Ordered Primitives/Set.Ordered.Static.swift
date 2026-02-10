@@ -59,7 +59,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }) else {
             return nil
         }
-        return .init(position)
+        return position
     }
 
     /// Returns whether the set contains the given element.
@@ -88,7 +88,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
         }) {
-            return (false, .init(existingPosition)!)
+            return (false, existingPosition)
         }
 
         // Check capacity
@@ -97,11 +97,11 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
 
         // Insert at next available position (count < capacity since !isFull)
-        let position = _buffer.count.map(Ordinal.init)
+        let position: Index<Element>.Bounded<capacity> = .init(_buffer.count.map(Ordinal.init))!
         _ = _buffer.append(element)
         _hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
 
-        return (true, .init(position)!)
+        return (true, position)
     }
 
     /// Removes an element from the set.
@@ -122,7 +122,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
 
         // Remove element from buffer (shifts remaining elements left)
-        let removed = _buffer.remove(at: removedPosition)
+        let removed = _buffer.remove(at: Index<Element>(removedPosition))
 
         // Update positions in hash table for shifted elements
         _hashTable.positions.decrement(after: removedPosition)
@@ -151,9 +151,34 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         return _buffer[index]
     }
 
+    /// Accesses the element at a capacity-bounded index.
+    ///
+    /// The bounded index guarantees `index < capacity` at the type level.
+    /// Only the `index < count` check remains as a runtime precondition
+    /// (the slot must be initialized).
+    @inlinable
+    public func element(at index: Index<Element>.Bounded<capacity>) throws(__SetOrderedInlineError) -> Element {
+        let unbounded = Index<Element>(index)
+        guard unbounded < count else {
+            throw .bounds(.init(index: Int(bitPattern: unbounded.position), count: Int(bitPattern: count)))
+        }
+        return _buffer[index]
+    }
+
     /// Subscript access to elements by index.
     @inlinable
     public subscript(index: Index<Element>) -> Element {
+        precondition(index < count, "Index out of bounds")
+        return _buffer[index]
+    }
+
+    /// Subscript access to elements by capacity-bounded index.
+    ///
+    /// - index >= 0: guaranteed by `Ordinal` (non-negative by construction)
+    /// - index < capacity: guaranteed by `Finite<capacity>` (bounded by type)
+    /// - index < count: checked at runtime (count is runtime state)
+    @inlinable
+    public subscript(index: Index<Element>.Bounded<capacity>) -> Element {
         precondition(index < count, "Index out of bounds")
         return _buffer[index]
     }
@@ -183,6 +208,13 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// Accesses the element at the given index via closure.
     @inlinable
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
+        precondition(index < count, "Index out of bounds")
+        return body(_buffer[index])
+    }
+
+    /// Accesses the element at a capacity-bounded index via closure.
+    @inlinable
+    public func withElement<R>(at index: Index<Element>.Bounded<capacity>, _ body: (borrowing Element) -> R) -> R {
         precondition(index < count, "Index out of bounds")
         return body(_buffer[index])
     }
