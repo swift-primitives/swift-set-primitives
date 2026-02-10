@@ -80,7 +80,7 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
 
             /// Creates a Fixed ordered set with the specified capacity.
             @inlinable
-            public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedFixedError) {
+            public init(capacity: Index_Primitives.Index<Element>.Count) throws(__SetOrderedFixedError<Element>) {
                 self.buffer = Buffer<Element>.Linear.Bounded(minimumCapacity: capacity)
                 self.hashTable = Hash.Table<Element>(minimumCapacity: capacity)
                 self.maximumCapacity = capacity

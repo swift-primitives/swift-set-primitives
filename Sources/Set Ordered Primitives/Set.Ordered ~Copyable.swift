@@ -70,9 +70,9 @@ extension Set.Ordered {
     /// - Returns: The result of the closure.
     /// - Throws: ``Set/Ordered/Error/bounds(_:)`` if the index is out of bounds.
     @inlinable
-    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError) -> R) throws(__SetOrderedError) -> R {
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError<Element>) -> R) throws(__SetOrderedError<Element>) -> R {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return try body(buffer[index])
     }

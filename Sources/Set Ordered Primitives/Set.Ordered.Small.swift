@@ -183,9 +183,9 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
 
     /// Accesses the element at the specified index, with typed error on bounds failure.
     @inlinable
-    public func element(at index: Index<Element>) throws(__SetOrderedError) -> Element {
+    public func element(at index: Index<Element>) throws(__SetOrderedError<Element>) -> Element {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return _buffer[index]
     }
@@ -233,9 +233,9 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 
     /// Accesses the element at the given index via closure, with typed error on bounds failure.
     @inlinable
-    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError) -> R) throws(__SetOrderedError) -> R {
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError<Element>) -> R) throws(__SetOrderedError<Element>) -> R {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return try body(_buffer[index])
     }

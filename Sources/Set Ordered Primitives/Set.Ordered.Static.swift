@@ -81,7 +81,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError) -> (inserted: Bool, index: Index<Element>.Bounded<capacity>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError<Element>) -> (inserted: Bool, index: Index<Element>.Bounded<capacity>) {
         let hashValue = element.hashValue
 
         // Check for existing element
@@ -144,9 +144,9 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 extension Set_Primitives_Core.Set.Ordered.Static {
     /// Accesses the element at the specified index.
     @inlinable
-    public func element(at index: Index<Element>) throws(__SetOrderedInlineError) -> Element {
+    public func element(at index: Index<Element>) throws(__SetOrderedInlineError<Element>) -> Element {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return _buffer[index]
     }
@@ -157,10 +157,10 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// Only the `index < count` check remains as a runtime precondition
     /// (the slot must be initialized).
     @inlinable
-    public func element(at index: Index<Element>.Bounded<capacity>) throws(__SetOrderedInlineError) -> Element {
+    public func element(at index: Index<Element>.Bounded<capacity>) throws(__SetOrderedInlineError<Element>) -> Element {
         let unbounded = Index<Element>(index)
         guard unbounded < count else {
-            throw .bounds(.init(index: Int(bitPattern: unbounded.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: Index<Element>(index), count: count))
         }
         return _buffer[index]
     }

@@ -68,7 +68,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// - Throws: ``Error/overflow`` if the set is full.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index<Element>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError<Element>) -> (inserted: Bool, index: Index<Element>) {
         if let existing = hashTable.position(
             forHash: element.hashValue,
             equals: { idx in buffer[idx] == element }
@@ -133,9 +133,9 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
 extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Accesses the element at the specified index.
     @inlinable
-    public func element(at index: Index<Element>) throws(__SetOrderedFixedError) -> Element {
+    public func element(at index: Index<Element>) throws(__SetOrderedFixedError<Element>) -> Element {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return buffer[index]
     }
@@ -178,9 +178,9 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
 
     /// Accesses the element at the given index via closure, with typed error on bounds failure.
     @inlinable
-    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedFixedError) -> R) throws(__SetOrderedFixedError) -> R {
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedFixedError<Element>) -> R) throws(__SetOrderedFixedError<Element>) -> R {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return try body(buffer[index])
     }

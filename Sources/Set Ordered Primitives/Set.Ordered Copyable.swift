@@ -21,7 +21,7 @@ public import Cardinal_Primitives
 extension Set.Ordered {
     /// Creates an ordered set with reserved capacity.
     @inlinable
-    public init(reservingCapacity capacity: Index<Element>.Count) throws(__SetOrderedError) {
+    public init(reservingCapacity capacity: Index<Element>.Count) throws(__SetOrderedError<Element>) {
         self.init()
         if capacity > .zero {
             self.reserve(capacity)
@@ -134,9 +134,9 @@ extension Set.Ordered where Element: Copyable {
 extension Set.Ordered where Element: Copyable {
     /// Accesses the element at the specified index.
     @inlinable
-    public func element(at index: Index<Element>) throws(__SetOrderedError) -> Element {
+    public func element(at index: Index<Element>) throws(__SetOrderedError<Element>) -> Element {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: index, count: count))
         }
         return buffer[index]
     }

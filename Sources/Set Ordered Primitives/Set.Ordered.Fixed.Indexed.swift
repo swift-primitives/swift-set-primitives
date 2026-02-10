@@ -137,7 +137,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable 
     /// - Throws: ``Error/overflow`` if the set is full.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index_Primitives.Index<Tag>) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedFixedError<Element>) -> (inserted: Bool, index: Index_Primitives.Index<Tag>) {
         let result = try _storage.insert(element)
         return (result.inserted, result.index.retag(Tag.self))
     }
