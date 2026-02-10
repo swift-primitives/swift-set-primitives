@@ -147,6 +147,13 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
         return _buffer[index]
     }
+
+    /// Subscript access to elements by index.
+    @inlinable
+    public subscript(index: Index<Element>) -> Element {
+        precondition(index < count, "Index out of bounds")
+        return _buffer[index]
+    }
 }
 
 // MARK: - First/Last Accessors

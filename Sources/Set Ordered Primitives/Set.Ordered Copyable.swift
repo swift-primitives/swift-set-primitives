@@ -248,7 +248,7 @@ extension Set.Ordered: Hash.`Protocol` {
     /// Hashes the essential components of this set.
     @inlinable
     public borrowing func hash(into hasher: inout Hasher) {
-        hasher.combine(Int(bitPattern: count))
+        hasher.combine(count)
         guard count > .zero else { return }
         var index: Index<Element> = .zero
         let end = count.map(Ordinal.init)
