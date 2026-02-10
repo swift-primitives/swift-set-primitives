@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
-public import Index_Primitives
+import Set_Primitives_Core
+import Index_Primitives
 
 // Note: Set.Ordered now uses Index<Element> natively throughout its API.
 // Set<Element>.Index is a typealias for Index_Primitives.Index<Element>.

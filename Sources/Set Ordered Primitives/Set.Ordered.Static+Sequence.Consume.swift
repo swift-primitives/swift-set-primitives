@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Sequence_Primitives
+import Sequence_Primitives
 
 // MARK: - consume() Implementation
 //

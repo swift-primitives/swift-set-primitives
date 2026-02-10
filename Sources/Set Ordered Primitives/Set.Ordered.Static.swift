@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Index_Primitives
+import Index_Primitives
 
 // Note: Set.Ordered.Static is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Static.

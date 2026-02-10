@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Index_Primitives
+import Index_Primitives
 
 extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Namespace for symmetric set operations.

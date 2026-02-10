@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Index_Primitives
+import Index_Primitives
 
 // MARK: - Algebra Accessor
 

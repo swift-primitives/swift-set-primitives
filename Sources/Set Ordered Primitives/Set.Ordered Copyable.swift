@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Index_Primitives
+import Index_Primitives
 public import Ordinal_Primitives
 public import Cardinal_Primitives
 

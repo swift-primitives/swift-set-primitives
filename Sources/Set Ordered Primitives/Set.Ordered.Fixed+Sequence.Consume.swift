@@ -10,8 +10,8 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Sequence_Primitives
-public import Index_Primitives
+import Sequence_Primitives
+import Index_Primitives
 
 // MARK: - consume() Implementation
 //

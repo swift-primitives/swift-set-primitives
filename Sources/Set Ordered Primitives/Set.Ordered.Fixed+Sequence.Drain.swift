@@ -10,7 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitives_Core
-public import Sequence_Primitives
+import Sequence_Primitives
 public import Property_Primitives
 
 // MARK: - Sequence.Drain.Protocol Conformance
