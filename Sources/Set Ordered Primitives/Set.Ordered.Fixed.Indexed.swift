@@ -74,7 +74,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         /// ```
         @inlinable
         public var count: Index_Primitives.Index<Tag>.Count {
-            Index_Primitives.Index<Tag>.Count(__unchecked: (), _storage.count.rawValue)
+            _storage.count.retag(Tag.self)
         }
 
         /// Accesses the element at the given phantom-typed index.
@@ -84,7 +84,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         @inlinable
         public subscript(index: Index_Primitives.Index<Tag>) -> Element {
             get {
-                let elementIndex = Index<Element>(__unchecked: (), index.position)
+                let elementIndex = index.retag(Element.self)
                 precondition(elementIndex < _storage.count, "Index out of bounds")
                 return _storage.buffer[elementIndex]
             }
@@ -102,7 +102,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable 
     /// The maximum number of elements the set can hold.
     @inlinable
     public var capacity: Index_Primitives.Index<Tag>.Count {
-        Index_Primitives.Index<Tag>.Count(__unchecked: (), _storage.capacity.rawValue)
+        _storage.capacity.retag(Tag.self)
     }
 
     /// Whether the set is at full capacity.
@@ -123,7 +123,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable 
     @inlinable
     public func index(_ element: Element) -> Index_Primitives.Index<Tag>? {
         guard let rawIndex = _storage.index(element) else { return nil }
-        return Index_Primitives.Index<Tag>(__unchecked: (), rawIndex.position)
+        return rawIndex.retag(Tag.self)
     }
 }
 
@@ -139,7 +139,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed.Indexed where Element: Copyable 
     @discardableResult
     public mutating func insert(_ element: Element) throws(__SetOrderedFixedError) -> (inserted: Bool, index: Index_Primitives.Index<Tag>) {
         let result = try _storage.insert(element)
-        return (result.inserted, Index_Primitives.Index<Tag>(__unchecked: (), result.index.position))
+        return (result.inserted, result.index.retag(Tag.self))
     }
 
     /// Removes an element from the set.

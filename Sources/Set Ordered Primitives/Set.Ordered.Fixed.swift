@@ -135,7 +135,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     @inlinable
     public func element(at index: Index<Element>) throws(__SetOrderedFixedError) -> Element {
         guard index < count else {
-            throw .bounds(.init(index: Int(bitPattern: index.position.rawValue), count: Int(bitPattern: count)))
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
         }
         return buffer[index]
     }

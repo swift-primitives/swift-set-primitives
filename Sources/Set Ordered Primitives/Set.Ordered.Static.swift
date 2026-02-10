@@ -31,7 +31,7 @@ import Index_Primitives
 extension Set_Primitives_Core.Set.Ordered.Static {
     /// The number of elements in the set.
     @inlinable
-    public var count: Int { Int(bitPattern: _hashTable.count) }
+    public var count: Index<Element>.Count { _buffer.count }
 
     /// Whether the set is empty.
     @inlinable
@@ -49,14 +49,14 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     ///
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
-    public mutating func index(_ element: Element) -> Int? {
+    public mutating func index(_ element: Element) -> Index<Element>? {
         let hashValue = element.hashValue
         guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
         }) else {
             return nil
         }
-        return Int(bitPattern: position.position.rawValue)
+        return position
     }
 
     /// Returns whether the set contains the given element.
@@ -78,14 +78,14 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError) -> (inserted: Bool, index: Int) {
+    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError) -> (inserted: Bool, index: Index<Element>) {
         let hashValue = element.hashValue
 
         // Check for existing element
         if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
         }) {
-            return (false, Int(bitPattern: existingPosition.position.rawValue))
+            return (false, existingPosition)
         }
 
         // Check capacity
@@ -94,11 +94,11 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
 
         // Insert at next available position
-        let position = Index<Element>(Ordinal(_hashTable.count.rawValue.rawValue))
+        let position = _buffer.count.map(Ordinal.init)
         _ = _buffer.append(element)
         _hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
 
-        return (true, Int(bitPattern: position.position.rawValue))
+        return (true, position)
     }
 
     /// Removes an element from the set.
@@ -141,31 +141,28 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 extension Set_Primitives_Core.Set.Ordered.Static {
     /// Accesses the element at the specified index.
     @inlinable
-    public func element(at index: Int) throws(__SetOrderedInlineError) -> Element {
-        guard index >= 0 && index < count else {
-            throw .bounds(.init(index: index, count: count))
+    public func element(at index: Index<Element>) throws(__SetOrderedInlineError) -> Element {
+        guard index < count else {
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
         }
-        let idx = Index<Element>(Ordinal(UInt(index)))
-        return _buffer[idx]
+        return _buffer[index]
     }
 }
 
 // MARK: - First/Last Accessors
 
 extension Set_Primitives_Core.Set.Ordered.Static {
-    /// Returns the first element, or `nil` if the set is empty.
+    /// The first element, or `nil` if the set is empty.
     @inlinable
-    public func getFirst() -> Element? {
-        guard Int(bitPattern: _hashTable.count) > 0 else { return nil }
-        return _buffer[Index<Element>.zero]
+    public var first: Element? {
+        count > .zero ? _buffer[.zero] : nil
     }
 
-    /// Returns the last element, or `nil` if the set is empty.
+    /// The last element, or `nil` if the set is empty.
     @inlinable
-    public func getLast() -> Element? {
-        let c = Int(bitPattern: _hashTable.count)
-        guard c > 0 else { return nil }
-        let lastIndex = Index<Element>(Ordinal(UInt(c - 1)))
+    public var last: Element? {
+        guard count > .zero else { return nil }
+        let lastIndex = count.subtract.saturating(.one).map(Ordinal.init)
         return _buffer[lastIndex]
     }
 }
@@ -175,10 +172,9 @@ extension Set_Primitives_Core.Set.Ordered.Static {
 extension Set_Primitives_Core.Set.Ordered.Static {
     /// Accesses the element at the given index via closure.
     @inlinable
-    public func withElement<R>(at index: Int, _ body: (borrowing Element) -> R) -> R {
-        precondition(index >= 0 && index < Int(bitPattern: _hashTable.count), "Index out of bounds")
-        let idx = Index<Element>(Ordinal(UInt(index)))
-        return body(_buffer[idx])
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
+        precondition(index < count, "Index out of bounds")
+        return body(_buffer[index])
     }
 
     /// Iterates over all elements in the set.
