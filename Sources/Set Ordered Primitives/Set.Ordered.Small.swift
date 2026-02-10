@@ -174,10 +174,19 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
 // ============================================================================
 
 extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
-    /// Accesses the element at the specified index.
+    /// Accesses the element at the specified index, returning nil if out of bounds.
     @inlinable
     public func element(at index: Index<Element>) -> Element? {
         guard index < count else { return nil }
+        return _buffer[index]
+    }
+
+    /// Accesses the element at the specified index, with typed error on bounds failure.
+    @inlinable
+    public func element(at index: Index<Element>) throws(__SetOrderedError) -> Element {
+        guard index < count else {
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+        }
         return _buffer[index]
     }
 
@@ -220,6 +229,15 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) -> R) -> R {
         precondition(index < count, "Index out of bounds")
         return body(_buffer[index])
+    }
+
+    /// Accesses the element at the given index via closure, with typed error on bounds failure.
+    @inlinable
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError) -> R) throws(__SetOrderedError) -> R {
+        guard index < count else {
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+        }
+        return try body(_buffer[index])
     }
 
     /// Iterates over all elements in the set.

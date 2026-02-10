@@ -176,6 +176,15 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
         return body(buffer[index])
     }
 
+    /// Accesses the element at the given index via closure, with typed error on bounds failure.
+    @inlinable
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedFixedError) -> R) throws(__SetOrderedFixedError) -> R {
+        guard index < count else {
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+        }
+        return try body(buffer[index])
+    }
+
     /// Iterates over all elements in the set.
     @inlinable
     public func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E) {

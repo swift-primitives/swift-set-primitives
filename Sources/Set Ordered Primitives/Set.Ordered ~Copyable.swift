@@ -62,6 +62,21 @@ extension Set.Ordered {
         return body(buffer[index])
     }
 
+    /// Accesses the element at the given index via closure, with typed error on bounds failure.
+    ///
+    /// - Parameters:
+    ///   - index: The index of the element.
+    ///   - body: A closure that receives a borrowed reference to the element.
+    /// - Returns: The result of the closure.
+    /// - Throws: ``Set/Ordered/Error/bounds(_:)`` if the index is out of bounds.
+    @inlinable
+    public func withElement<R>(at index: Index<Element>, _ body: (borrowing Element) throws(__SetOrderedError) -> R) throws(__SetOrderedError) -> R {
+        guard index < count else {
+            throw .bounds(.init(index: Int(bitPattern: index.position), count: Int(bitPattern: count)))
+        }
+        return try body(buffer[index])
+    }
+
     /// Iterates over all elements in the set.
     ///
     /// - Parameter body: A closure that receives each borrowed element.
