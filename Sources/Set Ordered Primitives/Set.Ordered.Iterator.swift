@@ -22,7 +22,7 @@ import Cardinal_Primitives
 
 extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Iterator for Set.Ordered that copies elements for safe iteration.
-    public struct Iterator: IteratorProtocol {
+    public struct Iterator: Sequence.Iterator.`Protocol`, IteratorProtocol {
         @usableFromInline
         var index: Index<Element>
 
