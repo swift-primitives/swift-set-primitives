@@ -25,7 +25,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// ```
     @inlinable
     public var algebra: Algebra {
-        Algebra(buffer: buffer)
+        Algebra(buffer: buffer, hashTable: hashTable)
     }
 }
 
@@ -44,8 +44,12 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         let buffer: Buffer<Element>.Linear
 
         @usableFromInline
-        init(buffer: Buffer<Element>.Linear) {
+        let hashTable: Hash.Table<Element>
+
+        @usableFromInline
+        init(buffer: Buffer<Element>.Linear, hashTable: Hash.Table<Element>) {
             self.buffer = buffer
+            self.hashTable = hashTable
         }
 
         @usableFromInline
@@ -131,7 +135,7 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Nested accessor for symmetric operations.
     @inlinable
     public var symmetric: Symmetric {
-        Symmetric(buffer: buffer)
+        Symmetric(buffer: buffer, hashTable: hashTable)
     }
 }
 

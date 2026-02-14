@@ -22,8 +22,12 @@ extension Set_Primitives_Core.Set.Ordered.Algebra {
         let buffer: Buffer<Element>.Linear
 
         @usableFromInline
-        init(buffer: Buffer<Element>.Linear) {
+        let hashTable: Hash.Table<Element>
+
+        @usableFromInline
+        init(buffer: Buffer<Element>.Linear, hashTable: Hash.Table<Element>) {
             self.buffer = buffer
+            self.hashTable = hashTable
         }
 
         @usableFromInline
@@ -62,17 +66,10 @@ extension Set_Primitives_Core.Set.Ordered.Algebra.Symmetric {
         let otherEnd = other.count.map(Ordinal.init)
         while otherIndex < otherEnd {
             let element = other.buffer[otherIndex]
-            // Check if element is in self by iterating
-            var found = false
-            var selfIndex: Index<Element> = .zero
-            while selfIndex < end {
-                if buffer[selfIndex] == element {
-                    found = true
-                    break
-                }
-                selfIndex += .one
-            }
-            if !found {
+            if hashTable.position(
+                forHash: element.hashValue,
+                equals: { idx in buffer[idx] == element }
+            ) == nil {
                 result.insert(element)
             }
             otherIndex += .one

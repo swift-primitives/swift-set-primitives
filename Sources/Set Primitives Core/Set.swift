@@ -47,10 +47,12 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         // MARK: - Stored Properties
 
         /// Element storage using Buffer.Linear from buffer-primitives.
-        public var buffer: Buffer<Element>.Linear
+        @usableFromInline
+        package var buffer: Buffer<Element>.Linear
 
         /// Hash table for O(1) position lookup.
-        public var hashTable: Hash.Table<Element>
+        @usableFromInline
+        package var hashTable: Hash.Table<Element>
 
         // MARK: - Initialization
 
@@ -70,10 +72,12 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         @safe
         public struct Fixed {
             /// Element storage using Buffer.Linear.Bounded from buffer-primitives.
-            public var buffer: Buffer<Element>.Linear.Bounded
+            @usableFromInline
+            package var buffer: Buffer<Element>.Linear.Bounded
 
             /// Hash table for O(1) position lookup.
-            public var hashTable: Hash.Table<Element>
+            @usableFromInline
+            package var hashTable: Hash.Table<Element>
 
             /// The maximum number of elements the set can hold.
             public let maximumCapacity: Index_Primitives.Index<Element>.Count
