@@ -203,7 +203,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     public mutating func drain(_ body: (consuming Element) -> Void) {
         guard buffer.count > .zero else { return }
         while !buffer.isEmpty {
-            body(buffer.consumeFront())
+            body(buffer.remove.first())
         }
         hashTable.remove.all(keepingCapacity: true)
     }

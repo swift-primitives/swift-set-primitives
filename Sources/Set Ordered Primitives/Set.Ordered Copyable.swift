@@ -180,7 +180,7 @@ extension Set.Ordered where Element: Copyable {
         guard count > .zero else { return }
         makeUnique()
         while !buffer.isEmpty {
-            body(buffer.consumeFront())
+            body(buffer.remove.first())
         }
         hashTable.remove.all(keepingCapacity: true)
     }

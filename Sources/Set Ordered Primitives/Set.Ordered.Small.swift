@@ -133,7 +133,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
-        _buffer.removeAll(keepingCapacity: keepingCapacity)
+        _buffer.remove.all(keepingCapacity: keepingCapacity)
         if keepingCapacity {
             // WORKAROUND: Extract hash table to local for .remove.all() call.
             // Direct `_heapHashTable?.remove.all(keepingCapacity:)` crashes the
@@ -259,7 +259,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
         guard count > .zero else { return }
 
         while !_buffer.isEmpty {
-            body(_buffer.consumeFront())
+            body(_buffer.remove.first())
         }
 
         // WORKAROUND: Extract hash table to local for .remove.all() call.

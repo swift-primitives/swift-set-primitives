@@ -122,7 +122,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         }
 
         // Remove element from buffer (shifts remaining elements left)
-        let removed = _buffer.remove(at: Index<Element>(removedPosition))
+        let removed = _buffer.remove(at: removedPosition)
 
         // Update positions in hash table for shifted elements
         _hashTable.positions.decrement(after: removedPosition)
@@ -238,7 +238,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         guard _hashTable.count > .zero else { return }
 
         while !_buffer.isEmpty {
-            body(_buffer.consumeFront())
+            body(_buffer.remove.first())
         }
 
         // Clear hash table
