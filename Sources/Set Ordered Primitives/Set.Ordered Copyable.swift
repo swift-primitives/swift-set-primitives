@@ -282,3 +282,31 @@ extension Set.Ordered where Element: Copyable {
     }
 }
 #endif
+
+// ============================================================================
+// MARK: - Sequence.Protocol Conformance
+// ============================================================================
+
+extension Set.Ordered: Sequence.`Protocol` where Element: Copyable {
+    /// Returns the count as the underestimated count since we know the exact size.
+    ///
+    /// This explicit implementation resolves ambiguity between Swift.Sequence
+    /// and Sequence.Protocol+Swift.Sequence default implementation.
+    @inlinable
+    public var underestimatedCount: Int { Int(bitPattern: count) }
+}
+
+// ============================================================================
+// MARK: - Sequence.Clearable Conformance
+// ============================================================================
+
+extension Set.Ordered: Sequence.Clearable where Element: Copyable {
+    /// Removes all elements from the set.
+    ///
+    /// This enables `.forEach.consuming { }` pattern via `Property.View` extension.
+    @inlinable
+    public mutating func removeAll() {
+        clear(keepingCapacity: false)
+    }
+}
+
