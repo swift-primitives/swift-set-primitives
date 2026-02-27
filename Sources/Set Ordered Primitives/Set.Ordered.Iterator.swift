@@ -33,12 +33,29 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
         let count: Index<Element>.Count
 
         @usableFromInline
+        var _spanBuffer: [Element] = []
+
+        @usableFromInline
         init(_ ordered: borrowing Set_Primitives_Core.Set<Element>.Ordered) {
             self.index = .zero
             self.buffer = ordered.buffer
             self.count = buffer.count
         }
 
+        @_lifetime(&self)
+        @inlinable
+        public mutating func nextSpan(maximumCount: Cardinal) -> Span<Element> {
+            _spanBuffer.removeAll(keepingCapacity: true)
+            var remaining = Int(maximumCount.rawValue)
+            while remaining > 0, index < count {
+                _spanBuffer.append(buffer[index])
+                index += .one
+                remaining -= 1
+            }
+            return _spanBuffer.span
+        }
+
+        @_lifetime(self: immortal)
         @inlinable
         public mutating func next() -> Element? {
             guard index < count else { return nil }
