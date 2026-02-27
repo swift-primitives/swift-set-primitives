@@ -21,47 +21,26 @@ import Cardinal_Primitives
 // For ~Copyable elements, use forEach() or index-based iteration instead.
 
 extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
-    /// Iterator for Set.Ordered that copies elements for safe iteration.
+    /// Iterator for Set.Ordered that delegates to Buffer.Linear.Iterator.
     public struct Iterator: Sequence.Iterator.`Protocol`, IteratorProtocol {
         @usableFromInline
-        var index: Index<Element>
+        var _inner: Buffer<Element>.Linear.Iterator
 
         @usableFromInline
-        let buffer: Buffer<Element>.Linear
-
-        @usableFromInline
-        let count: Index<Element>.Count
-
-        @usableFromInline
-        var _spanBuffer: [Element] = []
-
-        @usableFromInline
-        init(_ ordered: borrowing Set_Primitives_Core.Set<Element>.Ordered) {
-            self.index = .zero
-            self.buffer = ordered.buffer
-            self.count = buffer.count
+        init(_inner: Buffer<Element>.Linear.Iterator) {
+            self._inner = _inner
         }
 
         @_lifetime(&self)
         @inlinable
         public mutating func nextSpan(maximumCount: Cardinal) -> Span<Element> {
-            _spanBuffer.removeAll(keepingCapacity: true)
-            var remaining = Int(maximumCount.rawValue)
-            while remaining > 0, index < count {
-                _spanBuffer.append(buffer[index])
-                index += .one
-                remaining -= 1
-            }
-            return _spanBuffer.span
+            _inner.nextSpan(maximumCount: maximumCount)
         }
 
         @_lifetime(self: immortal)
         @inlinable
         public mutating func next() -> Element? {
-            guard index < count else { return nil }
-            let element = buffer[index]
-            index += .one
-            return element
+            _inner.next()
         }
     }
 
@@ -71,7 +50,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// Swift.Sequence conformance (which would require Copyable).
     @inlinable
     public borrowing func makeIterator() -> Iterator {
-        Iterator(self)
+        Iterator(_inner: buffer.makeIterator())
     }
 }
 

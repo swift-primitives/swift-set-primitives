@@ -19,47 +19,26 @@ import Cardinal_Primitives
 // ============================================================================
 
 extension Set.Ordered.Fixed where Element: Copyable {
-    /// Iterator for Set.Ordered.Fixed that copies elements for safe iteration.
+    /// Iterator for Set.Ordered.Fixed that delegates to Buffer.Linear.Bounded.Iterator.
     public struct Iterator: Sequence.Iterator.`Protocol`, IteratorProtocol {
         @usableFromInline
-        var index: Index<Element>
+        var _inner: Buffer<Element>.Linear.Bounded.Iterator
 
         @usableFromInline
-        let buffer: Buffer<Element>.Linear.Bounded
-
-        @usableFromInline
-        let count: Index<Element>.Count
-
-        @usableFromInline
-        var _spanBuffer: [Element] = []
-
-        @usableFromInline
-        init(_ fixed: borrowing Set.Ordered.Fixed) {
-            self.index = .zero
-            self.buffer = fixed.buffer
-            self.count = fixed.buffer.count
+        init(_inner: Buffer<Element>.Linear.Bounded.Iterator) {
+            self._inner = _inner
         }
 
         @_lifetime(&self)
         @inlinable
         public mutating func nextSpan(maximumCount: Cardinal) -> Span<Element> {
-            _spanBuffer.removeAll(keepingCapacity: true)
-            var remaining = Int(maximumCount.rawValue)
-            while remaining > 0, index < count {
-                _spanBuffer.append(buffer[index])
-                index += .one
-                remaining -= 1
-            }
-            return _spanBuffer.span
+            _inner.nextSpan(maximumCount: maximumCount)
         }
 
         @_lifetime(self: immortal)
         @inlinable
         public mutating func next() -> Element? {
-            guard index < count else { return nil }
-            let element = buffer[index]
-            index += .one
-            return element
+            _inner.next()
         }
     }
 }
@@ -76,7 +55,7 @@ extension Set.Ordered.Fixed: Swift.Sequence where Element: Copyable {
     /// Elements are yielded in insertion order.
     @inlinable
     public func makeIterator() -> Iterator {
-        Iterator(self)
+        Iterator(_inner: buffer.makeIterator())
     }
 }
 
