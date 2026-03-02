@@ -202,6 +202,54 @@ struct SetProtocolTests {
         #expect(!a.isStrictSuperset(of: b))
     }
 
+    // MARK: - isEqual
+
+    @Test
+    func `Equal sets`() {
+        var a = Set<Int>.Ordered()
+        a.insert(1); a.insert(2); a.insert(3)
+        var b = Set<Int>.Ordered()
+        b.insert(1); b.insert(2); b.insert(3)
+        #expect(a.isEqual(to: b))
+    }
+
+    @Test
+    func `Unequal sets with different counts`() {
+        var a = Set<Int>.Ordered()
+        a.insert(1); a.insert(2)
+        var b = Set<Int>.Ordered()
+        b.insert(1); b.insert(2); b.insert(3)
+        #expect(!a.isEqual(to: b))
+    }
+
+    @Test
+    func `Unequal sets with same count`() {
+        var a = Set<Int>.Ordered()
+        a.insert(1); a.insert(2)
+        var b = Set<Int>.Ordered()
+        b.insert(2); b.insert(3)
+        #expect(!a.isEqual(to: b))
+    }
+
+    @Test
+    func `Empty sets are equal`() {
+        let a = Set<Int>.Ordered()
+        let b = Set<Int>.Ordered()
+        #expect(a.isEqual(to: b))
+    }
+
+    @Test
+    func `Heterogeneous isEqual`() throws {
+        var ordered = Set<Int>.Ordered()
+        ordered.insert(1); ordered.insert(2)
+        var fixed = try Set<Int>.Ordered.Fixed(capacity: 4)
+        try fixed.insert(1); try fixed.insert(2)
+        #expect(ordered.isEqual(to: fixed))
+
+        try fixed.insert(3)
+        #expect(!ordered.isEqual(to: fixed))
+    }
+
     // MARK: - Protocol Algebra
 
     @Test

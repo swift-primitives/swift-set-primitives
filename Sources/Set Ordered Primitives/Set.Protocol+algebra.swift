@@ -46,18 +46,24 @@ extension Set.`Protocol` where Self: ~Copyable, Element: Copyable {
 
     /// Returns a new set with elements common to both sets.
     ///
-    /// Elements appear in the iteration order of `self`.
+    /// Iterates the smaller set and probes the larger for O(min(n,m)) average.
     ///
     /// - Parameter other: The set to intersect with.
     /// - Returns: A new ordered set containing only elements present in both sets.
-    /// - Complexity: O(n) average, where n is the size of this set.
+    /// - Complexity: O(min(n, m)) average, where n and m are the set sizes.
     @inlinable
     public func intersection<Other: Set.`Protocol` & ~Copyable>(
         _ other: borrowing Other
     ) -> Set<Element>.Ordered where Other.Element == Element {
         var result = Set<Element>.Ordered()
-        self.forEach { element in
-            if other.contains(element) { result.insert(element) }
+        if count <= other.count {
+            self.forEach { element in
+                if other.contains(element) { result.insert(element) }
+            }
+        } else {
+            other.forEach { element in
+                if self.contains(element) { result.insert(element) }
+            }
         }
         return result
     }

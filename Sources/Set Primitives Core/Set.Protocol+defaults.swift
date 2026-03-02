@@ -14,16 +14,24 @@
 extension Set.`Protocol` where Self: ~Copyable {
     /// Returns whether this set and `other` have no elements in common.
     ///
+    /// Iterates the smaller set and probes the larger for O(min(n,m)) average.
+    ///
     /// - Parameter other: A set to test for disjointness.
     /// - Returns: `true` if this set has no elements in common with `other`.
-    /// - Complexity: O(n) average, where n is the size of this set.
+    /// - Complexity: O(min(n, m)) average, where n and m are the set sizes.
     @inlinable
     public func isDisjoint<Other: Set.`Protocol` & ~Copyable>(
         with other: borrowing Other
     ) -> Bool where Other.Element == Element {
         var disjoint = true
-        forEach { element in
-            if disjoint, other.contains(element) { disjoint = false }
+        if count <= other.count {
+            forEach { element in
+                if disjoint, other.contains(element) { disjoint = false }
+            }
+        } else {
+            other.forEach { element in
+                if disjoint, self.contains(element) { disjoint = false }
+            }
         }
         return disjoint
     }
@@ -94,5 +102,20 @@ extension Set.`Protocol` where Self: ~Copyable {
         of other: borrowing Other
     ) -> Bool where Other.Element == Element {
         count > other.count && isSuperset(of: other)
+    }
+
+    /// Returns whether this set and `other` contain the same elements.
+    ///
+    /// Short-circuits via count comparison — if counts differ, returns `false`
+    /// without iterating. Otherwise verifies every element of `self` is in `other`.
+    ///
+    /// - Parameter other: A set to compare against.
+    /// - Returns: `true` if both sets contain exactly the same elements.
+    /// - Complexity: O(1) when counts differ; O(n) average otherwise.
+    @inlinable
+    public func isEqual<Other: Set.`Protocol` & ~Copyable>(
+        to other: borrowing Other
+    ) -> Bool where Other.Element == Element {
+        count == other.count && isSubset(of: other)
     }
 }
