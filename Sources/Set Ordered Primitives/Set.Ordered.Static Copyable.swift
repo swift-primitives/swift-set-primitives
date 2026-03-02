@@ -83,6 +83,12 @@ extension Set.Ordered.Static: Sequence.`Protocol` where Element: Copyable {
 }
 
 // ============================================================================
+// MARK: - Set.Protocol Conformance
+// ============================================================================
+
+extension Set.Ordered.Static: Set.`Protocol` {}
+
+// ============================================================================
 // MARK: - Sequence.Clearable Conformance
 // ============================================================================
 

@@ -77,6 +77,20 @@ extension Set.Ordered {
         return try body(buffer[index])
     }
 
+    /// Returns whether the set contains the given element.
+    @inlinable
+    public func contains(_ element: borrowing Element) -> Bool {
+        let count = buffer.count
+        guard count > .zero else { return false }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if buffer[index] == element { return true }
+            index += .one
+        }
+        return false
+    }
+
     /// Iterates over all elements in the set.
     ///
     /// - Parameter body: A closure that receives each borrowed element.

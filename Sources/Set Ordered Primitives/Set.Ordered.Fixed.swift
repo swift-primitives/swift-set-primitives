@@ -110,15 +110,6 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         return removed
     }
 
-    /// Returns whether the set contains the given element.
-    @inlinable
-    public func contains(_ element: Element) -> Bool {
-        hashTable.position(
-            forHash: element.hashValue,
-            equals: { idx in buffer[idx] == element }
-        ) != nil
-    }
-
     /// Removes all elements from the set.
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
@@ -183,6 +174,20 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
             throw .bounds(.init(index: index, count: count))
         }
         return try body(buffer[index])
+    }
+
+    /// Returns whether the set contains the given element.
+    @inlinable
+    public func contains(_ element: borrowing Element) -> Bool {
+        let count = buffer.count
+        guard count > .zero else { return false }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if buffer[index] == element { return true }
+            index += .one
+        }
+        return false
     }
 
     /// Iterates over all elements in the set.

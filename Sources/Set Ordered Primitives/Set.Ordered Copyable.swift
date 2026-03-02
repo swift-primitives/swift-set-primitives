@@ -109,15 +109,6 @@ extension Set.Ordered where Element: Copyable {
         return removed
     }
 
-    /// Returns whether the set contains the given element.
-    @inlinable
-    public func contains(_ element: Element) -> Bool {
-        hashTable.position(
-            forHash: element.hashValue,
-            equals: { idx in buffer[idx] == element }
-        ) != nil
-    }
-
     /// Removes all elements from the set (CoW-aware).
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
@@ -293,6 +284,12 @@ extension Set.Ordered: ExpressibleByArrayLiteral where Element: Copyable {
         self.init(elements)
     }
 }
+
+// ============================================================================
+// MARK: - Set.Protocol Conformance
+// ============================================================================
+
+extension Set.Ordered: Set.`Protocol` {}
 
 // ============================================================================
 // MARK: - Sequence.Protocol Conformance

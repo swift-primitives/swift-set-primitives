@@ -73,12 +73,6 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         }
     }
 
-    /// Returns whether the set contains the given element.
-    @inlinable
-    public func contains(_ element: Element) -> Bool {
-        index(element) != nil
-    }
-
     /// Inserts an element into the set.
     ///
     /// If inline storage is full, spills to heap automatically.
@@ -238,6 +232,18 @@ extension Set_Primitives_Core.Set.Ordered.Small {
             throw .bounds(.init(index: index, count: count))
         }
         return try body(_buffer[index])
+    }
+
+    /// Returns whether the set contains the given element.
+    @inlinable
+    public func contains(_ element: borrowing Element) -> Bool {
+        var idx: Index<Element> = .zero
+        let end = _buffer.count.map(Ordinal.init)
+        while idx < end {
+            if _buffer[idx] == element { return true }
+            idx += .one
+        }
+        return false
     }
 
     /// Iterates over all elements in the set.

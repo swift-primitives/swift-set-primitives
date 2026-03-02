@@ -52,7 +52,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     ///
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
-    public mutating func index(_ element: Element) -> Index<Element>.Bounded<capacity>? {
+    public func index(_ element: Element) -> Index<Element>.Bounded<capacity>? {
         let hashValue = element.hashValue
         guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
             _buffer[idx] == element
@@ -66,11 +66,16 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     ///
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
-    public mutating func contains(_ element: Element) -> Bool {
-        let hashValue = element.hashValue
-        return _hashTable.contains(hashValue: hashValue, equals: { idx in
-            _buffer[idx] == element
-        })
+    public func contains(_ element: borrowing Element) -> Bool {
+        let count = _buffer.count
+        guard count > .zero else { return false }
+        var index: Index<Element> = .zero
+        let end = count.map(Ordinal.init)
+        while index < end {
+            if _buffer[index] == element { return true }
+            index += .one
+        }
+        return false
     }
 
     /// Inserts an element into the set.
