@@ -284,6 +284,17 @@ extension Set.Ordered where Element: Copyable {
 #endif
 
 // ============================================================================
+// MARK: - ExpressibleByArrayLiteral
+// ============================================================================
+
+extension Set.Ordered: ExpressibleByArrayLiteral where Element: Copyable {
+    @inlinable
+    public init(arrayLiteral elements: Element...) {
+        self.init(elements)
+    }
+}
+
+// ============================================================================
 // MARK: - Sequence.Protocol Conformance
 // ============================================================================
 
