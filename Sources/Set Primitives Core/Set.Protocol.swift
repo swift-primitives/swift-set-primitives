@@ -23,6 +23,9 @@ public protocol __SetProtocol: ~Copyable {
 
     /// Calls `body` with a borrowing reference to each element.
     func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E)
+
+    /// The number of elements in the set.
+    var count: Index<Element>.Count { get }
 }
 
 // MARK: - Namespace Typealias
@@ -30,9 +33,11 @@ public protocol __SetProtocol: ~Copyable {
 extension Set where Element: ~Copyable {
     /// Protocol unifying membership queries across all `Set` variants.
     ///
-    /// `Set.Protocol` refines nothing — it declares `contains` and `forEach`
-    /// as requirements, enabling default implementations for `isDisjoint`,
-    /// `isSubset`, and `isSuperset`.
+    /// `Set.Protocol` refines nothing — it declares `contains`, `forEach`,
+    /// and `count` as requirements, enabling default implementations for
+    /// relational operations (`isDisjoint`, `isSubset`, `isSuperset`,
+    /// `isStrictSubset`, `isStrictSuperset`, `isEmpty`) and non-mutating
+    /// algebra (`union`, `intersection`, `subtract`, `symmetricDifference`).
     ///
     /// ## Hoisted Protocol Pattern
     ///

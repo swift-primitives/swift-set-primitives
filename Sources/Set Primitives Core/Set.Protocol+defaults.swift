@@ -16,7 +16,7 @@ extension Set.`Protocol` where Self: ~Copyable {
     ///
     /// - Parameter other: A set to test for disjointness.
     /// - Returns: `true` if this set has no elements in common with `other`.
-    /// - Complexity: O(min(n, m)) average, where n and m are the set sizes.
+    /// - Complexity: O(n) average, where n is the size of this set.
     @inlinable
     public func isDisjoint<Other: Set.`Protocol` & ~Copyable>(
         with other: borrowing Other
@@ -58,5 +58,41 @@ extension Set.`Protocol` where Self: ~Copyable {
             if result, !self.contains(element) { result = false }
         }
         return result
+    }
+
+    /// Whether the set contains no elements.
+    @inlinable
+    public var isEmpty: Bool { count == .zero }
+
+    /// Returns whether this set is a strict subset of `other`.
+    ///
+    /// A strict subset means every element of this set is in `other`,
+    /// and `other` contains at least one element not in this set.
+    ///
+    /// - Parameter other: A set to test against.
+    /// - Returns: `true` if this set is a strict subset of `other`.
+    /// - Complexity: O(n) average, where n is the size of this set.
+    ///   Short-circuits via count comparison when `count >= other.count`.
+    @inlinable
+    public func isStrictSubset<Other: Set.`Protocol` & ~Copyable>(
+        of other: borrowing Other
+    ) -> Bool where Other.Element == Element {
+        count < other.count && isSubset(of: other)
+    }
+
+    /// Returns whether this set is a strict superset of `other`.
+    ///
+    /// A strict superset means every element of `other` is in this set,
+    /// and this set contains at least one element not in `other`.
+    ///
+    /// - Parameter other: A set to test against.
+    /// - Returns: `true` if this set is a strict superset of `other`.
+    /// - Complexity: O(m) average, where m is the size of `other`.
+    ///   Short-circuits via count comparison when `count <= other.count`.
+    @inlinable
+    public func isStrictSuperset<Other: Set.`Protocol` & ~Copyable>(
+        of other: borrowing Other
+    ) -> Bool where Other.Element == Element {
+        count > other.count && isSuperset(of: other)
     }
 }
