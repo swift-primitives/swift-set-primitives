@@ -9,11 +9,6 @@ applies_to: [swift-set-primitives]
 normative: false
 ---
 -->
-
-@Metadata {
-    @TitleHeading("Set Primitives")
-}
-
 Design decisions, implementation patterns, and lessons learned specific to this package.
 
 ## Overview
@@ -360,9 +355,6 @@ This semantic distinction should be consistent across small-variant types. `Stac
 
 ---
 
-## Topics
+## Related
 
-### Related Documents
-
-- <doc:Set>
-
+- Set
