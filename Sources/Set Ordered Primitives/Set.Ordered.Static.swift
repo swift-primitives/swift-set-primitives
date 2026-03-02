@@ -67,15 +67,11 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        let count = _buffer.count
-        guard count > .zero else { return false }
-        var index: Index<Element> = .zero
-        let end = count.map(Ordinal.init)
-        while index < end {
-            if _buffer[index] == element { return true }
-            index += .one
-        }
-        return false
+        _hashTable.position(
+            forHash: element.hashValue,
+            context: element,
+            equals: { idx, elem in _buffer[idx] == elem }
+        ) != nil
     }
 
     /// Inserts an element into the set.

@@ -235,15 +235,27 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     }
 
     /// Returns whether the set contains the given element.
+    ///
+    /// Uses O(1) hash-table lookup when spilled to heap, O(n) linear scan
+    /// when inline (no hash table available in inline mode).
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        var idx: Index<Element> = .zero
-        let end = _buffer.count.map(Ordinal.init)
-        while idx < end {
-            if _buffer[idx] == element { return true }
-            idx += .one
+        if isSpilled {
+            let ht = _heapHashTable!
+            return ht.position(
+                forHash: element.hashValue,
+                context: element,
+                equals: { idx, elem in _buffer[idx] == elem }
+            ) != nil
+        } else {
+            var idx: Index<Element> = .zero
+            let end = _buffer.count.map(Ordinal.init)
+            while idx < end {
+                if _buffer[idx] == element { return true }
+                idx += .one
+            }
+            return false
         }
-        return false
     }
 
     /// Iterates over all elements in the set.

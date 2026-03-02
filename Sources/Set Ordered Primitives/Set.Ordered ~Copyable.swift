@@ -78,17 +78,15 @@ extension Set.Ordered {
     }
 
     /// Returns whether the set contains the given element.
+    ///
+    /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     public func contains(_ element: borrowing Element) -> Bool {
-        let count = buffer.count
-        guard count > .zero else { return false }
-        var index: Index<Element> = .zero
-        let end = count.map(Ordinal.init)
-        while index < end {
-            if buffer[index] == element { return true }
-            index += .one
-        }
-        return false
+        hashTable.position(
+            forHash: element.hashValue,
+            context: element,
+            equals: { idx, elem in buffer[idx] == elem }
+        ) != nil
     }
 
     /// Iterates over all elements in the set.
