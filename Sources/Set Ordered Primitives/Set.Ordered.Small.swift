@@ -56,7 +56,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
 extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Returns the index of the given element, or `nil` if not present.
     @inlinable
-    public mutating func index(_ element: Element) -> Index<Element>? {
+    public func index(_ element: Element) -> Index<Element>? {
         if isSpilled {
             return _heapHashTable!.position(
                 forHash: element.hashValue,
@@ -75,7 +75,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
 
     /// Returns whether the set contains the given element.
     @inlinable
-    public mutating func contains(_ element: Element) -> Bool {
+    public func contains(_ element: Element) -> Bool {
         index(element) != nil
     }
 
