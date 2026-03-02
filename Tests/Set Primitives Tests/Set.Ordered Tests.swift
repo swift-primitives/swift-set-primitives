@@ -15,13 +15,9 @@ import Set_Primitives_Test_Support
 
 // MARK: - Helper to convert Set.Ordered to Array
 
-// Note: Set.Ordered is ~Copyable and cannot conform to Swift.Sequence.
-// This helper uses index-based iteration to extract elements.
 func toArray<Element: Hashable>(_ set: borrowing Set<Element>.Ordered) -> [Element] {
     var result: [Element] = []
-    for i in Index<Element>.zero..<set.count {
-        result.append(set[i])
-    }
+    set.forEach { result.append($0) }
     return result
 }
 

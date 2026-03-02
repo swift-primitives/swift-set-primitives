@@ -83,3 +83,17 @@ extension Set.Ordered.Fixed: Sequence.Clearable where Element: Copyable {
         clear(keepingCapacity: false)
     }
 }
+
+// ============================================================================
+// MARK: - ExpressibleByArrayLiteral
+// ============================================================================
+
+extension Set.Ordered.Fixed: ExpressibleByArrayLiteral where Element: Copyable {
+    @inlinable
+    public init(arrayLiteral elements: Element...) {
+        self = try! Self(capacity: .init(__unchecked: (), Cardinal(UInt(elements.count))))
+        for element in elements {
+            try! insert(element)
+        }
+    }
+}
