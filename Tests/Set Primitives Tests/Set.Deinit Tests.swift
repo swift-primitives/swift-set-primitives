@@ -17,7 +17,7 @@ struct SetDeinitTests {
 
     final class Tracker: @unchecked Sendable {
         private var _storage: [Int] = []
-        var deinitCount: Int { _storage.count }
+        var count: Int { _storage.count }
         func append(_ id: Int) { _storage.append(id) }
     }
 
@@ -48,7 +48,7 @@ struct SetDeinitTests {
             try set.insert(TrackedElement(2, tracker: tracker))
             try set.insert(TrackedElement(3, tracker: tracker))
         }
-        #expect(tracker.deinitCount == 3)
+        #expect(tracker.count == 3)
     }
 
     @Test
@@ -69,7 +69,7 @@ struct SetDeinitTests {
             set.insert(TrackedElement(2, tracker: tracker))
             set.insert(TrackedElement(3, tracker: tracker))
         }
-        #expect(tracker.deinitCount == 3)
+        #expect(tracker.count == 3)
     }
 
     @Test
