@@ -91,89 +91,6 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
             }
         }
 
-        // MARK: - Static (Fixed-Capacity, Inline Storage)
-
-        /// A fixed-capacity, inline-storage ordered set with compile-time capacity.
-        ///
-        /// Composes `Buffer<Element>.Linear.Inline<capacity>` for element storage and
-        /// `Hash.Table<Element>.Static<capacity>` for O(1) position lookup.
-        ///
-        /// - Precondition: `capacity` must be a power of two (required by Hash.Table.Static).
-        ///
-        /// - Note: This type is declared inside `Ordered` (not in an extension) due to a
-        ///   Swift compiler bug where nested types with value generic parameters declared
-        ///   in extensions do not properly inherit `~Copyable` constraints from the outer type.
-        public struct Static<let capacity: Int>: ~Copyable {
-            /// Element storage using Buffer.Linear.Inline from buffer-primitives.
-            @usableFromInline
-            package var _buffer: Buffer<Element>.Linear.Inline<capacity>
-
-            /// Hash table for O(1) position lookup.
-            @usableFromInline
-            package var _hashTable: Hash.Table<Element>.Static<capacity>
-
-            /// Workaround for Swift compiler bug where deinit element cleanup
-            /// fails for ~Copyable structs that contain only value-type properties.
-            /// See: https://github.com/swiftlang/swift/issues/86652
-            @usableFromInline
-            package var _deinitWorkaround: AnyObject? = nil
-
-            /// Creates an empty inline ordered set.
-            ///
-            /// - Precondition: `capacity` must be a power of two.
-            @inlinable
-            public init() {
-                self._buffer = Buffer<Element>.Linear.Inline<capacity>()
-                // Hash.Table.Static.init() validates power-of-two capacity
-                self._hashTable = Hash.Table<Element>.Static<capacity>()
-            }
-
-            deinit {
-                // Storage<Element>.Inline's own deinit handles element cleanup
-                // via _slots bit vector — no explicit removeAll() needed.
-            }
-        }
-
-        // MARK: - Small (SmallVec Pattern)
-
-        /// An ordered set with small-buffer optimization (SmallVec pattern).
-        ///
-        /// Composes `Buffer<Element>.Linear.Small<inlineCapacity>` for element storage
-        /// and `Hash.Table<Element>` after spill.
-        ///
-        /// Inline mode uses O(n) linear scan — no hash table overhead for small sizes.
-        /// Hash table activates only on spill.
-        public struct Small<let inlineCapacity: Int>: ~Copyable {
-            /// Element storage — handles inline/heap dispatch internally.
-            @usableFromInline
-            package var _buffer: Buffer<Element>.Linear.Small<inlineCapacity>
-
-            /// Heap hash table — non-nil after spill.
-            @usableFromInline
-            package var _heapHashTable: Hash.Table<Element>?
-
-            /// Workaround for Swift compiler bug where deinit element cleanup
-            /// fails for ~Copyable structs that contain only value-type properties.
-            /// See: https://github.com/swiftlang/swift/issues/86652
-            @usableFromInline
-            package var _deinitWorkaround: AnyObject? = nil
-
-            /// Creates an empty small ordered set.
-            @inlinable
-            public init() {
-                self._buffer = Buffer<Element>.Linear.Small<inlineCapacity>()
-                self._heapHashTable = nil
-            }
-
-            deinit {
-                // Buffer.Linear.Small's deinit handles element cleanup for both modes.
-                // No manual cleanup needed — the composed buffer manages its own lifecycle.
-            }
-
-            /// Whether the set has spilled to heap storage.
-            @inlinable
-            public var isSpilled: Bool { _buffer.isSpilled }
-        }
     }
 }
 
@@ -186,5 +103,3 @@ extension Set.Ordered.Fixed: Copyable where Element: Copyable {}
 
 extension Set.Ordered: @unchecked Sendable where Element: Sendable {}
 extension Set.Ordered.Fixed: @unchecked Sendable where Element: Sendable {}
-extension Set.Ordered.Static: @unchecked Sendable where Element: Sendable {}
-extension Set.Ordered.Small: @unchecked Sendable where Element: Sendable {}
