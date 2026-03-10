@@ -31,6 +31,12 @@ extension Set.Ordered where Element: ~Copyable {
         @usableFromInline
         package var _hashTable: Hash.Table<Element>.Static<capacity>
 
+        // WORKAROUND: Forces compiler to execute deinit body.
+        // TRACKING: swiftlang/swift #86652 variant (nested ~Copyable deinit chain)
+        // WHEN TO REMOVE: When the compiler correctly destroys ~Copyable structs
+        //      with cross-package value-generic stored properties.
+        private var _deinitWorkaround: AnyObject? = nil
+
         /// Creates an empty inline ordered set.
         ///
         /// - Precondition: `capacity` must be a power of two.
@@ -42,8 +48,11 @@ extension Set.Ordered where Element: ~Copyable {
         }
 
         deinit {
-            // Storage<Element>.Inline's own deinit handles element cleanup
-            // via _slots bit vector — no explicit removeAll() needed.
+            // WORKAROUND: Manually clean up elements via the mutating path.
+            // TRACKING: swiftlang/swift #86652 variant
+            unsafe withUnsafePointer(to: _buffer) { ptr in
+                unsafe UnsafeMutablePointer(mutating: ptr).pointee.remove.all()
+            }
         }
     }
 }
