@@ -1,4 +1,11 @@
 # Supporting ~Copyable Elements in Hash-Based Collections
+<!--
+---
+version: 1.0.0
+last_updated: 2026-03-16
+status: IN_PROGRESS
+---
+-->
 
 ## Abstract
 
