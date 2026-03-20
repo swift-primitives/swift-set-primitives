@@ -97,7 +97,7 @@ extension Set.Ordered.Fixed: Set.`Protocol` {}
 extension Set.Ordered.Fixed: ExpressibleByArrayLiteral where Element: Copyable {
     @inlinable
     public init(arrayLiteral elements: Element...) {
-        self = try! Self(capacity: .init(__unchecked: (), Cardinal(UInt(elements.count))))
+        self = try! Self(capacity: .init(Cardinal(UInt(elements.count))))
         for element in elements {
             try! insert(element)
         }
