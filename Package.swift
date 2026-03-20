@@ -38,7 +38,8 @@ let package = Package(
         .package(path: "../swift-finite-primitives"),
     ],
     targets: [
-        // Internal: Core types with ~Copyable support (type declarations only)
+
+        // MARK: - Core
         .target(
             name: "Set Primitives Core",
             dependencies: [
@@ -52,7 +53,8 @@ let package = Package(
                 .product(name: "Memory Primitives", package: "swift-memory-primitives"),
             ]
         ),
-        // Internal: Set.Ordered functionality
+
+        // MARK: - Ordered
         .target(
             name: "Set Ordered Primitives",
             dependencies: [
@@ -72,7 +74,8 @@ let package = Package(
             exclude: [
             ]
         ),
-        // Public: Re-exports all modules for users
+
+        // MARK: - Umbrella
         .target(
             name: "Set Primitives",
             dependencies: [
@@ -80,7 +83,8 @@ let package = Package(
                 "Set Ordered Primitives",
             ]
         ),
-        // Test Support: Re-exports test support from dependencies
+
+        // MARK: - Test Support
         .target(
             name: "Set Primitives Test Support",
             dependencies: [
@@ -90,6 +94,8 @@ let package = Package(
             ],
             path: "Tests/Support"
         ),
+
+        // MARK: - Tests
         .testTarget(
             name: "Set Primitives Tests",
             dependencies: [
