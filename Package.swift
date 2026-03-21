@@ -59,16 +59,10 @@ let package = Package(
             name: "Set Ordered Primitives",
             dependencies: [
                 "Set Primitives Core",
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Ordinal Primitives", package: "swift-ordinal-primitives"),
                 .product(name: "Cardinal Primitives", package: "swift-cardinal-primitives"),
-                .product(name: "Collection Primitives", package: "swift-collection-primitives"),
                 .product(name: "Sequence Primitives", package: "swift-sequence-primitives"),
                 .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
-                .product(name: "Storage Primitives", package: "swift-storage-primitives"),
-                .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
-                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
                 .product(name: "Finite Primitives", package: "swift-finite-primitives"),
             ],
             exclude: [
