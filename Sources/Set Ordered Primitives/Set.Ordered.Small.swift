@@ -76,11 +76,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     /// Inserts an element into the set.
     ///
     /// If inline storage is full, spills to heap automatically.
-    // WORKAROUND: @_optimize(none) suppresses CopyPropagation false positive
     // on multiple _buffer + _heapHashTable accessor chains in deep @inlinable chain.
-    // WHEN TO REMOVE: When swiftlang/swift fixes SIL ownership verification in CopyPropagation.
-    // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md (Bug 2)
-    @_optimize(none)
     @inlinable
     @discardableResult
     public mutating func insert(_ element: Element) -> (inserted: Bool, index: Index<Element>) {
@@ -102,11 +98,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     }
 
     /// Removes an element from the set.
-    // WORKAROUND: @_optimize(none) suppresses CopyPropagation false positive
     // on multiple _buffer + _heapHashTable accessor chains in deep @inlinable chain.
-    // WHEN TO REMOVE: When swiftlang/swift fixes SIL ownership verification in CopyPropagation.
-    // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md (Bug 2)
-    @_optimize(none)
     @inlinable
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
@@ -135,11 +127,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     }
 
     /// Removes all elements from the set.
-    // WORKAROUND: @_optimize(none) suppresses CopyPropagation false positive
     // on remove.all() + conditional buffer reassignment in deep @inlinable chain.
-    // WHEN TO REMOVE: When swiftlang/swift fixes SIL ownership verification in CopyPropagation.
-    // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md (Bug 2)
-    @_optimize(none)
     @inlinable
     public mutating func clear(keepingCapacity: Bool = false) {
         _buffer.remove.all(keepingCapacity: keepingCapacity)
@@ -287,11 +275,7 @@ extension Set_Primitives_Core.Set.Ordered.Small {
     }
 
     /// Removes and consumes all elements.
-    // WORKAROUND: @_optimize(none) suppresses CopyPropagation false positive
     // on _buffer.remove loop + _heapHashTable operations in deep @inlinable chain.
-    // WHEN TO REMOVE: When swiftlang/swift fixes SIL ownership verification in CopyPropagation.
-    // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md (Bug 2)
-    @_optimize(none)
     @inlinable
     public mutating func drain(_ body: (consuming Element) -> Void) {
         guard count > .zero else { return }
