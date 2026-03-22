@@ -24,14 +24,6 @@ extension Set.Ordered where Element: ~Copyable {
     /// Inline mode uses O(n) linear scan — no hash table overhead for small sizes.
     /// Hash table activates only on spill.
     public struct Small<let inlineCapacity: Int>: ~Copyable {
-        /// Element storage — handles inline/heap dispatch internally.
-        @usableFromInline
-        package var _buffer: Buffer<Element>.Linear.Small<inlineCapacity>
-
-        /// Heap hash table — non-nil after spill.
-        @usableFromInline
-        package var _heapHashTable: Hash.Table<Element>?
-
         // WORKAROUND: swiftlang/swift#86652 — @_rawLayout triviality misclassification.
         // Forces compiler to recognize type as non-trivially destructible so deinit executes.
         // COST: 8 bytes overhead per instance.
@@ -39,7 +31,19 @@ extension Set.Ordered where Element: ~Copyable {
         //   Build with `public` access under -O. If it passes, remove this field
         //   and the manual cleanup in deinit.
         // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md
+        //
+        // NOTE: Must be declared BEFORE _buffer. The buffer transitively
+        // contains @_rawLayout storage which must be last in memory layout.
+        // See Storage.Inline for the Swift 6.2.4 IRGen crash details.
         private var _deinitWorkaround: AnyObject? = nil
+
+        /// Heap hash table — non-nil after spill.
+        @usableFromInline
+        package var _heapHashTable: Hash.Table<Element>?
+
+        /// Element storage — handles inline/heap dispatch internally.
+        @usableFromInline
+        package var _buffer: Buffer<Element>.Linear.Small<inlineCapacity>
 
         /// Creates an empty small ordered set.
         @inlinable
