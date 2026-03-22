@@ -11,7 +11,7 @@
 
 public import Set_Primitives_Core
 import Index_Primitives
-public import Ordinal_Primitives
+internal import Ordinal_Primitives
 import Cardinal_Primitives
 
 // ============================================================================

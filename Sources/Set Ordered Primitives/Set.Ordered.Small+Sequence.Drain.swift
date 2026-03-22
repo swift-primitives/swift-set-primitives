@@ -11,7 +11,7 @@
 
 public import Set_Primitives_Core
 import Sequence_Primitives
-public import Property_Primitives
+internal import Property_Primitives
 
 // MARK: - Sequence.Drain.Protocol Conformance
 
