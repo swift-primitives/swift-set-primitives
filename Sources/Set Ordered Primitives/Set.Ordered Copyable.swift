@@ -49,8 +49,7 @@ extension Set.Ordered where Element: Copyable {
     ///
     /// Each component is independently checked — fixes the latent bug where
     /// `reserve()` could make the buffer unique while the hash table remained shared.
-    @usableFromInline
-    @inline(always)
+    @inlinable
     mutating func makeUnique() {
         buffer.ensureUnique()
         hashTable.ensureUnique()

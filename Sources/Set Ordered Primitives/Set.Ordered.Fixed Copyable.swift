@@ -35,7 +35,6 @@ extension Set.Ordered.Fixed where Element: Copyable {
             _inner.nextSpan(maximumCount: maximumCount)
         }
 
-        @_lifetime(self: immortal)
         @inlinable
         public mutating func next() -> Element? {
             _inner.next()
