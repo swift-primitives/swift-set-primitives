@@ -42,7 +42,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
 extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     /// Ensures both buffer and hash table are uniquely owned.
     @usableFromInline
-    @inline(__always)
+    @inline(always)
     mutating func makeUnique() {
         buffer.ensureUnique()
         hashTable.ensureUnique()
