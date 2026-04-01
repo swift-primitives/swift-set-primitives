@@ -23,18 +23,7 @@ extension Set.Ordered where Element: ~Copyable {
     ///
     /// - Precondition: `capacity` must be a power of two (required by Hash.Table.Static).
     public struct Static<let capacity: Int>: ~Copyable {
-        // WORKAROUND: swiftlang/swift#86652 — @_rawLayout triviality misclassification.
-        // Forces compiler to recognize type as non-trivially destructible so deinit executes.
-        // COST: 8 bytes overhead per instance.
-        // REMOVAL TEST: swift-buffer-primitives/Experiments/rawlayout-access-level-trigger/
-        //   Build with `public` access under -O. If it passes, remove this field
-        //   and the manual cleanup in deinit.
-        // TRACKING: swift-buffer-primitives/Research/rawlayout-release-crash-investigation.md
-        //
-        // NOTE: Must be declared BEFORE _buffer. The buffer transitively
-        // contains @_rawLayout storage which must be last in memory layout.
-        // See Storage.Inline for the Swift 6.2.4 IRGen crash details.
-        private var _deinitWorkaround: AnyObject? = nil
+        /// Element cleanup is handled by Storage.Inline's deinit.
 
         /// Element storage using Buffer.Linear.Inline from buffer-primitives.
         @usableFromInline
@@ -54,13 +43,6 @@ extension Set.Ordered where Element: ~Copyable {
             self._hashTable = Hash.Table<Element>.Static<capacity>()
         }
 
-        deinit {
-            // WORKAROUND: Manually clean up elements via the mutating path.
-            // TRACKING: swiftlang/swift #86652 variant
-            unsafe withUnsafePointer(to: _buffer) { ptr in
-                unsafe UnsafeMutablePointer(mutating: ptr).pointee.remove.all()
-            }
-        }
     }
 }
 
