@@ -52,14 +52,12 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     ///
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
-    public func index(_ element: Element) -> Index<Element>.Bounded<capacity>? {
-        let hashValue = element.hashValue
-        guard let position = _hashTable.position(forHash: hashValue, equals: { idx in
-            _buffer[idx] == element
-        }) else {
-            return nil
-        }
-        return position
+    public func index(_ element: borrowing Element) -> Index<Element>.Bounded<capacity>? {
+        _hashTable.position(
+            forHash: element.hashValue,
+            context: element,
+            equals: { idx, elem in _buffer[idx] == elem }
+        )
     }
 
     /// Returns whether the set contains the given element.
@@ -82,7 +80,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// - Complexity: O(1) average, O(n) worst case.
     @inlinable
     @discardableResult
-    public mutating func insert(_ element: Element) throws(__SetOrderedInlineError<Element>) -> (inserted: Bool, index: Index<Element>.Bounded<capacity>) {
+    public mutating func insert(_ element: consuming Element) throws(__SetOrderedInlineError<Element>) -> (inserted: Bool, index: Index<Element>.Bounded<capacity>) {
         let hashValue = element.hashValue
 
         // Check for existing element
@@ -112,13 +110,13 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     /// - Complexity: O(n) due to element shifting.
     @inlinable
     @discardableResult
-    public mutating func remove(_ element: Element) -> Element? {
-        let hashValue = element.hashValue
-
+    public mutating func remove(_ element: borrowing Element) -> Element? {
         // Find and remove from hash table
-        guard let removedPosition = _hashTable.remove(hashValue: hashValue, equals: { idx in
-            _buffer[idx] == element
-        }) else {
+        guard let removedPosition = _hashTable.remove(
+            hashValue: element.hashValue,
+            context: element,
+            equals: { idx, elem in _buffer[idx] == elem }
+        ) else {
             return nil
         }
 
