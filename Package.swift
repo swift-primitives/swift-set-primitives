@@ -17,6 +17,14 @@ let package = Package(
             targets: ["Set Primitives"]
         ),
         .library(
+            name: "Set Primitives Core",
+            targets: ["Set Primitives Core"]
+        ),
+        .library(
+            name: "Set Ordered Primitives",
+            targets: ["Set Ordered Primitives"]
+        ),
+        .library(
             name: "Set Primitives Test Support",
             targets: ["Set Primitives Test Support"]
         ),
