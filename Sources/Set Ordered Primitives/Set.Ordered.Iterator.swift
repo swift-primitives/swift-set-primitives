@@ -53,7 +53,7 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     }
 }
 
-extension Set_Primitives_Core.Set.Ordered.Iterator: @unchecked Sendable where Element: Sendable {}
+extension Set_Primitives_Core.Set.Ordered.Iterator: @unsafe @unchecked Sendable where Element: Sendable {}
 
 // MARK: - Conditional Sequence
 

@@ -54,6 +54,11 @@ extension Set_Primitives_Core.Set.Ordered where Element: Copyable {
     /// This follows the `Property.Typed` pattern: the nested type "smuggles" the
     /// `Tag` generic parameter into scope, allowing typed operations without
     /// requiring protocols (which can't have `~Copyable` associated types).
+    // WHY: Category D — structural Sendable workaround (SP-4).
+    // WHY: Copyable struct wrapping Set.Ordered + phantom Tag: Copyable.
+    // WHY: Tag never stored; @unchecked exists because phantom Tag blocks inference.
+    // WHEN TO REMOVE: When compiler gains structural Sendable through phantom params.
+    // TRACKING: unsafe-audit-findings.md Category D SP-4.
     public struct Indexed<Tag: Copyable>: Copyable, @unchecked Sendable {
         @usableFromInline
         var _storage: Set_Primitives_Core.Set<Element>.Ordered

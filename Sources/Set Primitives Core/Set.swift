@@ -101,5 +101,5 @@ extension Set.Ordered.Fixed: Copyable where Element: Copyable {}
 
 // MARK: - Sendable
 
-extension Set.Ordered: @unchecked Sendable where Element: Sendable {}
-extension Set.Ordered.Fixed: @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered: @unsafe @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Fixed: @unsafe @unchecked Sendable where Element: Sendable {}
