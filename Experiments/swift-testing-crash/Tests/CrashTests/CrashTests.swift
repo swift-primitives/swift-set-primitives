@@ -12,16 +12,16 @@ func toArray<Element: Hashable>(_ set: borrowing Set<Element>.Ordered) -> [Eleme
 @Suite("Minimal Set.Ordered Tests")
 struct MinimalTests {
 
-    @Test("Basic insert")
-    func basicInsert() {
+    @Test
+    func `Basic insert`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         let count = set.count
         #expect(count == 1)
     }
 
-    @Test("Copy and mutate")
-    func copyAndMutate() {
+    @Test
+    func `Copy and mutate`() {
         var set1 = Set<Int>.Ordered()
         set1.insert(1)
         set1.insert(2)
@@ -35,8 +35,8 @@ struct MinimalTests {
         #expect(count2 == 3)
     }
 
-    @Test("Iteration")
-    func iteration() {
+    @Test
+    func `Iteration`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -49,8 +49,8 @@ struct MinimalTests {
         #expect(sum == 60)
     }
 
-    @Test("toArray helper")
-    func toArrayHelper() {
+    @Test
+    func `toArray helper`() {
         var set = Set<Int>.Ordered()
         set.insert(1)
         set.insert(2)
@@ -60,8 +60,8 @@ struct MinimalTests {
         #expect(array == [1, 2, 3])
     }
 
-    @Test("Algebra union")
-    func algebraUnion() {
+    @Test
+    func `Algebra union`() {
         var a = Set<Int>.Ordered()
         a.insert(1)
         a.insert(2)
@@ -77,8 +77,8 @@ struct MinimalTests {
         #expect(array == [1, 2, 3, 4, 5])
     }
 
-    @Test("Consuming iteration")
-    func consumingIteration() {
+    @Test
+    func `Consuming iteration`() {
         var set = Set<Int>.Ordered()
         set.insert(10)
         set.insert(20)
@@ -92,8 +92,8 @@ struct MinimalTests {
         #expect(consumed == [10, 20, 30])
     }
 
-    @Test("Model test pattern - random operations")
-    func randomOperations() {
+    @Test
+    func `Model test pattern - random operations`() {
         var set = Set<Int>.Ordered()
         var model = Swift.Set<Int>()
 
