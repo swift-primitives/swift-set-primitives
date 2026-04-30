@@ -1,11 +1,96 @@
 {
   "$schema": "https://swift-institute.org/schemas/experiments-index-v1.json",
   "schemaVersion": "1.0.0",
-  "generatedAt": "2026-04-18",
+  "generatedAt": "2026-04-30",
   "title": "Experiments Index",
   "blurb": "",
   "scope": "swift-set-primitives (swift-primitives)",
-  "experiments": [],
+  "experiments": [
+    {
+      "directory": "conditional-copyable-hash-table",
+      "displayName": "conditional-copyable-hash-table",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "pattern shipped in Set_Primitives Hash.Table; see [PATTERN-009-053], [MEM-COPY-005] (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "pattern shipped in Set_Primitives Hash.Table; see [PATTERN-009-053], [MEM-COPY-005]",
+      "crossRefs": []
+    },
+    {
+      "directory": "conditional-copyable-nested-type",
+      "displayName": "conditional-copyable-nested-type",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "pattern shipped in Set_Primitives nested types; see [PATTERN-009-053] (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "pattern shipped in Set_Primitives nested types; see [PATTERN-009-053]",
+      "crossRefs": []
+    },
+    {
+      "directory": "cow-crash-investigation",
+      "displayName": "cow-crash-investigation",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "CoW pattern stable in Set.Ordered production code (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "CoW pattern stable in Set.Ordered production code",
+      "crossRefs": []
+    },
+    {
+      "directory": "noncopyable-set-test",
+      "displayName": "noncopyable-set-test",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "~Copyable element support shipped via Set_Primitives + Hash_Primitives; see [MEM-COPY-*] (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "~Copyable element support shipped via Set_Primitives + Hash_Primitives; see [MEM-COPY-*]",
+      "crossRefs": []
+    },
+    {
+      "directory": "inline-span-investigation",
+      "displayName": "inline-span-investigation",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "Span/InlineArray patterns documented in swift-property-primitives Property.View (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "Span/InlineArray patterns documented in swift-property-primitives Property.View",
+      "crossRefs": []
+    },
+    {
+      "directory": "verify-noncopyable",
+      "displayName": "verify-noncopyable",
+      "purpose": "(Phase 1b backfill) ~Copyable/borrowing investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "SUPERSEDED",
+      "statusDetail": "~Copyable verification absorbed into [MEM-COPY-*] and [COPY-FIX-*] (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": "~Copyable verification absorbed into [MEM-COPY-*] and [COPY-FIX-*]",
+      "crossRefs": []
+    },
+    {
+      "directory": "bit-packed-crash",
+      "displayName": "bit-packed-crash",
+      "purpose": "(Phase 1b backfill) compiler-crash investigation; details in main.swift header",
+      "date": "2026-01-22",
+      "toolchain": "Apple Swift 6.2.x",
+      "status": "DEFERRED",
+      "statusDetail": "compiler SIL crash investigation: synthesized Equatable for nested type in conditional extension of ~Copyable enum, status PENDING in original header; resumption: revalidate on each new Swift toolchain per [META-006]; capture FIXED verdict if compiler accepts the original repro per [EXP-006] (Phase 1b stale-triage 2026-04-30)",
+      "statusRaw": "DEFERRED (Phase 1b stale-triage 2026-04-30)",
+      "supersededBy": null,
+      "crossRefs": []
+    }
+  ],
   "narrativeSections": [
     {
       "heading": "Notes",

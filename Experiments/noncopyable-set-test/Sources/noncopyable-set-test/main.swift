@@ -1,3 +1,4 @@
+// Status: SUPERSEDED -- ~Copyable element support shipped via Set_Primitives + Hash_Primitives; see [MEM-COPY-*]. (Phase 1b stale-triage 2026-04-30)
 // Experiment: ~Copyable Set with Hash.Protocol elements
 // Tests: Can we build a set that stores ~Copyable elements using Hash.Protocol?
 

@@ -1,3 +1,4 @@
+// Status: SUPERSEDED -- CoW pattern stable in Set.Ordered production code. (Phase 1b stale-triage 2026-04-30)
 // ===----------------------------------------------------------------------===//
 // Experiment: CoW Crash Investigation
 // ===----------------------------------------------------------------------===//

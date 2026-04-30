@@ -1,3 +1,4 @@
+// Status: SUPERSEDED -- ~Copyable verification absorbed into [MEM-COPY-*] and [COPY-FIX-*]. (Phase 1b stale-triage 2026-04-30)
 // ===----------------------------------------------------------------------===//
 // Experiment: Verify ~Copyable Behavior
 // ===----------------------------------------------------------------------===//

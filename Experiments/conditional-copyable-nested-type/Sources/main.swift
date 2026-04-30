@@ -1,3 +1,4 @@
+// Status: SUPERSEDED -- pattern shipped in Set_Primitives nested types; see [PATTERN-009-053]. (Phase 1b stale-triage 2026-04-30)
 // ===----------------------------------------------------------------------===//
 // Experiment: Conditional Copyable for Nested Type with Outer Generic
 // ===----------------------------------------------------------------------===//
