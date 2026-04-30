@@ -1,4 +1,4 @@
-// Status: SUPERSEDED -- pattern shipped in Set_Primitives Hash.Table; see [PATTERN-009-053], [MEM-COPY-005]. (Phase 1b stale-triage 2026-04-30)
+// Status: SUPERSEDED -- pattern shipped in Set_Primitives Hash.Table; see [COPY-FIX-*], [MEM-COPY-005]. (Phase 1b stale-triage 2026-04-30)
 // ===----------------------------------------------------------------------===//
 // Experiment: Conditional Copyable Hash Table with Class-Based Storage
 // ===----------------------------------------------------------------------===//

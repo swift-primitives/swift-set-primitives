@@ -13,9 +13,9 @@
       "date": "2026-01-22",
       "toolchain": "Apple Swift 6.2.x",
       "status": "SUPERSEDED",
-      "statusDetail": "pattern shipped in Set_Primitives Hash.Table; see [PATTERN-009-053], [MEM-COPY-005] (Phase 1b stale-triage 2026-04-30)",
+      "statusDetail": "pattern shipped in Set_Primitives Hash.Table; see [COPY-FIX-*], [MEM-COPY-005] (Phase 1b stale-triage 2026-04-30)",
       "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
-      "supersededBy": "pattern shipped in Set_Primitives Hash.Table; see [PATTERN-009-053], [MEM-COPY-005]",
+      "supersededBy": "pattern shipped in Set_Primitives Hash.Table; see [COPY-FIX-*], [MEM-COPY-005]",
       "crossRefs": []
     },
     {
@@ -25,9 +25,9 @@
       "date": "2026-01-22",
       "toolchain": "Apple Swift 6.2.x",
       "status": "SUPERSEDED",
-      "statusDetail": "pattern shipped in Set_Primitives nested types; see [PATTERN-009-053] (Phase 1b stale-triage 2026-04-30)",
+      "statusDetail": "pattern shipped in Set_Primitives nested types; see [COPY-FIX-*] (Phase 1b stale-triage 2026-04-30)",
       "statusRaw": "CONFIRMED -> SUPERSEDED (Phase 1b stale-triage 2026-04-30)",
-      "supersededBy": "pattern shipped in Set_Primitives nested types; see [PATTERN-009-053]",
+      "supersededBy": "pattern shipped in Set_Primitives nested types; see [COPY-FIX-*]",
       "crossRefs": []
     },
     {

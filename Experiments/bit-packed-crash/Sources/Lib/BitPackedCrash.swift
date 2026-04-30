@@ -2,6 +2,7 @@
 // Toolchain: Apple Swift 6.3.1 (swiftlang-6.3.1.1.2 clang-2100.0.123.102)
 // Revalidated: Swift 6.3.1 (2026-04-30) -- FIXED. swift build -c release: clean compile (0.30s); swiftc -O -emit-sil emits 1090 lines with no crash, no "ambiguous use of operator '=='" diagnostic. (Phase 1b stale-triage 2026-04-30)
 // Note: Sources/Lib/main.swift renamed to BitPackedCrash.swift to fix package layout (file has no top-level executable code; SwiftPM rejects main.swift in non-executable target).
+// Methodological caveat: the original 2026-01-23 Package.swift declared `.target(name: "Lib")` containing main.swift -- a layout SwiftPM has rejected since tools-version 5.4. The original "RESULT: [PENDING]" header almost certainly reflects the author hitting the same package-config error and stopping; the minimal reducer was likely never compiled to SIL by anyone, including under Swift 6.0/6.2.x. The 2026-04-30 FIXED verdict is therefore the FIRST verifiable empirical run of this reducer -- not a re-run that detected a silent fix. Whether the original __derived_struct_equals crash actually reproduced in this minimized shape on any toolchain is unknown.
 // ===----------------------------------------------------------------------===//
 // Experiment: bit-packed-crash
 // ===----------------------------------------------------------------------===//
