@@ -1,4 +1,5 @@
 // Status: SUPERSEDED -- pattern shipped in Set_Primitives nested types; see [COPY-FIX-*]. (Phase 1b stale-triage 2026-04-30)
+// Revalidated: Swift 6.3.1 (2026-04-30) — SUPERSEDED (per existing Status line; not re-run)
 // ===----------------------------------------------------------------------===//
 // Experiment: Conditional Copyable for Nested Type with Outer Generic
 // ===----------------------------------------------------------------------===//

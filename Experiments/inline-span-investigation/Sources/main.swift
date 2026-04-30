@@ -1,4 +1,5 @@
 // Status: SUPERSEDED -- Span/InlineArray patterns documented in swift-property-primitives Property.View. (Phase 1b stale-triage 2026-04-30)
+// Revalidated: Swift 6.3.1 (2026-04-30) — SUPERSEDED (per existing Status line; not re-run)
 // Experiment: Why does InlineArray.span work but our pattern doesn't?
 //
 // Hypothesis: The issue is our use of `withUnsafePointer(to: elements)`
