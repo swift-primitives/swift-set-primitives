@@ -1,5 +1,7 @@
-// Status: DEFERRED -- compiler SIL crash investigation: synthesized Equatable for nested type in conditional extension of ~Copyable enum, status PENDING in original header.
-// Revalidated: resumption -- revalidate on each new Swift toolchain per [META-006]; capture FIXED verdict if compiler accepts the original repro per [EXP-006]. (Phase 1b stale-triage 2026-04-30)
+// Status: FIXED -- original SIL-crash hypothesis (synthesized Equatable for nested type in conditional extension of ~Copyable enum) does NOT reproduce on Swift 6.3.1.
+// Toolchain: Apple Swift 6.3.1 (swiftlang-6.3.1.1.2 clang-2100.0.123.102)
+// Revalidated: Swift 6.3.1 (2026-04-30) -- FIXED. swift build -c release: clean compile (0.30s); swiftc -O -emit-sil emits 1090 lines with no crash, no "ambiguous use of operator '=='" diagnostic. (Phase 1b stale-triage 2026-04-30)
+// Note: Sources/Lib/main.swift renamed to BitPackedCrash.swift to fix package layout (file has no top-level executable code; SwiftPM rejects main.swift in non-executable target).
 // ===----------------------------------------------------------------------===//
 // Experiment: bit-packed-crash
 // ===----------------------------------------------------------------------===//
