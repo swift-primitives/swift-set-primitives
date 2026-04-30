@@ -23,6 +23,7 @@
 // Platform: macOS 26.0 (arm64)
 //
 // Result: CONFIRMED — crash reproduced and workaround validated
+// Revalidated: Swift 6.3.1 (2026-04-30) — STILL PRESENT
 // Date: 2026-02-09
 
 import Buffer_Primitives

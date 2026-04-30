@@ -2,6 +2,7 @@
 // Experiment: noncopyable-level1-investigation
 // Date: 2026-01-22
 // Status: IN PROGRESS
+// Revalidated: Swift 6.3.1 (2026-04-30) — STILL CRASHES
 // ===----------------------------------------------------------------------===//
 //
 // QUESTION: What specific factor causes Hash.Table<Element> to fail in Set.Ordered?

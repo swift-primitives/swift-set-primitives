@@ -11,6 +11,7 @@
 // Platform: macOS 26.0 (arm64)
 //
 // Result: CONFIRMED STILL PRESENT — DiagnoseStaticExclusivity SIL pass crash persists in 6.2.4
+// Revalidated: Swift 6.3.1 (2026-04-30) — STILL CRASHES
 // Date: 2026-03-10
 
 import Buffer_Primitives

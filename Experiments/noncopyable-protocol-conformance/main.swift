@@ -10,6 +10,7 @@
 // Status: CONFIRMED
 //
 // Result:
+// Revalidated: Swift 6.3.1 (2026-04-30) — PASSES
 // - Hash.Protocol WORKS for ~Copyable (provides ==, !=, hashValue)
 // - Sequence.Protocol WORKS for ~Copyable (provides makeIterator, forEach)
 // - for-in loops REQUIRE Swift.Sequence (which requires Copyable)
