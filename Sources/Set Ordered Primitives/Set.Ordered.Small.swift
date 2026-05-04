@@ -9,11 +9,11 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
-import Index_Primitives
-public import Ordinal_Primitives
 public import Cardinal_Primitives
+import Index_Primitives
 import Memory_Primitives_Core
+public import Ordinal_Primitives
+public import Set_Primitives_Core
 
 // Note: Set.Ordered.Small is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Small.
@@ -103,10 +103,12 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
     @discardableResult
     public mutating func remove(_ element: Element) -> Element? {
         if isSpilled {
-            guard let removedPosition = _heapHashTable!.remove(
-                hashValue: element.hashValue,
-                equals: { idx in _buffer[idx] == element }
-            ) else { return nil }
+            guard
+                let removedPosition = _heapHashTable!.remove(
+                    hashValue: element.hashValue,
+                    equals: { idx in _buffer[idx] == element }
+                )
+            else { return nil }
 
             let removed = _buffer.remove(at: removedPosition)
 

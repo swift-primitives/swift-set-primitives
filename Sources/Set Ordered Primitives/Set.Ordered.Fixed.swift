@@ -9,10 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
+public import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
-public import Cardinal_Primitives
+public import Set_Primitives_Core
 
 // Note: Set.Ordered.Fixed is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Fixed.
@@ -96,10 +96,12 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
     public mutating func remove(_ element: Element) -> Element? {
         makeUnique()
 
-        guard let removedPosition = hashTable.remove(
-            hashValue: element.hashValue,
-            equals: { idx in buffer[idx] == element }
-        ) else {
+        guard
+            let removedPosition = hashTable.remove(
+                hashValue: element.hashValue,
+                equals: { idx in buffer[idx] == element }
+            )
+        else {
             return nil
         }
 

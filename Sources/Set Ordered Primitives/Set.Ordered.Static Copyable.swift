@@ -9,10 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
+import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
-import Cardinal_Primitives
+public import Set_Primitives_Core
 
 // Note: Set.Ordered.Static is unconditionally ~Copyable (inline storage requires deinit),
 // so it cannot conform to Swift.Sequence which requires Copyable.

@@ -9,9 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
-@testable import Set_Primitives
 import Set_Primitives_Test_Support
+import Testing
+
+@testable import Set_Primitives
 
 // Note: #expect macro cannot handle ~Copyable types (Static, Small) in
 // property access or function call decomposition. All Bool results from
@@ -74,18 +75,23 @@ struct SetProtocolTests {
     @Test
     func `Disjoint sets`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(3); b.insert(4)
+        b.insert(3)
+        b.insert(4)
         #expect(a.isDisjoint(with: b))
     }
 
     @Test
     func `Overlapping sets are not disjoint`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered()
-        b.insert(2); b.insert(4)
+        b.insert(2)
+        b.insert(4)
         #expect(!a.isDisjoint(with: b))
     }
 
@@ -104,9 +110,12 @@ struct SetProtocolTests {
     @Test
     func `Subset`() {
         var small = Set<Int>.Ordered()
-        small.insert(1); small.insert(2)
+        small.insert(1)
+        small.insert(2)
         var large = Set<Int>.Ordered()
-        large.insert(1); large.insert(2); large.insert(3)
+        large.insert(1)
+        large.insert(2)
+        large.insert(3)
         #expect(small.isSubset(of: large))
         #expect(!large.isSubset(of: small))
     }
@@ -114,9 +123,11 @@ struct SetProtocolTests {
     @Test
     func `Equal sets are subsets of each other`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(1); b.insert(2)
+        b.insert(1)
+        b.insert(2)
         #expect(a.isSubset(of: b))
         #expect(b.isSubset(of: a))
     }
@@ -135,9 +146,12 @@ struct SetProtocolTests {
     @Test
     func `Superset`() {
         var large = Set<Int>.Ordered()
-        large.insert(1); large.insert(2); large.insert(3)
+        large.insert(1)
+        large.insert(2)
+        large.insert(3)
         var small = Set<Int>.Ordered()
-        small.insert(1); small.insert(2)
+        small.insert(1)
+        small.insert(2)
         #expect(large.isSuperset(of: small))
         #expect(!small.isSuperset(of: large))
     }
@@ -156,9 +170,12 @@ struct SetProtocolTests {
     @Test
     func `Strict subset`() {
         var small = Set<Int>.Ordered()
-        small.insert(1); small.insert(2)
+        small.insert(1)
+        small.insert(2)
         var large = Set<Int>.Ordered()
-        large.insert(1); large.insert(2); large.insert(3)
+        large.insert(1)
+        large.insert(2)
+        large.insert(3)
         #expect(small.isStrictSubset(of: large))
         #expect(!large.isStrictSubset(of: small))
     }
@@ -166,9 +183,11 @@ struct SetProtocolTests {
     @Test
     func `Equal sets are not strict subsets`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(1); b.insert(2)
+        b.insert(1)
+        b.insert(2)
         #expect(!a.isStrictSubset(of: b))
     }
 
@@ -186,9 +205,12 @@ struct SetProtocolTests {
     @Test
     func `Strict superset`() {
         var large = Set<Int>.Ordered()
-        large.insert(1); large.insert(2); large.insert(3)
+        large.insert(1)
+        large.insert(2)
+        large.insert(3)
         var small = Set<Int>.Ordered()
-        small.insert(1); small.insert(2)
+        small.insert(1)
+        small.insert(2)
         #expect(large.isStrictSuperset(of: small))
         #expect(!small.isStrictSuperset(of: large))
     }
@@ -196,9 +218,11 @@ struct SetProtocolTests {
     @Test
     func `Equal sets are not strict supersets`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(1); b.insert(2)
+        b.insert(1)
+        b.insert(2)
         #expect(!a.isStrictSuperset(of: b))
     }
 
@@ -207,27 +231,36 @@ struct SetProtocolTests {
     @Test
     func `Equal sets`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered()
-        b.insert(1); b.insert(2); b.insert(3)
+        b.insert(1)
+        b.insert(2)
+        b.insert(3)
         #expect(a.isEqual(to: b))
     }
 
     @Test
     func `Unequal sets with different counts`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(1); b.insert(2); b.insert(3)
+        b.insert(1)
+        b.insert(2)
+        b.insert(3)
         #expect(!a.isEqual(to: b))
     }
 
     @Test
     func `Unequal sets with same count`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2)
+        a.insert(1)
+        a.insert(2)
         var b = Set<Int>.Ordered()
-        b.insert(2); b.insert(3)
+        b.insert(2)
+        b.insert(3)
         #expect(!a.isEqual(to: b))
     }
 
@@ -241,9 +274,11 @@ struct SetProtocolTests {
     @Test
     func `Heterogeneous isEqual`() throws {
         var ordered = Set<Int>.Ordered()
-        ordered.insert(1); ordered.insert(2)
+        ordered.insert(1)
+        ordered.insert(2)
         var fixed = try Set<Int>.Ordered.Fixed(capacity: 4)
-        try fixed.insert(1); try fixed.insert(2)
+        try fixed.insert(1)
+        try fixed.insert(2)
         #expect(ordered.isEqual(to: fixed))
 
         try fixed.insert(3)
@@ -255,9 +290,13 @@ struct SetProtocolTests {
     @Test
     func `Union via protocol default`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered()
-        b.insert(3); b.insert(4); b.insert(5)
+        b.insert(3)
+        b.insert(4)
+        b.insert(5)
         let result = a.union(b)
         #expect(toArray(result) == [1, 2, 3, 4, 5])
     }
@@ -265,9 +304,14 @@ struct SetProtocolTests {
     @Test
     func `Intersection via protocol default`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3); a.insert(4)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
+        a.insert(4)
         var b = Set<Int>.Ordered()
-        b.insert(2); b.insert(4); b.insert(6)
+        b.insert(2)
+        b.insert(4)
+        b.insert(6)
         let result = a.intersection(b)
         #expect(toArray(result) == [2, 4])
     }
@@ -275,9 +319,14 @@ struct SetProtocolTests {
     @Test
     func `Subtract via protocol default`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3); a.insert(4); a.insert(5)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
+        a.insert(4)
+        a.insert(5)
         var b = Set<Int>.Ordered()
-        b.insert(2); b.insert(4)
+        b.insert(2)
+        b.insert(4)
         let result = a.subtract(b)
         #expect(toArray(result) == [1, 3, 5])
     }
@@ -285,9 +334,13 @@ struct SetProtocolTests {
     @Test
     func `Symmetric difference via protocol default`() {
         var a = Set<Int>.Ordered()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered()
-        b.insert(2); b.insert(3); b.insert(4)
+        b.insert(2)
+        b.insert(3)
+        b.insert(4)
         let result = a.symmetricDifference(b)
         #expect(toArray(result) == [1, 4])
     }
@@ -296,7 +349,8 @@ struct SetProtocolTests {
     func `Algebra with empty sets`() {
         let empty = Set<Int>.Ordered()
         var nonEmpty = Set<Int>.Ordered()
-        nonEmpty.insert(1); nonEmpty.insert(2)
+        nonEmpty.insert(1)
+        nonEmpty.insert(2)
 
         #expect(toArray(empty.union(nonEmpty)) == [1, 2])
         #expect(toArray(nonEmpty.union(empty)) == [1, 2])
@@ -312,9 +366,11 @@ struct SetProtocolTests {
     @Test
     func `Ordered isDisjoint with Fixed`() throws {
         var ordered = Set<Int>.Ordered()
-        ordered.insert(1); ordered.insert(2)
+        ordered.insert(1)
+        ordered.insert(2)
         var fixed = try Set<Int>.Ordered.Fixed(capacity: 4)
-        try fixed.insert(3); try fixed.insert(4)
+        try fixed.insert(3)
+        try fixed.insert(4)
         #expect(ordered.isDisjoint(with: fixed))
 
         try fixed.insert(2)
@@ -324,9 +380,12 @@ struct SetProtocolTests {
     @Test
     func `Ordered isSubset of Static`() throws {
         var ordered = Set<Int>.Ordered()
-        ordered.insert(1); ordered.insert(2)
+        ordered.insert(1)
+        ordered.insert(2)
         var _static = Set<Int>.Ordered.Static<8>()
-        try _static.insert(1); try _static.insert(2); try _static.insert(3)
+        try _static.insert(1)
+        try _static.insert(2)
+        try _static.insert(3)
 
         let isSubset = ordered.isSubset(of: _static)
         #expect(isSubset)
@@ -339,9 +398,11 @@ struct SetProtocolTests {
     @Test
     func `Fixed union with Small`() throws {
         var fixed = try Set<Int>.Ordered.Fixed(capacity: 4)
-        try fixed.insert(1); try fixed.insert(2)
+        try fixed.insert(1)
+        try fixed.insert(2)
         var small = Set<Int>.Ordered.Small<4>()
-        small.insert(3); small.insert(4)
+        small.insert(3)
+        small.insert(4)
         let result = fixed.union(small)
         #expect(toArray(result) == [1, 2, 3, 4])
     }
@@ -349,9 +410,13 @@ struct SetProtocolTests {
     @Test
     func `Static intersection with Ordered`() throws {
         var _static = Set<Int>.Ordered.Static<8>()
-        try _static.insert(1); try _static.insert(2); try _static.insert(3)
+        try _static.insert(1)
+        try _static.insert(2)
+        try _static.insert(3)
         var ordered = Set<Int>.Ordered()
-        ordered.insert(2); ordered.insert(3); ordered.insert(4)
+        ordered.insert(2)
+        ordered.insert(3)
+        ordered.insert(4)
         let result = _static.intersection(ordered)
         #expect(toArray(result) == [2, 3])
     }
@@ -359,9 +424,13 @@ struct SetProtocolTests {
     @Test
     func `Small subtract from Ordered`() {
         var small = Set<Int>.Ordered.Small<8>()
-        small.insert(1); small.insert(2); small.insert(3); small.insert(4)
+        small.insert(1)
+        small.insert(2)
+        small.insert(3)
+        small.insert(4)
         var ordered = Set<Int>.Ordered()
-        ordered.insert(2); ordered.insert(4)
+        ordered.insert(2)
+        ordered.insert(4)
         let result = small.subtract(ordered)
         #expect(toArray(result) == [1, 3])
     }
@@ -369,9 +438,12 @@ struct SetProtocolTests {
     @Test
     func `Small isStrictSuperset of Fixed`() throws {
         var small = Set<Int>.Ordered.Small<8>()
-        small.insert(1); small.insert(2); small.insert(3)
+        small.insert(1)
+        small.insert(2)
+        small.insert(3)
         var fixed = try Set<Int>.Ordered.Fixed(capacity: 4)
-        try fixed.insert(1); try fixed.insert(2)
+        try fixed.insert(1)
+        try fixed.insert(2)
 
         let smallIsStrict = small.isStrictSuperset(of: fixed)
         #expect(smallIsStrict)
@@ -384,9 +456,12 @@ struct SetProtocolTests {
     @Test
     func `Fixed relational defaults`() throws {
         var a = try Set<Int>.Ordered.Fixed(capacity: 8)
-        try a.insert(1); try a.insert(2)
+        try a.insert(1)
+        try a.insert(2)
         var b = try Set<Int>.Ordered.Fixed(capacity: 8)
-        try b.insert(1); try b.insert(2); try b.insert(3)
+        try b.insert(1)
+        try b.insert(2)
+        try b.insert(3)
 
         #expect(a.isSubset(of: b))
         #expect(a.isStrictSubset(of: b))
@@ -398,9 +473,11 @@ struct SetProtocolTests {
     @Test
     func `Static relational defaults`() throws {
         var a = Set<Int>.Ordered.Static<8>()
-        try a.insert(1); try a.insert(2)
+        try a.insert(1)
+        try a.insert(2)
         var b = Set<Int>.Ordered.Static<8>()
-        try b.insert(3); try b.insert(4)
+        try b.insert(3)
+        try b.insert(4)
 
         let disjoint = a.isDisjoint(with: b)
         #expect(disjoint)
@@ -413,9 +490,12 @@ struct SetProtocolTests {
     @Test
     func `Small relational defaults`() {
         var a = Set<Int>.Ordered.Small<8>()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered.Small<8>()
-        b.insert(1); b.insert(2)
+        b.insert(1)
+        b.insert(2)
 
         let bSubsetA = b.isSubset(of: a)
         #expect(bSubsetA)
@@ -432,9 +512,13 @@ struct SetProtocolTests {
     @Test
     func `Fixed algebra defaults`() throws {
         var a = try Set<Int>.Ordered.Fixed(capacity: 8)
-        try a.insert(1); try a.insert(2); try a.insert(3)
+        try a.insert(1)
+        try a.insert(2)
+        try a.insert(3)
         var b = try Set<Int>.Ordered.Fixed(capacity: 8)
-        try b.insert(2); try b.insert(3); try b.insert(4)
+        try b.insert(2)
+        try b.insert(3)
+        try b.insert(4)
 
         #expect(toArray(a.union(b)) == [1, 2, 3, 4])
         #expect(toArray(a.intersection(b)) == [2, 3])
@@ -445,9 +529,13 @@ struct SetProtocolTests {
     @Test
     func `Static algebra defaults`() throws {
         var a = Set<Int>.Ordered.Static<8>()
-        try a.insert(1); try a.insert(2); try a.insert(3)
+        try a.insert(1)
+        try a.insert(2)
+        try a.insert(3)
         var b = Set<Int>.Ordered.Static<8>()
-        try b.insert(2); try b.insert(3); try b.insert(4)
+        try b.insert(2)
+        try b.insert(3)
+        try b.insert(4)
 
         let unionResult = toArray(a.union(b))
         #expect(unionResult == [1, 2, 3, 4])
@@ -462,9 +550,13 @@ struct SetProtocolTests {
     @Test
     func `Small algebra defaults`() {
         var a = Set<Int>.Ordered.Small<8>()
-        a.insert(1); a.insert(2); a.insert(3)
+        a.insert(1)
+        a.insert(2)
+        a.insert(3)
         var b = Set<Int>.Ordered.Small<8>()
-        b.insert(2); b.insert(3); b.insert(4)
+        b.insert(2)
+        b.insert(3)
+        b.insert(4)
 
         let unionResult = toArray(a.union(b))
         #expect(unionResult == [1, 2, 3, 4])

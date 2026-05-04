@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
-import Sequence_Primitives
 internal import Property_Primitives
+import Sequence_Primitives
+public import Set_Primitives_Core
 
 // MARK: - Sequence.Drain.Protocol Conformance
 

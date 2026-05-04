@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
-import Index_Primitives
 import Finite_Primitives
+import Index_Primitives
+public import Set_Primitives_Core
 
 // Note: Set.Ordered.Static is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Static.
@@ -84,9 +84,12 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         let hashValue = element.hashValue
 
         // Check for existing element
-        if let existingPosition = _hashTable.position(forHash: hashValue, equals: { idx in
-            _buffer[idx] == element
-        }) {
+        if let existingPosition = _hashTable.position(
+            forHash: hashValue,
+            equals: { idx in
+                _buffer[idx] == element
+            }
+        ) {
             return (false, existingPosition)
         }
 
@@ -112,11 +115,13 @@ extension Set_Primitives_Core.Set.Ordered.Static {
     @discardableResult
     public mutating func remove(_ element: borrowing Element) -> Element? {
         // Find and remove from hash table
-        guard let removedPosition = _hashTable.remove(
-            hashValue: element.hashValue,
-            context: element,
-            equals: { idx, elem in _buffer[idx] == elem }
-        ) else {
+        guard
+            let removedPosition = _hashTable.remove(
+                hashValue: element.hashValue,
+                context: element,
+                equals: { idx, elem in _buffer[idx] == elem }
+            )
+        else {
             return nil
         }
 

@@ -9,10 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
+import Cardinal_Primitives
 import Index_Primitives
 internal import Ordinal_Primitives
-import Cardinal_Primitives
+public import Set_Primitives_Core
 
 // MARK: - Iterator (Copyable elements only)
 

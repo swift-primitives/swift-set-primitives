@@ -9,9 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
-@testable import Set_Primitives
 import Set_Primitives_Test_Support
+import Testing
+
+@testable import Set_Primitives
 
 // MARK: - Helper to convert Set.Ordered to Array
 
@@ -574,7 +575,7 @@ struct OrderedSetTests {
         var set = Set<Int>.Ordered.Small<2>()
         set.insert(1)
         set.insert(2)
-        set.insert(3) // Triggers spill
+        set.insert(3)  // Triggers spill
         set.insert(4)
         precondition(set.isSpilled, "Should be in heap mode")
 

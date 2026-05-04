@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Testing
+
 @testable import Set_Primitives
 
 @Suite("Set - Deinit")
@@ -27,7 +28,10 @@ struct SetDeinitTests {
     final class TrackedElement: Hash.`Protocol`, @unchecked Sendable {
         let id: Int
         let tracker: Tracker
-        init(_ id: Int, tracker: Tracker) { self.id = id; self.tracker = tracker }
+        init(_ id: Int, tracker: Tracker) {
+            self.id = id
+            self.tracker = tracker
+        }
         deinit { tracker.append(id) }
         static func == (lhs: borrowing TrackedElement, rhs: borrowing TrackedElement) -> Bool {
             lhs.id == rhs.id

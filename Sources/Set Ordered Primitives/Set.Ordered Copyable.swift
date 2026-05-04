@@ -9,10 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitives_Core
+public import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
-public import Cardinal_Primitives
+public import Set_Primitives_Core
 
 // ============================================================================
 // MARK: - Initialization (Copyable)
@@ -95,10 +95,12 @@ extension Set.Ordered where Element: Copyable {
     public mutating func remove(_ element: Element) -> Element? {
         makeUnique()
 
-        guard let removedPosition = hashTable.remove(
-            hashValue: element.hashValue,
-            equals: { idx in buffer[idx] == element }
-        ) else {
+        guard
+            let removedPosition = hashTable.remove(
+                hashValue: element.hashValue,
+                equals: { idx in buffer[idx] == element }
+            )
+        else {
             return nil
         }
 
@@ -254,23 +256,23 @@ extension Set.Ordered: Hash.`Protocol` {
 // ============================================================================
 
 #if !hasFeature(Embedded)
-extension Set.Ordered where Element: Copyable {
-    /// A textual representation of the set.
-    public var description: String {
-        var result = "Set.Ordered(["
-        var isFirst = true
-        var index: Index<Element> = .zero
-        let end = count.map(Ordinal.init)
-        while index < end {
-            if !isFirst { result += ", " }
-            result += String(describing: buffer[index])
-            isFirst = false
-            index += .one
+    extension Set.Ordered where Element: Copyable {
+        /// A textual representation of the set.
+        public var description: String {
+            var result = "Set.Ordered(["
+            var isFirst = true
+            var index: Index<Element> = .zero
+            let end = count.map(Ordinal.init)
+            while index < end {
+                if !isFirst { result += ", " }
+                result += String(describing: buffer[index])
+                isFirst = false
+                index += .one
+            }
+            result += "])"
+            return result
         }
-        result += "])"
-        return result
     }
-}
 #endif
 
 // ============================================================================
@@ -316,4 +318,3 @@ extension Set.Ordered: Sequence.Clearable where Element: Copyable {
         clear(keepingCapacity: false)
     }
 }
-

@@ -9,9 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Testing
-@testable import Set_Primitives
 import Set_Primitives_Test_Support
+import Testing
+
+@testable import Set_Primitives
 
 // MARK: - Invariant Verification Helpers
 
@@ -24,23 +25,39 @@ func verifyInvariants<Element: Hashable>(
 ) {
     // Invariant 1: Count matches expected
     let count = Int(bitPattern: set.count)
-    #expect(count == expectedElements.count, "Count mismatch: got \(count), expected \(expectedElements.count)", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+    #expect(
+        count == expectedElements.count,
+        "Count mismatch: got \(count), expected \(expectedElements.count)",
+        sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0)
+    )
 
     // Invariant 2: isEmpty is consistent with count
     let isEmpty = set.isEmpty
-    #expect(isEmpty == (count == 0), "isEmpty inconsistent with count", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+    #expect(
+        isEmpty == (count == 0),
+        "isEmpty inconsistent with count",
+        sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0)
+    )
 
     // Invariant 3: Elements at indices match expected order
     for i in 0..<expectedElements.count {
         let idx = Index<Element>(_unchecked: Ordinal(UInt(i)))
-        #expect(set[idx] == expectedElements[i], "Element at index \(i) mismatch", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+        #expect(
+            set[idx] == expectedElements[i],
+            "Element at index \(i) mismatch",
+            sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0)
+        )
     }
 
     // Invariant 4: index() returns correct position for each element
     for (i, element) in expectedElements.enumerated() {
         let foundIndex = set.index(element)
         let foundInt = foundIndex.map { Int(bitPattern: $0.position) }
-        #expect(foundInt == i, "index(\(element)) returned \(String(describing: foundInt)), expected \(i)", sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0))
+        #expect(
+            foundInt == i,
+            "index(\(element)) returned \(String(describing: foundInt)), expected \(i)",
+            sourceLocation: SourceLocation(fileID: String(describing: file), filePath: String(describing: file), line: Int(line), column: 0)
+        )
     }
 
     // Invariant 5: contains() returns true for all elements
@@ -62,7 +79,7 @@ struct OrderedSetModelTests {
         }
 
         mutating func next() -> UInt64 {
-            state = state &* 6364136223846793005 &+ 1442695040888963407
+            state = state &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
             return state
         }
 
