@@ -89,7 +89,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         _buffer.append(element)
 
         if wasSpilled {
-            _heapHashTable!.insert(__unchecked: (), position: index, hashValue: element.hashValue)
+            _heapHashTable!.insert(_unchecked: (), position: index, hashValue: element.hashValue)
         } else if _buffer.isSpilled {
             _buildHashTable()
         }
@@ -160,7 +160,7 @@ extension Set_Primitives_Core.Set.Ordered.Small where Element: Copyable {
         var idx: Index<Element> = .zero
         let end = count.map(Ordinal.init)
         while idx < end {
-            _heapHashTable!.insert(__unchecked: (), position: idx, hashValue: _buffer[idx].hashValue)
+            _heapHashTable!.insert(_unchecked: (), position: idx, hashValue: _buffer[idx].hashValue)
             idx += .one
         }
     }

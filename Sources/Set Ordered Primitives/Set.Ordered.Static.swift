@@ -98,7 +98,7 @@ extension Set_Primitives_Core.Set.Ordered.Static {
         // Insert at next available position (count < capacity since !isFull)
         let position: Index<Element>.Bounded<capacity> = .init(_buffer.count.map(Ordinal.init))!
         _ = _buffer.append(element)
-        _hashTable.insert(__unchecked: (), position: position, hashValue: hashValue)
+        _hashTable.insert(_unchecked: (), position: position, hashValue: hashValue)
 
         return (true, position)
     }

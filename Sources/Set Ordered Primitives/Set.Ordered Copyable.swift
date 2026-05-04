@@ -84,7 +84,7 @@ extension Set.Ordered where Element: Copyable {
         makeUnique()
         let index = buffer.count.map(Ordinal.init)
         buffer.append(element)
-        hashTable.insert(__unchecked: (), position: index, hashValue: element.hashValue)
+        hashTable.insert(_unchecked: (), position: index, hashValue: element.hashValue)
 
         return (true, index)
     }

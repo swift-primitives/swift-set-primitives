@@ -82,7 +82,7 @@ extension Set_Primitives_Core.Set.Ordered.Fixed where Element: Copyable {
         makeUnique()
         let index = currentCount.map(Ordinal.init)
         _ = buffer.append(element)
-        hashTable.insert(__unchecked: (), position: index, hashValue: element.hashValue)
+        hashTable.insert(_unchecked: (), position: index, hashValue: element.hashValue)
 
         return (true, index)
     }
