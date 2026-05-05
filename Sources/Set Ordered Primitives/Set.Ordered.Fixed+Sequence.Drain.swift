@@ -32,13 +32,13 @@ extension Set_Primitives_Core.Set.Ordered.Fixed {
     /// set.drain { print($0) }  // prints 1, 2, 3
     /// // set is now empty but still usable
     /// ```
-    public var drain: Property<Sequence.Drain, Self>.View {
+    public var drain: Property<Sequence.Drain, Self>.Inout {
         mutating _read {
-            yield unsafe Property<Sequence.Drain, Self>.View(&self)
+            yield Property<Sequence.Drain, Self>.Inout(&self)
         }
         mutating _modify {
-            var view = unsafe Property<Sequence.Drain, Self>.View(&self)
-            yield &view
+            var accessor = Property<Sequence.Drain, Self>.Inout(&self)
+            yield &accessor
         }
     }
 }

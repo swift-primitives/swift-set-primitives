@@ -36,13 +36,13 @@ extension Set_Primitives_Core.Set.Ordered {
     /// ```
     ///
     /// - Complexity: O(n) where n is the number of elements.
-    public var drain: Property<Sequence.Drain, Self>.View {
+    public var drain: Property<Sequence.Drain, Self>.Inout {
         mutating _read {
-            yield unsafe Property<Sequence.Drain, Self>.View(&self)
+            yield Property<Sequence.Drain, Self>.Inout(&self)
         }
         mutating _modify {
-            var view = unsafe Property<Sequence.Drain, Self>.View(&self)
-            yield &view
+            var accessor = Property<Sequence.Drain, Self>.Inout(&self)
+            yield &accessor
         }
     }
 }

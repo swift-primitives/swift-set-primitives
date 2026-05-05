@@ -76,7 +76,7 @@ extension Set.Ordered.Fixed: Sequence.Clearable where Element: Copyable {
     /// Removes all elements from the set.
     ///
     /// The capacity remains unchanged.
-    /// This enables `.forEach.consuming { }` pattern via `Property.View` extension.
+    /// This enables `.forEach.consuming { }` pattern via `Property.Inout` extension.
     @inlinable
     public mutating func removeAll() {
         clear(keepingCapacity: false)
