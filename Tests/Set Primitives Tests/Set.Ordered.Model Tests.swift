@@ -115,7 +115,7 @@ struct OrderedSetModelTests {
             }
             elements.append(element)
             set.insert(element)
-            return (true, elements.count - 1)
+            return (true, elements.endIndex - 1)
         }
 
         @discardableResult

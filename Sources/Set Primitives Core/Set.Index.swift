@@ -20,6 +20,6 @@ extension Set {
     /// ## Position Semantics
     ///
     /// Position 0 is the first element in insertion order.
-    /// Position `count - 1` is the most recently inserted element.
+    /// The last position is the most recently inserted element.
     public typealias Index = Index_Primitives.Index<Element>
 }
