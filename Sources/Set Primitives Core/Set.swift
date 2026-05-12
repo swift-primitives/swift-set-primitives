@@ -41,6 +41,9 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
     ///
     /// Composes `Buffer<Element>.Linear` for element storage and
     /// `Hash.Table<Element>` for O(1) position lookup.
+    // WHY: Category D — structural Sendable workaround; the type is
+    // WHY: structurally value-safe but the compiler cannot synthesize
+    // WHY: Sendable due to a stored pointer / generic parameter shape.
     @safe
     public struct Ordered {
 
@@ -69,6 +72,9 @@ public enum Set<Element: Hash.`Protocol` & ~Copyable>: ~Copyable {
         ///
         /// Composes `Buffer<Element>.Linear.Bounded` for element storage and
         /// `Hash.Table<Element>` for O(1) position lookup.
+        // WHY: Category D — structural Sendable workaround; the type is
+        // WHY: structurally value-safe but the compiler cannot synthesize
+        // WHY: Sendable due to a stored pointer / generic parameter shape.
         @safe
         public struct Fixed {
             /// Element storage using Buffer.Linear.Bounded from buffer-primitives.
