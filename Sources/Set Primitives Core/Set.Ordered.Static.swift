@@ -48,4 +48,4 @@ extension Set.Ordered where Element: ~Copyable {
 
 // MARK: - Sendable
 
-extension Set.Ordered.Static: @unsafe @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Static: Sendable where Element: Sendable {}

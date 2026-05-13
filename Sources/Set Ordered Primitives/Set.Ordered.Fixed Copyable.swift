@@ -42,7 +42,7 @@ extension Set.Ordered.Fixed where Element: Copyable {
     }
 }
 
-extension Set.Ordered.Fixed.Iterator: @unsafe @unchecked Sendable where Element: Sendable {}
+extension Set.Ordered.Fixed.Iterator: Sendable where Element: Sendable {}
 
 // ============================================================================
 // MARK: - Swift.Sequence Conformance
