@@ -11,7 +11,6 @@
 
 public import Cardinal_Primitives
 import Index_Primitives
-import Memory_Primitives_Core
 public import Ordinal_Primitives
 public import Set_Primitives_Core
 
