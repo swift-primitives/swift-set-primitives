@@ -11,6 +11,7 @@
 
 import Index_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Primitive
 
 extension Set_Primitives_Core.Set.Ordered.Algebra {
     /// Namespace for symmetric set operations.

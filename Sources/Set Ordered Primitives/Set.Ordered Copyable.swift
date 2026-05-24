@@ -13,6 +13,8 @@ public import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Primitive
+public import Buffer_Linear_Primitives
 
 // ============================================================================
 // MARK: - Initialization (Copyable)

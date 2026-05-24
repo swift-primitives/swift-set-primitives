@@ -13,6 +13,9 @@ import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Primitive
+public import Buffer_Linear_Primitives
+public import Buffer_Linear_Small_Primitive
 
 // Note: Set.Ordered.Small is unconditionally ~Copyable (inline storage requires deinit),
 // so it cannot conform to Swift.Sequence which requires Copyable.

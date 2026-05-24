@@ -12,6 +12,8 @@
 import Finite_Primitives
 import Index_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Inline_Primitives
+public import Buffer_Linear_Primitive
 
 // Note: Set.Ordered.Static is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Static.

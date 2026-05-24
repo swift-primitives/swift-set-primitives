@@ -13,6 +13,8 @@ public import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Small_Primitive
+public import Buffer_Linear_Small_Primitives
 
 // Note: Set.Ordered.Small is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Small.

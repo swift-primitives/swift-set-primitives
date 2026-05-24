@@ -13,6 +13,8 @@ public import Cardinal_Primitives
 import Index_Primitives
 public import Ordinal_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Bounded_Primitive
+public import Buffer_Linear_Bounded_Primitives
 
 // Note: Set.Ordered.Fixed is declared inside Set.Ordered (in Set.swift).
 // This file contains only extensions to Set.Ordered.Fixed.

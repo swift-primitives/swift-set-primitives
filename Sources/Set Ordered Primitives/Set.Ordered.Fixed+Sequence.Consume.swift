@@ -12,6 +12,9 @@
 import Index_Primitives
 import Sequence_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Bounded_Primitive
+public import Buffer_Linear_Bounded_Primitives
+public import Buffer_Linear_Primitive
 
 // MARK: - consume() Implementation
 //

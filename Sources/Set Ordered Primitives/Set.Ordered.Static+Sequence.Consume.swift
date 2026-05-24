@@ -11,6 +11,8 @@
 
 import Sequence_Primitives
 public import Set_Primitives_Core
+public import Buffer_Linear_Inline_Primitives
+public import Buffer_Linear_Primitive
 
 // MARK: - consume() Implementation
 //
