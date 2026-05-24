@@ -9,10 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Buffer_Linear_Primitive
-import Buffer_Linear_Primitives
-import Buffer_Linear_Bounded_Primitive
-import Buffer_Linear_Bounded_Primitives
+public import Buffer_Linear_Primitive
+public import Buffer_Linear_Primitives
+public import Buffer_Linear_Bounded_Primitive
+public import Buffer_Linear_Bounded_Primitives
 
 /// Namespace for ordered set types supporting move-only elements.
 ///

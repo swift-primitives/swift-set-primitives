@@ -9,8 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-import Buffer_Linear_Primitive
-import Buffer_Linear_Inline_Primitives
+public import Buffer_Linear_Primitive
+public import Buffer_Linear_Inline_Primitives
 import Hash_Table_Primitives
 
 extension Set.Ordered where Element: ~Copyable {
