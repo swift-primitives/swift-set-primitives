@@ -9,6 +9,11 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import Buffer_Linear_Primitive
+import Buffer_Linear_Primitives
+import Buffer_Linear_Bounded_Primitive
+import Buffer_Linear_Bounded_Primitives
+
 /// Namespace for ordered set types supporting move-only elements.
 ///
 /// This shadows `Swift.Set`. Use `Swift.Set` or `Set_Primitives_Core.Set`

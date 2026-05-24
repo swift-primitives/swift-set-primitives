@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import Buffer_Linear_Primitive
+import Buffer_Linear_Small_Primitive
 import Buffer_Linear_Small_Primitives
 import Hash_Table_Primitives
 
