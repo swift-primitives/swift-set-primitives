@@ -21,67 +21,23 @@ let package = Package(
             targets: ["Set Primitives Core"]
         ),
         .library(
-            name: "Set Ordered Primitives",
-            targets: ["Set Ordered Primitives"]
-        ),
-        .library(
             name: "Set Primitives Test Support",
             targets: ["Set Primitives Test Support"]
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-primitives/swift-standard-library-extensions.git", branch: "main"),
-        .package(path: "../swift-bit-primitives"),
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-hash-primitives"),
-        .package(path: "../swift-hash-table-primitives"),
-        .package(path: "../swift-buffer-primitives"),
-        .package(path: "../swift-buffer-linear-primitives"),
-        .package(path: "../swift-storage-primitives"),
-        .package(path: "../swift-collection-primitives"),
-        .package(path: "../swift-sequence-primitives"),
-        .package(path: "../swift-property-primitives"),
-        .package(path: "../swift-memory-primitives"),
-        .package(path: "../swift-ordinal-primitives"),
-        .package(path: "../swift-cardinal-primitives"),
-        .package(path: "../swift-finite-primitives"),
     ],
     targets: [
 
-        // MARK: - Core
+        // MARK: - Core (namespace shell: enum Set + Set.Protocol + Set.Index;
+        // the future home of a base unordered/hash Set discipline)
         .target(
             name: "Set Primitives Core",
             dependencies: [
-                .product(name: "Standard Library Extensions", package: "swift-standard-library-extensions"),
-                .product(name: "Bit Primitives", package: "swift-bit-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Hash Primitives", package: "swift-hash-primitives"),
-                .product(name: "Hash Table Primitives", package: "swift-hash-table-primitives"),
-                .product(name: "Storage Primitives", package: "swift-storage-primitives"),
-                .product(name: "Buffer Primitives", package: "swift-buffer-primitives"),
-                .product(name: "Buffer Linear Primitive", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Primitives", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Bounded Primitive", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Bounded Primitives", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Inline Primitives", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Small Primitive", package: "swift-buffer-linear-primitives"),
-                .product(name: "Buffer Linear Small Primitives", package: "swift-buffer-linear-primitives"),
-                .product(name: "Memory Primitives", package: "swift-memory-primitives"),
-            ]
-        ),
-
-        // MARK: - Ordered
-        .target(
-            name: "Set Ordered Primitives",
-            dependencies: [
-                "Set Primitives Core",
-                .product(name: "Ordinal Primitives", package: "swift-ordinal-primitives"),
-                .product(name: "Cardinal Primitives", package: "swift-cardinal-primitives"),
-                .product(name: "Sequence Primitives", package: "swift-sequence-primitives"),
-                .product(name: "Property Primitives", package: "swift-property-primitives"),
-                .product(name: "Finite Primitives", package: "swift-finite-primitives"),
-            ],
-            exclude: [
             ]
         ),
 
@@ -90,7 +46,6 @@ let package = Package(
             name: "Set Primitives",
             dependencies: [
                 "Set Primitives Core",
-                "Set Ordered Primitives",
             ]
         ),
 
@@ -98,21 +53,11 @@ let package = Package(
         .target(
             name: "Set Primitives Test Support",
             dependencies: [
-                .product(name: "Bit Primitives Test Support", package: "swift-bit-primitives"),
+                "Set Primitives",
                 .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
-                .product(name: "Buffer Primitives Test Support", package: "swift-buffer-primitives"),
             ],
             path: "Tests/Support"
         ),
-
-        // MARK: - Tests
-        .testTarget(
-            name: "Set Primitives Tests",
-            dependencies: [
-                "Set Primitives",
-                "Set Primitives Test Support",
-            ]
-        )
     ],
     swiftLanguageModes: [.v6]
 )
