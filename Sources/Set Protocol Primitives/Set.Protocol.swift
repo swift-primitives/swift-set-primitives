@@ -59,9 +59,7 @@ extension Set where Element: ~Copyable {
     /// `Set.Protocol` refines nothing — it declares `contains`, `forEach`,
     /// and `count` as requirements, enabling default implementations for
     /// relational operations (`isDisjoint`, `isSubset`, `isSuperset`,
-    /// `isStrictSubset`, `isStrictSuperset`, `isEmpty`, `isEqual`) and
-    /// non-mutating algebra (`union`, `intersection`, `subtract`,
-    /// `symmetricDifference`).
+    /// `isStrictSubset`, `isStrictSuperset`, `isEmpty`, `isEqual`).
     ///
     /// ## Hoisted Protocol Pattern
     ///

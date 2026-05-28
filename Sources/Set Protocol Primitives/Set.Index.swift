@@ -13,14 +13,17 @@ public import Set_Primitive
 public import Index_Primitives
 
 extension Set {
-    /// Type-safe index for ordered set elements.
+    /// Type-safe index for set elements.
     ///
     /// Uses `Index<Element>` to provide compile-time safety preventing
     /// cross-collection index confusion.
     ///
-    /// ## Position Semantics
+    /// ## Ordering
     ///
-    /// Position 0 is the first element in insertion order.
-    /// The last position is the most recently inserted element.
+    /// The base `Set` namespace makes no promise about the order in which
+    /// positions enumerate elements. Any ordering guarantee — such as the
+    /// insertion-order semantics of the ordered-set discipline — is the
+    /// responsibility of the concrete storage discipline that adopts it
+    /// (`Set.Ordered` and its capacity variants in `swift-set-ordered-primitives`).
     public typealias Index = Index_Primitives.Index<Element>
 }

@@ -10,7 +10,6 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitive
-public import Hash_Primitives
 public import Index_Primitives
 
 // MARK: - Default Implementations
