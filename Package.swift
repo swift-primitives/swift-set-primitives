@@ -76,6 +76,16 @@ let package = Package(
             ],
             path: "Tests/Support"
         ),
+
+        // MARK: - Tests
+        .testTarget(
+            name: "Set Protocol Primitives Tests",
+            dependencies: [
+                "Set Protocol Primitives",
+                "Set Primitives Test Support",
+            ],
+            path: "Tests/Set Protocol Primitives Tests"
+        ),
     ],
     swiftLanguageModes: [.v6]
 )
