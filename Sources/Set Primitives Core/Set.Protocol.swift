@@ -14,6 +14,25 @@
 /// Protocol unifying membership queries across all Set variants.
 ///
 /// See ``Set/`Protocol``` for documentation.
+///
+/// ## Probe finding (2026-05-28) — family-protocol `Backing` lift is NOT expressible
+///
+/// The handoff's family-protocol lean — *"a `Backing` associated type carries
+/// `makeIterator` delegation once (collapses per-variant repetition)"* — was
+/// attempted on this protocol and REVERTED. In current Swift (6.3.1+) a
+/// protocol-extension default referencing `backing.makeIterator()` (route 1,
+/// route 3) or `backing.span` (Memory.Contiguous substrate) cannot thread the
+/// iterator/span lifetime back to `self` through a generic `var backing:
+/// Backing` accessor: the compiler rejects with "lifetime-dependent value
+/// escapes its scope." Neither plain `{ get }` nor `{ borrowing get }`
+/// resolves it. Route 2 (Sequenceable consuming makeIterator) fails for a
+/// separate reason — `@_lifetime(copy self)` is rejected for Escapable
+/// `Iterator`, omitting it fails for `~Escapable` `Iterator`, and generic
+/// context cannot witness both shapes with one signature.
+///
+/// Consequence: variants implement iteration per-variant (the current shape).
+/// See the probe research note `swift-institute/Research/iteration-architecture-set-probe.md`
+/// for the full finding + the buffer-linear-side route-3 gap.
 public protocol __SetProtocol: ~Copyable {
     /// The type of element stored in the set.
     associatedtype Element: Hash.`Protocol` & ~Copyable
