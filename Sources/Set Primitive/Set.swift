@@ -21,7 +21,7 @@
 /// `swift-set-ordered-primitives` (module `Set_Ordered_Primitives`), which
 /// extends this namespace. Import that module to use ordered sets.
 ///
-// future: base unordered/hash Set discipline lives here
+/// The base unordered/hash `Set` discipline will live in this namespace.
 ///
 /// ## ~Copyable Support
 ///
