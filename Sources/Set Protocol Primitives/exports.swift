@@ -9,9 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Umbrella per [MOD-005]. Re-export every sub-target so a single
-// `import Set_Primitives` surfaces the whole package. Set Protocol Primitives
-// transitively re-exports Hash_Primitives + Index_Primitives.
+// Set Protocol Primitives owns `Set.Protocol` (membership-uniqueness
+// contract), `Set.Index`, and the relational defaults. Re-exports the root
+// namespace + its external dependencies so the umbrella surfaces them.
 
 @_exported public import Set_Primitive
-@_exported public import Set_Protocol_Primitives
+@_exported public import Hash_Primitives
+@_exported public import Index_Primitives

@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Set_Primitive
 public import Index_Primitives
 
 extension Set {

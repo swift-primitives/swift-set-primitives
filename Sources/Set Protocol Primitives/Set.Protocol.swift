@@ -9,6 +9,10 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Set_Primitive
+public import Hash_Primitives
+public import Index_Primitives
+
 // MARK: - Set.Protocol (Hoisted as __SetProtocol)
 
 /// Protocol unifying membership queries across all Set variants.

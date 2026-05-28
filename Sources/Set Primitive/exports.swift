@@ -9,9 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Umbrella per [MOD-005]. Re-export every sub-target so a single
-// `import Set_Primitives` surfaces the whole package. Set Protocol Primitives
-// transitively re-exports Hash_Primitives + Index_Primitives.
-
-@_exported public import Set_Primitive
-@_exported public import Set_Protocol_Primitives
+// Set Primitive declares the root `enum Set {}`. Zero deps per [MOD-017]'s
+// root-target invariant — the singular `Set Primitive` is universally cheap
+// to import for sibling packages that only extend the `Set` namespace.

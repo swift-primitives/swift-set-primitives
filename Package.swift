@@ -12,14 +12,25 @@ let package = Package(
         .visionOS(.v26)
     ],
     products: [
+        // MARK: - Namespace
+        .library(
+            name: "Set Primitive",
+            targets: ["Set Primitive"]
+        ),
+
+        // MARK: - Protocol
+        .library(
+            name: "Set Protocol Primitives",
+            targets: ["Set Protocol Primitives"]
+        ),
+
+        // MARK: - Umbrella
         .library(
             name: "Set Primitives",
             targets: ["Set Primitives"]
         ),
-        .library(
-            name: "Set Primitives Core",
-            targets: ["Set Primitives Core"]
-        ),
+
+        // MARK: - Test Support
         .library(
             name: "Set Primitives Test Support",
             targets: ["Set Primitives Test Support"]
@@ -31,13 +42,19 @@ let package = Package(
     ],
     targets: [
 
-        // MARK: - Core (namespace shell: enum Set + Set.Protocol + Set.Index;
-        // the future home of a base unordered/hash Set discipline)
+        // MARK: - Namespace (singular root: `enum Set`; zero external deps per [MOD-017])
         .target(
-            name: "Set Primitives Core",
+            name: "Set Primitive",
+            dependencies: []
+        ),
+
+        // MARK: - Protocol (Set.Protocol membership contract + Set.Index + relational defaults)
+        .target(
+            name: "Set Protocol Primitives",
             dependencies: [
-                .product(name: "Index Primitives", package: "swift-index-primitives"),
+                "Set Primitive",
                 .product(name: "Hash Primitives", package: "swift-hash-primitives"),
+                .product(name: "Index Primitives", package: "swift-index-primitives"),
             ]
         ),
 
@@ -45,7 +62,8 @@ let package = Package(
         .target(
             name: "Set Primitives",
             dependencies: [
-                "Set Primitives Core",
+                "Set Primitive",
+                "Set Protocol Primitives",
             ]
         ),
 
