@@ -34,13 +34,11 @@ public protocol __SetProtocol: ~Copyable {
     /// The type of element stored in the set.
     associatedtype Element: Hash.`Protocol` & ~Copyable
 
-    /// Returns whether the set contains the given element.
+    /// Returns whether the set contains the given element. The O(1) membership
+    /// query — the defining set primitive (hot; concrete witness on the leaf).
     func contains(_ element: borrowing Element) -> Bool
 
-    /// Calls `body` with a borrowing reference to each element.
-    func forEach<E: Swift.Error>(_ body: (borrowing Element) throws(E) -> Void) throws(E)
-
-    /// The number of elements in the set.
+    /// The number of elements in the set. O(1) cardinality.
     var count: Index<Element>.Count { get }
 }
 
@@ -49,10 +47,13 @@ public protocol __SetProtocol: ~Copyable {
 extension Set where Element: ~Copyable {
     /// Protocol unifying membership queries across all `Set` variants.
     ///
-    /// `Set.Protocol` refines nothing — it declares `contains`, `forEach`,
-    /// and `count` as requirements, enabling default implementations for
-    /// relational operations (`isDisjoint`, `isSubset`, `isSuperset`,
-    /// `isStrictSubset`, `isStrictSuperset`, `isEmpty`, `isEqual`).
+    /// `Set.Protocol` refines nothing — it is the minimal membership *core*,
+    /// declaring only `contains` and `count` as requirements. From the core
+    /// alone it derives `isEmpty` (`count == .zero`). The set *algebra* is a
+    /// third orthogonal concern, composed over the core + the iteration concern
+    /// in `Set Algebra Primitives` (predicates `where Self: Iterable`;
+    /// constructive `where Self: Set.Buildable.\`Protocol\` & Iterable`) — never
+    /// baked into these requirements.
     ///
     /// ## Hoisted Protocol Pattern
     ///
@@ -72,10 +73,22 @@ extension Set where Element: ~Copyable {
     ///
     /// ## Generic Usage
     ///
+    /// Membership-only generic code constrains on the core alone:
+    ///
     /// ```swift
-    /// func overlap<A: Set.Protocol, B: Set.Protocol & ~Copyable>(
+    /// func has<S: Set.Protocol>(_ s: borrowing S, _ e: borrowing S.Element) -> Bool {
+    ///     s.contains(e)
+    /// }
+    /// ```
+    ///
+    /// Algebra (predicates / constructive) additionally requires the iteration
+    /// concern, since enumeration lives on `Iterable`:
+    ///
+    /// ```swift
+    /// func overlap<A: Set.Protocol & Iterable, B: Set.Protocol & Iterable>(
     ///     _ a: borrowing A, _ b: borrowing B
-    /// ) -> Bool where A.Element == B.Element, A.Element: Copyable {
+    /// ) -> Bool where A.Element == B.Element, A.Element: Copyable,
+    ///                 A.Iterator.Element == A.Element, B.Iterator.Element == B.Element {
     ///     !a.isDisjoint(with: b)
     /// }
     /// ```

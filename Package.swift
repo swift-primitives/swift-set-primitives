@@ -24,6 +24,18 @@ let package = Package(
             targets: ["Set Protocol Primitives"]
         ),
 
+        // MARK: - Buildable Protocol (growable-set refinement)
+        .library(
+            name: "Set Buildable Protocol Primitives",
+            targets: ["Set Buildable Protocol Primitives"]
+        ),
+
+        // MARK: - Algebra (orthogonal predicates + constructive defaults)
+        .library(
+            name: "Set Algebra Primitives",
+            targets: ["Set Algebra Primitives"]
+        ),
+
         // MARK: - Umbrella
         .library(
             name: "Set Primitives",
@@ -39,6 +51,9 @@ let package = Package(
     dependencies: [
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-hash-primitives"),
+        // Iteration concern — consumed ONLY by the Set Algebra target (the
+        // membership core stays iteration-free). Tier-safe downward edge.
+        .package(path: "../swift-iterator-primitives"),
     ],
     targets: [
 
@@ -48,7 +63,7 @@ let package = Package(
             dependencies: []
         ),
 
-        // MARK: - Protocol (Set.Protocol membership contract + Set.Index + relational defaults)
+        // MARK: - Protocol (Set.Protocol membership CORE: {contains, count} + Set.Index + isEmpty)
         .target(
             name: "Set Protocol Primitives",
             dependencies: [
@@ -58,12 +73,32 @@ let package = Package(
             ]
         ),
 
+        // MARK: - Buildable Protocol (Set.Buildable.Protocol: init + insert; growable refinement)
+        .target(
+            name: "Set Buildable Protocol Primitives",
+            dependencies: [
+                "Set Protocol Primitives",
+            ]
+        ),
+
+        // MARK: - Algebra (orthogonal predicates + constructive defaults; the lone iterator edge)
+        .target(
+            name: "Set Algebra Primitives",
+            dependencies: [
+                "Set Protocol Primitives",
+                "Set Buildable Protocol Primitives",
+                .product(name: "Iterable", package: "swift-iterator-primitives"),
+            ]
+        ),
+
         // MARK: - Umbrella
         .target(
             name: "Set Primitives",
             dependencies: [
                 "Set Primitive",
                 "Set Protocol Primitives",
+                "Set Buildable Protocol Primitives",
+                "Set Algebra Primitives",
             ]
         ),
 
@@ -73,6 +108,10 @@ let package = Package(
             dependencies: [
                 "Set Primitives",
                 .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
+                // TS-of-dep ([MOD-024]): surfaces Iterator.Chunk so Set.Fixture
+                // conforms Iterable (iterator-primitives is a product dep of the
+                // Set Algebra target).
+                .product(name: "Iterator Primitives Test Support", package: "swift-iterator-primitives"),
             ],
             path: "Tests/Support"
         ),

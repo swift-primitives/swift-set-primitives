@@ -9,12 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Umbrella per [MOD-005]. Re-export every sub-target so a single
-// `import Set_Primitives` surfaces the whole package. Set Protocol Primitives
-// transitively re-exports Hash_Primitives + Index_Primitives; Set Algebra
-// Primitives transitively re-exports Iterable.
+// Set Buildable Protocol Primitives owns `Set.Buildable.Protocol` — the
+// growable-set refinement of `Set.Protocol`. Re-exports the membership core so
+// `Set.Buildable.Protocol`'s `__SetProtocol` requirements are visible.
 
-@_exported public import Set_Primitive
 @_exported public import Set_Protocol_Primitives
-@_exported public import Set_Buildable_Protocol_Primitives
-@_exported public import Set_Algebra_Primitives

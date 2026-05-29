@@ -9,12 +9,13 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Umbrella per [MOD-005]. Re-export every sub-target so a single
-// `import Set_Primitives` surfaces the whole package. Set Protocol Primitives
-// transitively re-exports Hash_Primitives + Index_Primitives; Set Algebra
-// Primitives transitively re-exports Iterable.
+// Set Algebra Primitives owns the orthogonal set *algebra* — the relational
+// predicates (`where Self: Set.Protocol & Iterable`) and the constructive ops
+// (`where Self: Set.Buildable.Protocol & Iterable`, returning `Self`). It is
+// the lone set-primitives target that depends on the iteration concern
+// (`Iterable`); the membership core stays iteration-free. Re-exports the core +
+// the buildable refinement + `Iterable` so the algebra surface is self-contained.
 
-@_exported public import Set_Primitive
 @_exported public import Set_Protocol_Primitives
 @_exported public import Set_Buildable_Protocol_Primitives
-@_exported public import Set_Algebra_Primitives
+@_exported public import Iterable
