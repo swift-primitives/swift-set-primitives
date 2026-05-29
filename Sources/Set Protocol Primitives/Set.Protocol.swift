@@ -52,8 +52,9 @@ extension Set where Element: ~Copyable {
     /// alone it derives `isEmpty` (`count == .zero`). The set *algebra* is a
     /// third orthogonal concern, composed over the core + the iteration concern
     /// in `Set Algebra Primitives` (predicates `where Self: Iterable`;
-    /// constructive `where Self: Set.Buildable.\`Protocol\` & Iterable`) — never
-    /// baked into these requirements.
+    /// constructive `where Self: Buildable & Iterable`, composing
+    /// builder-primitives' generic `Buildable` — `Initiable` + `add`) — never
+    /// baked into these requirements, and never a bundled `Set.Buildable.Protocol`.
     ///
     /// ## Hoisted Protocol Pattern
     ///

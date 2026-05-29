@@ -24,12 +24,6 @@ let package = Package(
             targets: ["Set Protocol Primitives"]
         ),
 
-        // MARK: - Buildable Protocol (growable-set refinement)
-        .library(
-            name: "Set Buildable Protocol Primitives",
-            targets: ["Set Buildable Protocol Primitives"]
-        ),
-
         // MARK: - Umbrella
         .library(
             name: "Set Primitives",
@@ -47,8 +41,11 @@ let package = Package(
         .package(url: "https://github.com/swift-primitives/swift-hash-primitives.git", branch: "main"),
         // NOTE: the iteration concern (swift-iterator-primitives) is NOT a
         // dependency. It moved out with the Set Algebra target to
-        // swift-set-algebra-primitives ([MOD-029] prune); the membership core +
-        // the BuildableSet refinement are iteration-free.
+        // swift-set-algebra-primitives ([MOD-029] prune); the membership core
+        // is iteration-free. The buildable concern is NOT here either: it is
+        // builder-primitives' generic `Buildable` composed at the conformer
+        // (`Set.Ordered: Set.Protocol, Buildable`) — set-primitives owns the
+        // membership core only, never a bundled `Set.Buildable.Protocol`.
     ],
     targets: [
 
@@ -68,14 +65,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Buildable Protocol (Set.Buildable.Protocol: init + insert; growable refinement)
-        .target(
-            name: "Set Buildable Protocol Primitives",
-            dependencies: [
-                "Set Protocol Primitives",
-            ]
-        ),
-
         // MARK: - Umbrella (NB: no Set Algebra re-export — lifted to
         // swift-set-algebra-primitives; re-exporting it here would complete a
         // package cycle, [MOD-032]/[MOD-033] cursor-pilot drop)
@@ -84,7 +73,6 @@ let package = Package(
             dependencies: [
                 "Set Primitive",
                 "Set Protocol Primitives",
-                "Set Buildable Protocol Primitives",
             ]
         ),
 

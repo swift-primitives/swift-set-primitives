@@ -19,7 +19,11 @@
 // package-level cycle ([MOD-032]/[MOD-033] cursor-pilot drop). Consumers needing
 // the algebra (e.g. swift-set-ordered-primitives) dep + re-export
 // Set_Algebra_Primitives themselves.
+//
+// NB: there is no Set.Buildable.Protocol re-export — the buildable concern is
+// builder-primitives' generic `Buildable`, composed at the conformer
+// (`Set.Ordered: Set.Protocol, Buildable`). set-primitives owns the membership
+// core only; consumers that build sets dep swift-builder-primitives themselves.
 
 @_exported public import Set_Primitive
 @_exported public import Set_Protocol_Primitives
-@_exported public import Set_Buildable_Protocol_Primitives
