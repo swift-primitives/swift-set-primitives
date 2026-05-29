@@ -30,12 +30,6 @@ let package = Package(
             targets: ["Set Buildable Protocol Primitives"]
         ),
 
-        // MARK: - Algebra (orthogonal predicates + constructive defaults)
-        .library(
-            name: "Set Algebra Primitives",
-            targets: ["Set Algebra Primitives"]
-        ),
-
         // MARK: - Umbrella
         .library(
             name: "Set Primitives",
@@ -51,9 +45,10 @@ let package = Package(
     dependencies: [
         .package(path: "../swift-index-primitives"),
         .package(path: "../swift-hash-primitives"),
-        // Iteration concern — consumed ONLY by the Set Algebra target (the
-        // membership core stays iteration-free). Tier-safe downward edge.
-        .package(path: "../swift-iterator-primitives"),
+        // NOTE: the iteration concern (swift-iterator-primitives) is NOT a
+        // dependency. It moved out with the Set Algebra target to
+        // swift-set-algebra-primitives ([MOD-029] prune); the membership core +
+        // the BuildableSet refinement are iteration-free.
     ],
     targets: [
 
@@ -81,49 +76,27 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Algebra (orthogonal predicates + constructive defaults; the lone iterator edge)
-        .target(
-            name: "Set Algebra Primitives",
-            dependencies: [
-                "Set Protocol Primitives",
-                "Set Buildable Protocol Primitives",
-                .product(name: "Iterable", package: "swift-iterator-primitives"),
-            ]
-        ),
-
-        // MARK: - Umbrella
+        // MARK: - Umbrella (NB: no Set Algebra re-export — lifted to
+        // swift-set-algebra-primitives; re-exporting it here would complete a
+        // package cycle, [MOD-032]/[MOD-033] cursor-pilot drop)
         .target(
             name: "Set Primitives",
             dependencies: [
                 "Set Primitive",
                 "Set Protocol Primitives",
                 "Set Buildable Protocol Primitives",
-                "Set Algebra Primitives",
             ]
         ),
 
-        // MARK: - Test Support
+        // MARK: - Test Support ([MOD-024] empty shell — the conformer fixture +
+        // the relational-default tests moved to swift-set-algebra-primitives)
         .target(
             name: "Set Primitives Test Support",
             dependencies: [
                 "Set Primitives",
                 .product(name: "Index Primitives Test Support", package: "swift-index-primitives"),
-                // TS-of-dep ([MOD-024]): surfaces Iterator.Chunk so Set.Fixture
-                // conforms Iterable (iterator-primitives is a product dep of the
-                // Set Algebra target).
-                .product(name: "Iterator Primitives Test Support", package: "swift-iterator-primitives"),
             ],
             path: "Tests/Support"
-        ),
-
-        // MARK: - Tests
-        .testTarget(
-            name: "Set Protocol Primitives Tests",
-            dependencies: [
-                "Set Protocol Primitives",
-                "Set Primitives Test Support",
-            ],
-            path: "Tests/Set Protocol Primitives Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
