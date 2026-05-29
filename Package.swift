@@ -43,8 +43,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../swift-index-primitives"),
-        .package(path: "../swift-hash-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-index-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-hash-primitives.git", branch: "main"),
         // NOTE: the iteration concern (swift-iterator-primitives) is NOT a
         // dependency. It moved out with the Set Algebra target to
         // swift-set-algebra-primitives ([MOD-029] prune); the membership core +
