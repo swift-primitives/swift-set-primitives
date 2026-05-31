@@ -60,28 +60,6 @@
       "statusRaw": "RECOMMENDATION",
       "tier": null,
       "scope": null
-    },
-    {
-      "file": "set-operations-audit.md",
-      "displayName": "set-operations-audit.md",
-      "topic": "Canonical Set ADT operations audit across all variants",
-      "date": "2026-02-16",
-      "status": "RECOMMENDATION",
-      "statusDetail": null,
-      "statusRaw": "RECOMMENDATION",
-      "tier": null,
-      "scope": null
-    },
-    {
-      "file": "audit.md",
-      "displayName": "audit.md",
-      "topic": "Pre-publication dependency-tree audit: multi-type error file (3 __-prefixed enums)",
-      "date": "2026-04-08",
-      "status": "LEGACY",
-      "statusDetail": null,
-      "statusRaw": "LEGACY",
-      "tier": null,
-      "scope": null
     }
   ]
 }
