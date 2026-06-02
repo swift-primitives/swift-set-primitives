@@ -6,10 +6,10 @@ let package = Package(
     name: "noncopyable-set-test",
     platforms: [.macOS(.v26)],
     dependencies: [
-        .package(path: "../../../swift-hash-primitives"),
-        .package(path: "../../../swift-sequence-primitives"),
-        .package(path: "../../../swift-collection-primitives"),
-        .package(path: "../../../swift-property-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-hash-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-sequence-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-collection-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
     ],
     targets: [
         .executableTarget(

@@ -7,8 +7,8 @@ let package = Package(
     platforms: [.macOS(.v26)],
     dependencies: [
         .package(path: "../.."),
-        .package(path: "../../../swift-hash-primitives"),
-        .package(path: "../../../swift-equation-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-hash-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-equation-primitives.git", branch: "main"),
     ],
     targets: [
         .executableTarget(

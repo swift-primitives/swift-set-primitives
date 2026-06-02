@@ -5,13 +5,13 @@ let package = Package(
     name: "exclusivity-direct-chain-test",
     platforms: [.macOS(.v26)],
     dependencies: [
-        .package(path: "../../../swift-buffer-primitives"),
-        .package(path: "../../../swift-index-primitives"),
-        .package(path: "../../../swift-ordinal-primitives"),
-        .package(path: "../../../swift-cardinal-primitives"),
-        .package(path: "../../../swift-hash-table-primitives"),
-        .package(path: "../../../swift-sequence-primitives"),
-        .package(path: "../../../swift-property-primitives"),
+        .package(url: "https://github.com/swift-primitives/swift-buffer-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-index-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-ordinal-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-cardinal-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-hash-table-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-sequence-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-property-primitives.git", branch: "main"),
     ],
     targets: [
         .executableTarget(
