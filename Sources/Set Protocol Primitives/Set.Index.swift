@@ -12,7 +12,7 @@
 public import Set_Primitive
 public import Index_Primitives
 
-extension Set {
+extension Set where S: ~Copyable {
     /// Type-safe index for set elements.
     ///
     /// Uses `Index<Element>` to provide compile-time safety preventing
@@ -25,5 +25,5 @@ extension Set {
     /// insertion-order semantics of the ordered-set discipline — is the
     /// responsibility of the concrete storage discipline that adopts it
     /// (`Set.Ordered` and its capacity variants in `swift-set-ordered-primitives`).
-    public typealias Index = Index_Primitives.Index<Element>
+    public typealias Index = Index_Primitives.Index<S.Element>
 }

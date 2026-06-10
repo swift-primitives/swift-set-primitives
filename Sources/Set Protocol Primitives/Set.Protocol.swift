@@ -44,7 +44,7 @@ public protocol __SetProtocol: ~Copyable {
 
 // MARK: - Namespace Typealias
 
-extension Set where Element: ~Copyable {
+extension Set where S: ~Copyable {
     /// Protocol unifying membership queries across all `Set` variants.
     ///
     /// `Set.Protocol` refines nothing — it is the minimal membership *core*,
