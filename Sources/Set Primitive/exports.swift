@@ -9,6 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Set Primitive declares the root `enum Set {}`. Zero deps per [MOD-017]'s
-// root-target invariant — the singular `Set Primitive` is universally cheap
-// to import for sibling packages that only extend the `Set` namespace.
+// Set Primitive declares the base type: the column-generic `struct Set<S>`
+// template ([MOD-017]'s zero-dep namespace invariant retired with the enum —
+// the Array Primitive precedent; the column packages are ordinary deps). The
+// pinned membership surface lives in the umbrella target's `Set+Columns.swift`.
