@@ -1,6 +1,6 @@
 # .github/metadata.yaml
 # Triaged by AI-assisted bulk pass (2026-04-29).
-description: "Set types for Swift."
+description: "Set<S> — an insertion-ordered hash set generic over its storage column, plus the Set.Protocol membership contract and its relational-algebra defaults."
 topics:
   - primitives
   - set
