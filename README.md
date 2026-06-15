@@ -1,55 +1,39 @@
 # Set Primitives
 
 ![Development Status](https://img.shields.io/badge/status-active--development-blue.svg)
+[![CI](https://github.com/swift-primitives/swift-set-primitives/actions/workflows/ci.yml/badge.svg)](https://github.com/swift-primitives/swift-set-primitives/actions/workflows/ci.yml)
 
-The `Set` namespace and the `Set.Protocol` membership contract — the shared vocabulary every set discipline conforms to, with the relational algebra (`isSubset`, `isSuperset`, `isDisjoint`, …) supplied as defaults.
+`Set<S>` — an insertion-ordered hash set generic over its storage **column**. Members live densely in insertion order behind a bucket position-index engine, so `contains` and `insert` are O(1) average-case and iteration follows insertion order. As with the rest of the family, copyability flows from the column: a move-only ordered-hashed column is zero-cost, and a `Shared` column gives copy-on-write value semantics.
+
+The package also defines the `Set` namespace and the `Set.Protocol` membership contract — the `contains` + `count` vocabulary any set discipline conforms to. Relational and constructive algebra over conformers (`isSubset`, `union`, `intersection`, …) lives in the sibling set-algebra package; the order-preserving discipline with positional access lives in the set-ordered package.
+
+---
+
+## Key Features
+
+- **Insertion-ordered hash set** — O(1) average-case `contains` and `insert`; `forEach` follows insertion order.
+- **Column-generic storage** — `Set<S>` composes the ordered-hashed column; the backing is a type parameter, not a separate type per policy.
+- **Copyability from the column** — move-only by default (zero-cost), opt-in copy-on-write via a `Shared` column.
+- **Membership vocabulary** — `Set.Protocol` (`contains` + `count`) that any type can satisfy, so set algebra composes over your own conformers.
 
 ---
 
 ## Quick Start
 
-`Set.Protocol` declares three requirements — `contains`, `forEach`, `count` — and from them derives the relational operations every set shares. Because the defaults are written against the protocol, they work across *any* two conformers with the same element, even when those conformers are different types — something `Swift.Set` cannot express:
-
 ```swift
 import Set_Primitives
+import Column_Primitives
+import Hash_Indexed_Primitive
+import Hash_Primitives_Standard_Library_Integration
 
-// A function that works over any set discipline, with no allocation,
-// against a borrowed receiver and a borrowed argument of a *different* set type:
-func isContainedBy<Subset: Set.`Protocol`, Superset: Set.`Protocol` & ~Copyable>(
-    _ subset: borrowing Subset,
-    _ superset: borrowing Superset
-) -> Bool where Subset.Element == Superset.Element, Subset.Element: Copyable {
-    subset.isSubset(of: superset)
-}
+// Move-only by default, over the ordered-hashed column:
+var seen = Set<Hash.Indexed<Column.Heap<Int>>>()
+seen.insert(200)
+seen.insert(404)
+seen.insert(200)                       // already present — ignored
+let hasError = seen.contains(404)      // true
+seen.forEach { print($0) }             // 200, 404 — insertion order
 ```
-
-A conformer supplies only the three requirements:
-
-```swift
-import Set_Primitives
-
-struct WordSet: Set.`Protocol` {
-    private let words: [String]
-
-    func contains(_ element: borrowing String) -> Bool {
-        let needle = copy element
-        return words.contains(needle)
-    }
-
-    func forEach<E: Error>(_ body: (borrowing String) throws(E) -> Void) throws(E) {
-        for word in words { try body(word) }
-    }
-
-    var count: Index<String>.Count {
-        Index<String>.Count(Cardinal(UInt(words.count)))
-    }
-}
-
-// isSubset / isSuperset / isDisjoint / isStrictSubset / isStrictSuperset /
-// isEmpty / isEqual are now all available — none were written by hand.
-```
-
-Element types are constrained to the hashing contract `Hash.Protocol`, and set disciplines support `~Copyable` elements — neither of which `Swift.Set` permits.
 
 ---
 
@@ -65,49 +49,51 @@ dependencies: [
 .target(
     name: "App",
     dependencies: [
-        // The umbrella — namespace + membership contract + relational defaults.
-        .product(name: "Set Primitives", package: "swift-set-primitives"),
-        // …or, to author a discipline, depend on just the protocol target:
-        // .product(name: "Set Protocol Primitives", package: "swift-set-primitives"),
+        .product(name: "Set Primitives", package: "swift-set-primitives")
     ]
 )
 ```
 
-The package is pre-1.0 — depend on `branch: "main"` until `0.1.0` is tagged. Requires Swift 6.3
-and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 (or the matching Linux toolchain).
+The package is pre-1.0 — depend on `branch: "main"` until `0.1.0` is tagged. Requires Swift 6.3 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26 (or the corresponding Linux / Windows toolchain).
 
 ---
 
-## Products
+## Architecture
 
-| Product | When to import |
-|---------|----------------|
-| `Set Primitives` (umbrella) | Anything using the `Set` namespace, the membership contract, and the relational defaults together |
-| `Set Primitive` | Sibling packages that only extend the `Set` namespace (e.g., to add a discipline) and want zero transitive weight |
-| `Set Protocol Primitives` | Authoring a set discipline — the `Set.Protocol` contract, `Set.Index`, and the relational defaults |
-
-This package owns **no storage**. It is the protocol and namespace that concrete disciplines build on; the disciplines themselves live in sibling packages (see Related Packages).
+| Product | Contents | When to import |
+|---------|----------|----------------|
+| `Set Primitives` | Umbrella — `Set<S>`, the column constructors, the `Set.Protocol` contract, and the conformances | Most consumers |
+| `Set Primitive` | The `Set<S>` value type and its column-pinned surface, without the conformances | Move-only / minimal-surface use |
+| `Set Protocol Primitives` | The `Set.Protocol` membership contract (`contains` + `count`) | Authoring a set discipline |
 
 ---
 
-## Scope
+## Platform Support
 
-The package's identity, and what it deliberately leaves to other packages, is documented in the
-DocC catalog under **Set Primitives Scope**. In short: this package is the *set vocabulary* —
-the `Set` namespace and the `Set.Protocol` membership-uniqueness contract plus its relational
-defaults. Storage disciplines (ordered, and any future hash/unordered discipline) live in
-sibling packages that extend this namespace.
+| Platform         | CI  | Status       |
+|------------------|-----|--------------|
+| macOS 26         | Yes | Full support |
+| Linux            | Yes | Full support |
+| Windows          | Yes | Full support |
+| iOS/tvOS/watchOS | —   | Supported    |
+| Swift Embedded   | —   | Pending (nightly-toolchain follow-up) |
 
 ---
 
 ## Related Packages
 
-- swift-set-ordered-primitives — the insertion-order-preserving `Set.Ordered` discipline and its capacity variants, built on this namespace. *(unreleased)*
-- swift-hash-primitives — the `Hash.Protocol` element-hashing contract that set elements conform to.
-- swift-index-primitives — the `Index<Element>` family backing `Set.Index` and the `count` type.
+- [`swift-set-algebra-primitives`](https://github.com/swift-primitives/swift-set-algebra-primitives) — relational and constructive algebra (`isSubset`, `union`, `intersection`, …) over any `Set.Protocol` conformer.
+- [`swift-set-ordered-primitives`](https://github.com/swift-primitives/swift-set-ordered-primitives) — the order-preserving `Set.Ordered` discipline with positional access.
+- [`swift-hash-primitives`](https://github.com/swift-primitives/swift-hash-primitives) — the `Hash.Key` element-hashing contract set elements conform to.
+- [`swift-column-primitives`](https://github.com/swift-primitives/swift-column-primitives) — the column vocabulary (`Hash.Indexed`, `Column.Heap`, …) the set composes.
 
 ---
 
+## Community
+
+<!-- BEGIN: discussion -->
+<!-- END: discussion -->
+
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE.md) for details.
+Apache 2.0. See [LICENSE.md](LICENSE.md).
