@@ -5,42 +5,30 @@
     @TitleHeading("Swift Primitives")
 }
 
-The `Set` namespace and the `Set.Protocol` membership contract that every set
-discipline in the ecosystem conforms to.
+The insertion-ordered hash set ``Set`` and the ``Set/`Protocol``` membership
+contract that every set discipline conforms to.
 
 ## Overview
 
-`Set_Primitives` defines *what a set is* without committing to *how a set is
-stored*. It declares the root ``Set`` namespace and the ``Set/`Protocol``
-membership contract — three requirements (`contains`, `forEach`, `count`) over
-an `Element` constrained to `Hash.Protocol`. On top of those requirements the
-package supplies the relational algebra that every set shares — `isDisjoint`,
-`isSubset`, `isSuperset`, `isStrictSubset`, `isStrictSuperset`, `isEmpty`, and
-`isEqual` — as default implementations, so a conformer that provides the three
-requirements gets the relational surface for free.
+`Set_Primitives` ships ``Set`` — an insertion-ordered hash set generic over its
+storage **column** — together with the `Set` namespace and the ``Set/`Protocol```
+membership contract. `Set<S>` stores members densely in insertion order behind a
+bucket position-index engine, so `contains` and `insert` are O(1) average-case and
+`forEach` follows insertion order. Copyability flows from the column: a move-only
+ordered-hashed column is zero-cost, and a `Shared` column gives copy-on-write value
+semantics.
 
-The package owns **no storage**. Concrete storage disciplines — the
-insertion-order-preserving `Set.Ordered` and its capacity variants — live in the
-sibling package `swift-set-ordered-primitives`, which extends this namespace.
-Future hash/unordered disciplines extend it the same way. Because the
-relational defaults are written against the protocol requirements alone, they
-operate uniformly across every discipline, including heterogeneous pairs (a
-default such as `isSubset(of:)` accepts any other `Set.Protocol` conformer with
-the same `Element`).
+The ``Set/`Protocol``` contract is **membership-only** — `contains` and `count`
+over an `Element` constrained to `Hash.Protocol` (element iteration is hosted on
+`Iterable`, not here). The relational and constructive algebra over conformers —
+`isSubset`, `isSuperset`, `isDisjoint`, `union`, `intersection`, … — lives in
+`swift-set-algebra-primitives`, which composes over any `Set.Protocol & Iterable`
+conformer. The order-preserving discipline with positional access, `Set.Ordered`,
+lives in `swift-set-ordered-primitives`.
 
-```swift
-import Set_Primitives
-
-func haveOverlap<A: Set.`Protocol`, B: Set.`Protocol` & ~Copyable>(
-    _ a: borrowing A, _ b: borrowing B
-) -> Bool where A.Element == B.Element, A.Element: Copyable {
-    !a.isDisjoint(with: b)
-}
-```
-
-Set disciplines in this ecosystem support `~Copyable` elements — the namespace
-constrains `Element: ~Copyable`, and the membership contract carries the element
-constraint forward as `Element: Hash.Protocol & ~Copyable`.
+Set disciplines support `~Copyable` elements — the namespace constrains
+`Element: ~Copyable`, and the membership contract carries the constraint forward as
+`Element: Hash.Protocol & ~Copyable`.
 
 ## Topics
 
@@ -48,7 +36,7 @@ constraint forward as `Element: Hash.Protocol & ~Copyable`.
 
 - <doc:Set-Primitives-Scope>
 
-### Namespace
+### The Set ADT
 
 - ``Set``
 
@@ -56,17 +44,3 @@ constraint forward as `Element: Hash.Protocol & ~Copyable`.
 
 - ``Set/`Protocol```
 - ``Set/Index``
-
-### Relational Defaults
-
-The relational operations are default implementations on ``Set/`Protocol``.
-Each takes another `Set.Protocol` conformer with a matching `Element` and
-answers a membership question against the receiver:
-
-- `isEmpty` — whether the set has no elements
-- `isDisjoint(with:)` — whether two sets share no elements
-- `isSubset(of:)` — whether every element is also in the other set
-- `isSuperset(of:)` — whether the other set's elements are all present
-- `isStrictSubset(of:)` — a subset that is strictly smaller
-- `isStrictSuperset(of:)` — a superset that is strictly larger
-- `isEqual(to:)` — whether both sets contain exactly the same elements
