@@ -84,16 +84,16 @@ extension Set where S: ~Copyable {
     /// Creates an empty MOVE-ONLY set (the default ownership column).
     @inlinable
     public init<E: Hash.Key & ~Copyable>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
-    where S == Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<E>>.Linear> {
+    where S == Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear> {
         self.init(store: S(minimumCapacity: minimumCapacity))
     }
 
     /// Creates an empty CoW (value-semantic) set on the `Shared` column.
     @inlinable
     public init<E: Hash.Key & SendableMetatype>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
-    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<E>>.Linear>> {
+    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
         self.init(store: Shared(
-            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
+            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
         ))
     }
 
@@ -101,9 +101,9 @@ extension Set where S: ~Copyable {
     /// column (the boxed flavor of the move-only regime).
     @inlinable
     public init<E: Hash.Key & SendableMetatype & ~Copyable>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
-    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<E>>.Linear>> {
+    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
         self.init(store: Shared(
-            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>.System>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
+            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
         ))
     }
 }
