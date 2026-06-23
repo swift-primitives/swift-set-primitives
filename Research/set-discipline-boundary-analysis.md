@@ -227,7 +227,7 @@ No single lower-layer component can own this coordination. The buffer does not k
 | CoW mechanism | `ensureUnique()` |
 | Element init/move/deinit lifecycle | Via `Storage` |
 | Raw pointer access | `pointer(at:)` |
-| Contiguous memory guarantee | `Memory.Contiguous.Protocol` |
+| Contiguous memory guarantee | `Span.Protocol` |
 | Unchecked subscript | Direct pointer arithmetic |
 | `span` / `mutableSpan` | Safe memory view |
 
