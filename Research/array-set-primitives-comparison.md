@@ -1,6 +1,6 @@
 # Array vs Set Primitives Comparative Analysis
 
-> **Dissolution note (2026-06-23)**: `Memory.Contiguous` was dissolved — the typed contiguous tier is now `Storage.Contiguous`, the read-capability protocol is `Span.Protocol` (the renamed/relocated `Memory.Contiguous.Protocol`), and owned raw bytes are `Memory.Heap`. References below are retained as the pre-dissolution design record; see `swift-institute/Research/memory-contiguous-dissolution.md`.
+> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
 
 <!--
 ---
