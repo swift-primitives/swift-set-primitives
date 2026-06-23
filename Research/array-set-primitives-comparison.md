@@ -1,7 +1,5 @@
 # Array vs Set Primitives Comparative Analysis
 
-> **Note:** `Memory.Contiguous` was dissolved 2026-06-23 → `Storage.Contiguous` (typed) / `Span.Protocol` (read capability) / `Memory.Heap` (raw bytes). See `swift-institute/Research/memory-contiguous-dissolution.md`.
-
 <!--
 ---
 version: 1.0.0
@@ -207,7 +205,7 @@ Set.Ordered.Fixed.Indexed.swift   → Indexed wrapper
 | Algebra ops | — | `Type.Algebra.swift` |
 | Relations | — | `Type.Relation.swift` |
 | Sequence drain | — | `Type+Sequence.Drain.swift` |
-| Memory access | — | `Type+Memory.Contiguous.swift` |
+| Memory access | — | `Type+Span.Protocol.swift` |
 
 **Observation**: Set has richer extension categorization due to set algebra operations.
 
