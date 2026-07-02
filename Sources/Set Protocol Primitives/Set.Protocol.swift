@@ -44,7 +44,7 @@ public protocol __SetProtocol: ~Copyable {
 
 // MARK: - Namespace Typealias
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Protocol unifying membership queries across all `Set` variants.
     ///
     /// `Set.Protocol` refines nothing — it is the minimal membership *core*,
@@ -62,7 +62,7 @@ extension Set where S: ~Copyable {
     /// is declared at module scope as `__SetProtocol` and aliased via:
     ///
     /// ```swift
-    /// extension Set where Element: ~Copyable {
+    /// extension __Set where S: ~Copyable {
     ///     public typealias `Protocol` = __SetProtocol
     /// }
     /// ```

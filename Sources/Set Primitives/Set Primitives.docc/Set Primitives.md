@@ -12,7 +12,8 @@ contract that every set discipline conforms to.
 
 `Set_Primitives` ships ``Set`` — an insertion-ordered hash set generic over its
 storage **column** — together with the `Set` namespace and the ``Set/`Protocol```
-membership contract. `Set<S>` stores members densely in insertion order behind a
+membership contract. `Set<E>` (the front door over the carrier `__Set<S>`) stores
+members densely in insertion order behind a
 bucket position-index engine, so `contains` and `insert` are O(1) average-case and
 `forEach` follows insertion order. Copyability flows from the column: a move-only
 ordered-hashed column is zero-cost, and a `Shared` column gives copy-on-write value

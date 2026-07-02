@@ -34,8 +34,8 @@ private typealias HeapStorage<E: ~Copyable> =
 private typealias OrderedColumn<E: Hash.Key & ~Copyable> =
     Hash.Indexed<Buffer<HeapStorage<E>>.Linear>
 
-private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<OrderedColumn<E>>
-private typealias CoWSet<E: Hash.Key & SendableMetatype> = Set<Shared<E, OrderedColumn<E>>>
+private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<E>
+private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<Shared<E, OrderedColumn<E>>>
 
 // MARK: - Fixtures: the hoisted move-only element gains the hashed key bound
 // (consumer-side conformance; hash binds to `group` — controlled collisions);

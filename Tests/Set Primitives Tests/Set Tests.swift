@@ -25,8 +25,8 @@ private typealias HeapStorage<E: ~Copyable> =
 private typealias OrderedColumn<E: Hash.Key & ~Copyable> =
     Hash.Indexed<Buffer<HeapStorage<E>>.Linear>
 
-private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<OrderedColumn<E>>
-private typealias CoWSet<E: Hash.Key & SendableMetatype> = Set<Shared<E, OrderedColumn<E>>>
+private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<E>
+private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<Shared<E, OrderedColumn<E>>>
 
 // MARK: - [DS-024] + coherence (the Shared composite is this family's NEW column)
 
@@ -202,7 +202,7 @@ struct SetTeardownTests {
     func `the boxed move-only lane tears down via the box drain`() {
         SetProbe2.reset()
         do {
-            var s = Set<Shared<SetItem2, OrderedColumn<SetItem2>>>(minimumCapacity: 4)
+            var s = __Set<Shared<SetItem2, OrderedColumn<SetItem2>>>(minimumCapacity: 4)
             s.insert(SetItem2(7))
             s.insert(SetItem2(8))
             let n = s.count

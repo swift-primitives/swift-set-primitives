@@ -9,7 +9,6 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitive
 public import Index_Primitives
 
 // MARK: - Core Derivation
@@ -23,7 +22,7 @@ public import Index_Primitives
 // in `Set Algebra Primitives`, composed `where Self: Iterable` — never on the
 // core's requirements.
 
-extension Set.`Protocol` where Self: ~Copyable {
+extension __SetProtocol where Self: ~Copyable {
     /// Whether the set contains no elements.
     @inlinable
     public var isEmpty: Bool { count == .zero }

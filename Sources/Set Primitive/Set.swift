@@ -11,8 +11,6 @@
 
 public import Buffer_Primitive
 public import Buffer_Linear_Primitive
-public import Buffer_Protocol_Primitives
-public import Store_Protocol_Primitives
 public import Storage_Primitive
 public import Storage_Contiguous_Primitives
 public import Memory_Heap_Primitives
@@ -23,18 +21,18 @@ import Hash_Primitives
 public import Shared_Primitive
 public import Index_Primitives
 
-// MARK: - Set (the ADT tier — generic over the ORDERED HASHED column)
+// MARK: - __Set (the ADT tier — generic over the ORDERED HASHED column)
 
 /// An insertion-ordered hash set — the semantic ADT over an explicit ORDERED HASHED
-/// storage COLUMN (the base `Set` the namespace always promised, built at the
+/// storage COLUMN (the base set the namespace always promised, built at the
 /// ADT-families tranche, 2026-06-10).
 ///
-/// The ratified two-column design: `Set` is generic over `S`, and **copyability flows
+/// The ratified two-column design: `__Set` is generic over `S`, and **copyability flows
 /// from the column** (S5):
 ///
 /// ```swift
-/// Set<            Hash.Indexed<Buffer<Storage<…System>.Contiguous<FD >>.Linear>>   // zero-cost MOVE-ONLY (default)
-/// Set<Shared<Int, Hash.Indexed<Buffer<Storage<…System>.Contiguous<Int>>.Linear>>>  // explicit CoW value semantics
+/// __Set<            Hash.Indexed<Buffer<Storage<…System>.Contiguous<FD >>.Linear>>   // zero-cost MOVE-ONLY (default)
+/// __Set<Shared<Int, Hash.Indexed<Buffer<Storage<…System>.Contiguous<Int>>.Linear>>>  // explicit CoW value semantics
 /// ```
 ///
 /// The column is `Hash.Indexed<Dense>`: members live DENSELY in insertion order; the
@@ -43,13 +41,23 @@ public import Index_Primitives
 /// Iteration (`forEach`) is insertion-ordered. Members never mutate in place
 /// (mutability ruling (a)): the surface is insert / contains / remove.
 ///
-/// This shadows `Swift.Set`. Use `Swift.Set` for the stdlib type when both are in scope.
+/// ## Carrier (hoisted per [API-IMPL-009]/[PKG-NAME-006])
+///
+/// `__Set` is the bound-free carrier ([DS-025]): its column parameter `S` is bound
+/// `~Copyable` **only**; every capability (observability, the membership seam ops,
+/// construction) attaches by conditional `@inlinable` extension keyed on the seams
+/// the column conforms. The PUBLIC spelling of the family is the front-door alias
+/// `Set<E>` (canonical), declared in `Set.FrontDoor.swift` ([DS-028]); the hoisted
+/// name never appears in consumer signatures.
+///
+/// The `Set<E>` front door shadows `Swift.Set`. Use `Swift.Set` for the stdlib type
+/// when both are in scope.
 ///
 /// The ordered-set discipline (`Set.Ordered` and its variants, sibling package) and the
-/// set algebra reshape onto this column vocabulary at their own W5 rounds.
+/// set algebra reshape onto this column vocabulary at their own rounds.
+@_documentation(visibility: public)
 @frozen
-public struct Set<S: Store.`Protocol` & Buffer.`Protocol` & ~Copyable>: ~Copyable
-where S.Count == Index_Primitives.Index<S.Element>.Count, S.Element: Hash.Key {
+public struct __Set<S: ~Copyable>: ~Copyable {
 
     /// The ordered hashed column — move-only (the default ownership column) or a
     /// `Shared` CoW column. The ADT is a thin membership discipline over it; it
@@ -72,15 +80,15 @@ where S.Count == Index_Primitives.Index<S.Element>.Count, S.Element: Hash.Key {
 
 // MARK: - Conditional Conformances (co-located per [COPY-FIX-004])
 
-/// The S5 chain: `Set<Shared<E, B>>` is `Copyable` exactly when the ELEMENT is.
-extension Set: Copyable where S: Copyable {}
+/// The S5 chain: `__Set<Shared<E, B>>` is `Copyable` exactly when the ELEMENT is.
+extension __Set: Copyable where S: Copyable {}
 
-extension Set: Sendable where S: Sendable & ~Copyable {}
+extension __Set: Sendable where S: Sendable & ~Copyable {}
 
 // MARK: - Column-pinned construction ([MEM-COPY-017]: the split lives in `Shared`'s
-// pinned constructor pair; the `Set` forms pick the column)
+// pinned constructor pair; the `__Set` forms pick the column)
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Creates an empty MOVE-ONLY set (the default ownership column).
     @inlinable
     public init<E: Hash.Key & ~Copyable>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)

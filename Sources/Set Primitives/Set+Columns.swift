@@ -29,7 +29,7 @@ public import Index_Primitives
 // MARK: - Insert (duplicate hand-back — move-only honesty)
 // ============================================================================
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Inserts a new member; returns `nil` on success, or hands the element BACK if an
     /// equal member is already present (direct column).
     ///
@@ -58,7 +58,7 @@ extension Set where S: ~Copyable {
 // MARK: - Membership
 // ============================================================================
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Whether an equal member is present (direct column).
     ///
     /// - Complexity: O(1) average
@@ -82,7 +82,7 @@ extension Set where S: ~Copyable {
 // MARK: - Remove (insertion order preserved)
 // ============================================================================
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Removes the equal member; returns it, or `nil` if absent (direct column).
     ///
     /// - Complexity: O(n) from the removal point (order preservation)
@@ -121,7 +121,7 @@ extension Set where S: ~Copyable {
 // MARK: - Iteration (insertion order) + direct clone
 // ============================================================================
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable {
     /// Calls the closure for each member, in insertion order (direct column).
     ///
     /// - Complexity: O(n)

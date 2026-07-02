@@ -9,15 +9,17 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// The COLUMN-GENERIC set surface: the count vocabulary rides the template bound; the
-// membership ops pin per column (`Set+Columns.swift`) — they reach the engine, which
-// only the concrete composite exposes.
+// The COLUMN-GENERIC set surface: the count vocabulary rides the seam bound (restated
+// on the extensions now that `__Set` is the bound-free carrier); the membership ops
+// pin per column (`Set+Columns.swift`) — they reach the engine, which only the
+// concrete composite exposes.
 public import Set_Primitive
 public import Buffer_Protocol_Primitives
 public import Store_Protocol_Primitives
 public import Index_Primitives
 
-extension Set where S: ~Copyable {
+extension __Set where S: ~Copyable, S: Store.`Protocol` & Buffer.`Protocol`,
+    S.Count == Index_Primitives.Index<S.Element>.Count {
     /// The number of members.
     @inlinable
     public var count: Index_Primitives.Index<S.Element>.Count { store.count }
@@ -33,7 +35,7 @@ extension Set where S: ~Copyable {
 
 // MARK: - Cloning (generic on the CoW column)
 
-extension Set where S: Copyable {
+extension __Set where S: Copyable, S: Store.`Protocol` {
     /// Returns an independent copy of this set with its own storage (the mutation gate
     /// on the fresh copy ALWAYS installs a deep copy).
     ///

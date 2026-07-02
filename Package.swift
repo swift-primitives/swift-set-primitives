@@ -86,6 +86,7 @@ let package = Package(
             dependencies: [
                 "Set Primitive",
                 .product(name: "Hash Primitives", package: "swift-hash-primitives"),
+                .product(name: "Store Protocol Primitives", package: "swift-storage-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
             ]
         ),

@@ -10,9 +10,10 @@
 // ===----------------------------------------------------------------------===//
 
 public import Set_Primitive
+public import Store_Protocol_Primitives
 public import Index_Primitives
 
-extension Set where S: ~Copyable {
+extension __Set where S: Store.`Protocol` & ~Copyable {
     /// Type-safe index for set elements.
     ///
     /// Uses `Index<Element>` to provide compile-time safety preventing
