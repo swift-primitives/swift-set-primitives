@@ -43,7 +43,7 @@ extension __Set where S: Copyable, S: Store.`Protocol` {
     @inlinable
     public borrowing func clone() -> Self {
         var result = copy self
-        result.store.prepareForMutation()
+        result.store.unshare()
         return result
     }
 }
