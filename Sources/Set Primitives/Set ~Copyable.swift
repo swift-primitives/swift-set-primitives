@@ -18,8 +18,7 @@ public import Buffer_Protocol_Primitives
 public import Store_Protocol_Primitives
 public import Index_Primitives
 
-extension __Set where S: ~Copyable, S: Store.`Protocol` & Buffer.`Protocol`,
-    S.Count == Index_Primitives.Index<S.Element>.Count {
+extension __Set where S: ~Copyable, S: Store.`Protocol` & Buffer.`Protocol` {
     /// The number of members.
     @inlinable
     public var count: Index_Primitives.Index<S.Element>.Count { store.count }
