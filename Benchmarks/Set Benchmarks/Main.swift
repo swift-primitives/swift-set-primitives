@@ -19,7 +19,7 @@ enum Main {
         print("=== swift-set-primitives — family-tier benchmark (W2) ===")
         print("config: sizes=\(Bench.sizes) curveSizes=\(Bench.curveSizes) samples=\(Bench.samples) warmup=\(Bench.warmup)")
         print("targets/sample: element=\(Bench.elementOpsTarget) structure=\(Bench.structureOpsTarget) copiedSlots=\(Bench.copiedSlotsTarget)")
-        print("subjects: tower.direct=Set<Hash.Indexed<Linear>> (flat) · tower.cow=Set<Shared<E,…>> (flat) · stdlib=Swift.Set (UNORDERED baseline)")
+        print("subjects: tower.direct=Set<Hash.Indexed<Linear>> (flat) · tower.cow=Set<Ownership.Shared<E,…>> (flat) · stdlib=Swift.Set (UNORDERED baseline)")
         print("churn: one op = one remove+insert pair (flat — no rank); wipe rows: build+removeAll(keepingCapacity:) per rep, build.zero as the control")
         print("")
         Bench.globalWarmup()

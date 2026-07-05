@@ -20,7 +20,7 @@ import Buffer_Linear_Primitive
 import Storage_Contiguous_Primitives
 import Memory_Heap_Primitives
 import Memory_Allocator_Primitive
-import Shared_Primitive
+import Ownership_Shared_Primitive
 import Index_Primitives
 import Tagged_Primitives_Standard_Library_Integration
 import Ordinal_Primitives
@@ -37,7 +37,7 @@ typealias OrderedColumn<E: Hash.Key & ~Copyable> =
 
 typealias MoveSet<E: Hash.Key & ~Copyable> = Set<OrderedColumn<E>>
 
-typealias CoWSet<E: Hash.Key & SendableMetatype> = Set<Shared<E, OrderedColumn<E>>>
+typealias CoWSet<E: Hash.Key & SendableMetatype> = Set<Ownership.Shared<E, OrderedColumn<E>>>
 
 extension Bench {
     /// The order-preserving remove curve uses denser scales: removing the

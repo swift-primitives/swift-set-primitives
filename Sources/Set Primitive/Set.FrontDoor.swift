@@ -36,7 +36,7 @@ public import Hash_Indexed_Primitive
 /// scope.
 ///
 /// The `Shared` (CoW) variant is consumer-pulled and rides the carrier directly
-/// (`__Set<Shared<E, …>>`) until it gains a live front-door consumer; the
+/// (`__Set<Ownership.Shared<E, …>>`) until it gains a live front-door consumer; the
 /// ordered-set discipline is `Set<E>.Ordered` (sibling package, a [DS-028] nest
 /// alias on `__Set`).
 public typealias Set<E: Hash.Key & ~Copyable> =

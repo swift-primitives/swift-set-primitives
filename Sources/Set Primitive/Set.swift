@@ -18,7 +18,7 @@ public import Memory_Allocator_Primitive
 public import Hash_Indexed_Primitive
 import Hash_Table_Primitive
 import Hash_Primitives
-public import Shared_Primitive
+public import Ownership_Shared_Primitive
 public import Index_Primitives
 
 // MARK: - __Set (the ADT tier — generic over the ORDERED HASHED column)
@@ -32,7 +32,7 @@ public import Index_Primitives
 ///
 /// ```swift
 /// __Set<            Hash.Indexed<Buffer<Storage<…System>.Contiguous<FD >>.Linear>>   // zero-cost MOVE-ONLY (default)
-/// __Set<Shared<Int, Hash.Indexed<Buffer<Storage<…System>.Contiguous<Int>>.Linear>>>  // explicit CoW value semantics
+/// __Set<Ownership.Shared<Int, Hash.Indexed<Buffer<Storage<…System>.Contiguous<Int>>.Linear>>>  // explicit CoW value semantics
 /// ```
 ///
 /// The column is `Hash.Indexed<Dense>`: members live DENSELY in insertion order; the
@@ -80,7 +80,7 @@ public struct __Set<S: ~Copyable>: ~Copyable {
 
 // MARK: - Conditional Conformances (co-located per [COPY-FIX-004])
 
-/// The S5 chain: `__Set<Shared<E, B>>` is `Copyable` exactly when the ELEMENT is.
+/// The S5 chain: `__Set<Ownership.Shared<E, B>>` is `Copyable` exactly when the ELEMENT is.
 extension __Set: Copyable where S: Copyable {}
 
 extension __Set: Sendable where S: Sendable & ~Copyable {}
@@ -99,8 +99,8 @@ extension __Set where S: ~Copyable {
     /// Creates an empty CoW (value-semantic) set on the `Shared` column.
     @inlinable
     public init<E: Hash.Key & SendableMetatype>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
-    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
-        self.init(store: Shared(
+    where S == Ownership.Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
+        self.init(store: Ownership.Shared(
             Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
         ))
     }
@@ -109,8 +109,8 @@ extension __Set where S: ~Copyable {
     /// column (the boxed flavor of the move-only regime).
     @inlinable
     public init<E: Hash.Key & SendableMetatype & ~Copyable>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
-    where S == Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
-        self.init(store: Shared(
+    where S == Ownership.Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
+        self.init(store: Ownership.Shared(
             Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
         ))
     }
