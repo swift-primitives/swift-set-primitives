@@ -13,6 +13,6 @@
 // contract), `Set.Index`, and the relational defaults. Re-exports the root
 // namespace + its external dependencies so the umbrella surfaces them.
 
-@_exported public import Set_Primitive
 @_exported public import Hash_Primitives
 @_exported public import Index_Primitives
+@_exported public import Set_Primitive

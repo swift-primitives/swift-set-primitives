@@ -1,20 +1,20 @@
-import Set_Primitives
-import Hash_Table_Primitives_Test_Support
+import Buffer_Linear_Primitive
+import Buffer_Primitive
 import Buffer_Primitives_Test_Support
-import Hash_Table_Primitive
 import Hash_Indexed_Primitive
 import Hash_Primitives
 import Hash_Primitives_Standard_Library_Integration
-import Buffer_Primitive
-import Buffer_Linear_Primitive
-import Storage_Primitive
-import Storage_Contiguous_Primitives
-import Memory_Heap_Primitives
-import Memory_Allocator_Primitive
-import Ownership_Shared_Primitive
+import Hash_Table_Primitive
+import Hash_Table_Primitives_Test_Support
 import Index_Primitives
-import Tagged_Primitives_Standard_Library_Integration
+import Memory_Allocator_Primitive
+import Memory_Heap_Primitives
 import Ordinal_Primitives_Standard_Library_Integration
+import Ownership_Shared_Primitive
+import Set_Primitives
+import Storage_Contiguous_Primitives
+import Storage_Primitive
+import Tagged_Primitives_Standard_Library_Integration
 import Testing
 
 // The column-keyed set suite: the ordered hashed column direct + Shared-wrapped.
@@ -79,7 +79,8 @@ struct SetCoreTests {
         #expect(dup == 10)
         s.insert(20)
         s.insert(30)
-        let has = s.contains(20), hasNot = s.contains(40)
+        let has = s.contains(20)
+        let hasNot = s.contains(40)
         #expect(has)
         #expect(!hasNot)
         let removed = s.remove(20)
@@ -111,7 +112,8 @@ struct SetCoreTests {
         s.insert(2)
         var c = s.clone()
         _ = c.remove(1)
-        let mineHas = s.contains(1), theirsHas = c.contains(1)
+        let mineHas = s.contains(1)
+        let theirsHas = c.contains(1)
         #expect(mineHas)
         #expect(!theirsHas)
         s.removeAll()
@@ -132,12 +134,14 @@ struct SetCoWTests {
     func `copies share until mutation; inserts detach through the box`() {
         var a = CoWSet<Int>(minimumCapacity: 4)
         a.insert(1)
-        let b = a                                // S5: Set is Copyable because S is
-        a.insert(2)                              // withUnique(consuming:) detaches first
-        let mine = a.count, theirs = b.count
+        let b = a  // S5: Set is Copyable because S is
+        a.insert(2)  // withUnique(consuming:) detaches first
+        let mine = a.count
+        let theirs = b.count
         #expect(mine == Index<Int>.Count(2))
         #expect(theirs == Index<Int>.Count(1))
-        let aHas2 = a.contains(2), bHas2 = b.contains(2)
+        let aHas2 = a.contains(2)
+        let bHas2 = b.contains(2)
         #expect(aHas2)
         #expect(!bHas2)
     }
@@ -155,7 +159,8 @@ struct SetCoWTests {
 
         var c = a.clone()
         c.insert(9)
-        let aHas9 = a.contains(9), cHas9 = c.contains(9)
+        let aHas9 = a.contains(9)
+        let cHas9 = c.contains(9)
         #expect(!aHas9)
         #expect(cHas9)
     }
@@ -166,7 +171,8 @@ struct SetCoWTests {
         a.insert(1)
         let b = a
         a.removeAll()
-        let aEmpty = a.isEmpty, bHas = b.contains(1)
+        let aEmpty = a.isEmpty
+        let bHas = b.contains(1)
         #expect(aEmpty)
         #expect(bHas)
     }
@@ -195,7 +201,7 @@ struct SetTeardownTests {
         }
         let all = SetProbe.destroyedSorted
         let twos = all.filter { $0 == 2 }.count
-        #expect(twos == 2)                       // the live member + the contains() probe argument
+        #expect(twos == 2)  // the live member + the contains() probe argument
     }
 
     @Test

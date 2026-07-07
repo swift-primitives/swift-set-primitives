@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Set_Primitive
 public import Hash_Primitives
 public import Index_Primitives
+public import Set_Primitive
 
 // MARK: - Set.Protocol (Hoisted as __SetProtocol)
 

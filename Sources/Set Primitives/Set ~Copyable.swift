@@ -13,10 +13,10 @@
 // on the extensions now that `__Set` is the bound-free carrier); the membership ops
 // pin per column (`Set+Columns.swift`) — they reach the engine, which only the
 // concrete composite exposes.
-public import Set_Primitive
 public import Buffer_Protocol_Primitives
-public import Store_Protocol_Primitives
 public import Index_Primitives
+public import Set_Primitive
+public import Store_Protocol_Primitives
 
 extension __Set where S: ~Copyable, S: Store.`Protocol` & Buffer.`Protocol` {
     /// The number of members.

@@ -9,17 +9,17 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Buffer_Primitive
 public import Buffer_Linear_Primitive
-public import Storage_Primitive
-public import Storage_Contiguous_Primitives
-public import Memory_Heap_Primitives
-public import Memory_Allocator_Primitive
+public import Buffer_Primitive
 public import Hash_Indexed_Primitive
-import Hash_Table_Primitive
 import Hash_Primitives
-public import Ownership_Shared_Primitive
+import Hash_Table_Primitive
 public import Index_Primitives
+public import Memory_Allocator_Primitive
+public import Memory_Heap_Primitives
+public import Ownership_Shared_Primitive
+public import Storage_Contiguous_Primitives
+public import Storage_Primitive
 
 // MARK: - __Set (the ADT tier — generic over the ORDERED HASHED column)
 
@@ -60,8 +60,9 @@ public import Index_Primitives
 public struct __Set<S: ~Copyable>: ~Copyable {
 
     /// The ordered hashed column — move-only (the default ownership column) or a
-    /// `Shared` CoW column. The ADT is a thin membership discipline over it; it
-    /// carries NO deinit.
+    /// `Shared` CoW column.
+    ///
+    /// The ADT is a thin membership discipline over it; it carries NO deinit.
     @usableFromInline
     package var store: S
 
@@ -100,9 +101,11 @@ extension __Set where S: ~Copyable {
     @inlinable
     public init<E: Hash.Key & SendableMetatype>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
     where S == Ownership.Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
-        self.init(store: Ownership.Shared(
-            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
-        ))
+        self.init(
+            store: Ownership.Shared(
+                Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
+            )
+        )
     }
 
     /// Creates an empty statically-unique set of move-only members on the `Shared`
@@ -110,8 +113,10 @@ extension __Set where S: ~Copyable {
     @inlinable
     public init<E: Hash.Key & SendableMetatype & ~Copyable>(minimumCapacity: Index_Primitives.Index<E>.Count = .zero)
     where S == Ownership.Shared<E, Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>> {
-        self.init(store: Ownership.Shared(
-            Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
-        ))
+        self.init(
+            store: Ownership.Shared(
+                Hash.Indexed<Buffer<Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>>.Linear>(minimumCapacity: minimumCapacity)
+            )
+        )
     }
 }

@@ -9,9 +9,9 @@
 //
 // ===----------------------------------------------------------------------===//
 
+public import Index_Primitives
 public import Set_Primitive
 public import Store_Protocol_Primitives
-public import Index_Primitives
 
 extension __Set where S: Store.`Protocol` & ~Copyable {
     /// Type-safe index for set elements.
