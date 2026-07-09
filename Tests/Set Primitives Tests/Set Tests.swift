@@ -235,7 +235,9 @@ extension SetItem: Hash.`Protocol` {
     }
 }
 
-private enum SetProbe {
+private enum SetProbe {}
+
+extension SetProbe {
     nonisolated(unsafe) static var _destroyed: [Int] = []
     static func reset() { unsafe _destroyed = [] }
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }
@@ -258,7 +260,9 @@ extension SetItem2: Hash.`Protocol` {
     }
 }
 
-private enum SetProbe2 {
+private enum SetProbe2 {}
+
+extension SetProbe2 {
     nonisolated(unsafe) static var _destroyed: [Int] = []
     static func reset() { unsafe _destroyed = [] }
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }

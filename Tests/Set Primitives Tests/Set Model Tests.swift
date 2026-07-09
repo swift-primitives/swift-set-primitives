@@ -87,7 +87,9 @@ private struct Reference {
     var members: [(id: Int, group: Int)] = []
     var ids: Swift.Set<Int> = []
     var graveyard: [(id: Int, group: Int)] = []
+}
 
+extension Reference {
     mutating func append(id: Int, group: Int) {
         members.append((id, group))
         ids.insert(id)
@@ -133,7 +135,9 @@ private struct DirectStream: ~Copyable {
         self.verdict = Model.Verdict(seed: seed)
         self.census = census
     }
+}
 
+extension DirectStream {
     mutating func freshID() -> (id: Int, group: Int) {
         let minted = (nextID, nextID / collisionDivisor)
         nextID += 1
@@ -310,7 +314,9 @@ private struct FleetStream {
         self.verdict = Model.Verdict(seed: seed)
         self.census = census
     }
+}
 
+extension FleetStream {
     mutating func freshID() -> (id: Int, group: Int) {
         let minted = (nextID, nextID / collisionDivisor)
         nextID += 1
