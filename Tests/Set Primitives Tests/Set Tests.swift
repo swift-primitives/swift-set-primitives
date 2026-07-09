@@ -31,7 +31,7 @@ private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<Ownership.Share
 // MARK: - [DS-024] + coherence (the Shared composite is this family's NEW column)
 
 @Suite
-struct SetColumnLawTests {
+struct `Set Column Law Tests` {
 
     @Test
     func `the shared ordered-hashed column obeys the seam ledger laws`() {
@@ -66,7 +66,7 @@ extension Hash.Indexed<Buffer<HeapStorage<Int>>.Linear> {
 // MARK: - Core membership (both columns)
 
 @Suite(.serialized)
-struct SetCoreTests {
+struct `Set Core Tests` {
 
     @Test
     func `insert, contains, duplicate hand-back, remove, counts`() {
@@ -128,7 +128,7 @@ struct SetCoreTests {
 // MARK: - CoW value semantics (the Shared composite column)
 
 @Suite(.serialized)
-struct SetCoWTests {
+struct `Set CoW Tests` {
 
     @Test
     func `copies share until mutation; inserts detach through the box`() {
@@ -181,7 +181,7 @@ struct SetCoWTests {
 // MARK: - Move-only members + teardown
 
 @Suite(.serialized)
-struct SetTeardownTests {
+struct `Set Teardown Tests` {
 
     @Test
     func `move-only members flow through and tear down exactly once`() {
@@ -272,7 +272,7 @@ extension SetProbe2 {
 // MARK: - Sendable smoke
 
 @Suite
-struct SetSendableTests {
+struct `Set Sendable Tests` {
 
     @Test
     func `sendable composes through both columns`() {
