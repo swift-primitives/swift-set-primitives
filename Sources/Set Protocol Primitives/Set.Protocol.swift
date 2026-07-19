@@ -34,11 +34,15 @@ public protocol __SetProtocol: ~Copyable {
     /// The type of element stored in the set.
     associatedtype Element: Hash.`Protocol` & ~Copyable
 
-    /// Returns whether the set contains the given element. The O(1) membership
-    /// query — the defining set primitive (hot; concrete witness on the leaf).
+    /// Returns whether the set contains the given element.
+    ///
+    /// The O(1) membership query — the defining set primitive (hot; concrete
+    /// witness on the leaf).
     func contains(_ element: borrowing Element) -> Bool
 
-    /// The number of elements in the set. O(1) cardinality.
+    /// The number of elements in the set.
+    ///
+    /// O(1) cardinality.
     var count: Index<Element>.Count { get }
 }
 
