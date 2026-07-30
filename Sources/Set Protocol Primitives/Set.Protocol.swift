@@ -91,5 +91,7 @@ public protocol Membership: ~Copyable {
 }
 
 /// Compatibility alias retained for existing conformance sites that spell the
-/// hoisted name directly. New code should prefer ``Membership``.
+/// hoisted name directly.
+///
+/// New code should prefer ``Membership``.
 public typealias __SetProtocol = Membership
