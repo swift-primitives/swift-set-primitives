@@ -22,7 +22,7 @@
 //
 // NB: there is no Set.Buildable.Protocol re-export — the buildable concern is
 // builder-primitives' generic `Buildable`, composed at the conformer
-// (`Set.Ordered: Set.Protocol, Buildable`). set-primitives owns the membership
+// (`Set.Ordered: Membership, Buildable`). set-primitives owns the membership
 // core only; consumers that build sets dep swift-builder-primitives themselves.
 
 @_exported public import Set_Primitive

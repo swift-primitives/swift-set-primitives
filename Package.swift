@@ -53,7 +53,7 @@ let package = Package(
         // swift-set-algebra-primitives ([MOD-029] prune); the membership core
         // is iteration-free. The buildable concern is NOT here either: it is
         // builder-primitives' generic `Buildable` composed at the conformer
-        // (`Set.Ordered: Set.Protocol, Buildable`) — set-primitives owns the
+        // (`Set.Ordered: Membership, Buildable`) — set-primitives owns the
         // membership core only, never a bundled `Set.Buildable.Protocol`.
     ],
     targets: [
@@ -80,7 +80,7 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Protocol (Set.Protocol membership CORE: {contains, count} + Set.Index + isEmpty)
+        // MARK: - Protocol (Membership CORE: {contains, count} + Set.Index + isEmpty)
         .target(
             name: "Set Protocol Primitives",
             dependencies: [

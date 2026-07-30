@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-// Set Protocol Primitives owns `Set.Protocol` (membership-uniqueness
+// Set Protocol Primitives owns `Membership` (membership-uniqueness
 // contract), `Set.Index`, and the relational defaults. Re-exports the root
 // namespace + its external dependencies so the umbrella surfaces them.
 
