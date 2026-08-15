@@ -26,7 +26,9 @@ private typealias OrderedColumn<E: Hash.Key & ~Copyable> =
     Hash.Indexed<Buffer<HeapStorage<E>>.Linear>
 
 private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<E>
-private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<Ownership.Shared<E, OrderedColumn<E>>>
+private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<
+    Ownership.Shared<E, OrderedColumn<E>>
+>
 
 // MARK: - [DS-024] + coherence (the Shared composite is this family's NEW column)
 
@@ -36,7 +38,9 @@ struct `Set Column Law Tests` {
     @Test
     func `the shared ordered-hashed column obeys the seam ledger laws`() {
         let violations = Seam.Ledger.violations(
-            makeEmpty: { Ownership.Shared(OrderedColumn<Int>(minimumCapacity: Index<Int>.Count(4))) },
+            makeEmpty: {
+                Ownership.Shared(OrderedColumn<Int>(minimumCapacity: Index<Int>.Count(4)))
+            },
             element: { $0 }
         )
         #expect(violations.isEmpty, "\(violations)")

@@ -35,7 +35,9 @@ private typealias OrderedColumn<E: Hash.Key & ~Copyable> =
     Hash.Indexed<Buffer<HeapStorage<E>>.Linear>
 
 private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<E>
-private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<Ownership.Shared<E, OrderedColumn<E>>>
+private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<
+    Ownership.Shared<E, OrderedColumn<E>>
+>
 
 // MARK: - Fixtures: the hoisted move-only element gains the hashed key bound
 // (consumer-side conformance; hash binds to `group` — controlled collisions);
@@ -48,7 +50,10 @@ extension Model.Element.Tracked: @retroactive Hash.`Protocol` {
     }
 
     /// Whether two tracked elements are the same instance (compared by id).
-    public static func == (lhs: borrowing Model.Element.Tracked, rhs: borrowing Model.Element.Tracked) -> Bool {
+    public static func == (
+        lhs: borrowing Model.Element.Tracked,
+        rhs: borrowing Model.Element.Tracked
+    ) -> Bool {
         lhs.id == rhs.id
     }
 }
@@ -238,7 +243,9 @@ extension DirectStream {
         }
         for retired in model.graveyard where !model.ids.contains(retired.id) {
             if set.contains(probe(retired)) {
-                findings.append("retired id \(retired.id) (group \(retired.group)) is still reachable")
+                findings.append(
+                    "retired id \(retired.id) (group \(retired.group)) is still reachable"
+                )
             }
         }
         return findings
@@ -414,7 +421,9 @@ extension FleetStream {
         var findings: [String] = []
         for (index, model) in models.enumerated() {
             if siblings[index].count != Index<Member>.Count(UInt(model.members.count)) {
-                findings.append("sibling \(index) count \(siblings[index].count), model \(model.members.count)")
+                findings.append(
+                    "sibling \(index) count \(siblings[index].count), model \(model.members.count)"
+                )
             }
             var seen: [Int] = []
             siblings[index].forEach { (member: borrowing Member) in seen.append(member.id) }
@@ -493,7 +502,9 @@ extension `Set Model`.Integration {
     }
 
     @Test(arguments: Model.seeds(default: [0xF1EE_0001, 0xF1EE_0002, 0xF1EE_0003]))
-    func `shared sibling fleet: every sibling tracks its own fork; refcounts end exact`(seed: UInt64) {
+    func `shared sibling fleet: every sibling tracks its own fork; refcounts end exact`(
+        seed: UInt64
+    ) {
         let verdict = runFleetStream(seed: seed)
         #expect(verdict.isClean, Comment(rawValue: verdict.report))
     }
@@ -502,7 +513,9 @@ extension `Set Model`.Integration {
 extension `Set Model`.Unit {
     @Test
     func `direct clone detaches and stays order-coherent`() {
-        var set = MoveSet<Model.Element.Tracked>(minimumCapacity: Index<Model.Element.Tracked>.Count(4))
+        var set = MoveSet<Model.Element.Tracked>(
+            minimumCapacity: Index<Model.Element.Tracked>.Count(4)
+        )
         let census = Model.Census()
         set.insert(Model.Element.Tracked(id: 1, group: 0, census: census))
         set.insert(Model.Element.Tracked(id: 2, group: 0, census: census))
@@ -528,9 +541,12 @@ extension `Set Model`.`Edge Case` {
     func `duplicate hand-back returns the argument instance through the set door`() {
         let census = Model.Census()
         do {
-            var set = MoveSet<Model.Element.Tracked>(minimumCapacity: Index<Model.Element.Tracked>.Count(4))
+            var set = MoveSet<Model.Element.Tracked>(
+                minimumCapacity: Index<Model.Element.Tracked>.Count(4)
+            )
             set.insert(Model.Element.Tracked(id: 1, group: 0, census: census))  // serial 0
-            if let rejected = set.insert(Model.Element.Tracked(id: 1, group: 0, census: census)) {  // serial 1
+            // serial 1
+            if let rejected = set.insert(Model.Element.Tracked(id: 1, group: 0, census: census)) {
                 let serial = rejected.serial
                 #expect(serial == 1)
             } else {
