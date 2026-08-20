@@ -11,7 +11,7 @@
 
 public import Hash_Primitives
 public import Index_Primitives
-public import Set_Primitive
+import Set_Primitive
 
 // MARK: - Membership (top-level capability protocol; formerly hoisted as __SetProtocol)
 
