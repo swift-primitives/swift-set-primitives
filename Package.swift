@@ -12,25 +12,22 @@ let package = Package(
         .visionOS(.v27),
     ],
     products: [
-        // MARK: - Namespace
+
         .library(
             name: "Set Primitive",
             targets: ["Set Primitive"]
         ),
 
-        // MARK: - Protocol
         .library(
             name: "Set Protocol Primitives",
             targets: ["Set Protocol Primitives"]
         ),
 
-        // MARK: - Umbrella
         .library(
             name: "Set Primitives",
             targets: ["Set Primitives"]
         ),
 
-        // MARK: - Test Support
         .library(
             name: "Set Primitives Test Support",
             targets: ["Set Primitives Test Support"]
@@ -81,19 +78,10 @@ let package = Package(
             url: "https://github.com/swift-primitives/swift-tagged-primitives.git",
             branch: "main"
         ),
-        // NOTE: the iteration concern (swift-iterator-primitives) is NOT a
-        // dependency. It moved out with the Set Algebra target to
-        // swift-set-algebra-primitives ([MOD-029] prune); the membership core
-        // is iteration-free. The buildable concern is NOT here either: it is
-        // builder-primitives' generic `Buildable` composed at the conformer
-        // (`Set.Ordered: Membership, Buildable`) — set-primitives owns the
-        // membership core only, never a bundled `Set.Buildable.Protocol`.
+
     ],
     targets: [
 
-        // MARK: - Base type (struct Set<S>: the ADT over the ordered hashed column;
-        // [MOD-017]'s zero-dep namespace invariant retired with the enum — the Array
-        // Primitive precedent)
         .target(
             name: "Set Primitive",
             dependencies: [
@@ -125,7 +113,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Protocol (Membership CORE: {contains, count} + Set.Index + isEmpty)
         .target(
             name: "Set Protocol Primitives",
             dependencies: [
@@ -136,9 +123,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Umbrella (NB: no Set Algebra re-export — lifted to
-        // swift-set-algebra-primitives; re-exporting it here would complete a
-        // package cycle, [MOD-032]/[MOD-033] cursor-pilot drop)
         .target(
             name: "Set Primitives",
             dependencies: [
@@ -172,8 +156,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Test Support ([MOD-024] empty shell — the conformer fixture +
-        // the relational-default tests moved to swift-set-algebra-primitives)
         .target(
             name: "Set Primitives Test Support",
             dependencies: [
@@ -183,7 +165,6 @@ let package = Package(
             path: "Tests/Support"
         ),
 
-        // MARK: - Tests
         .testTarget(
             name: "Set Primitives Tests",
             dependencies: [

@@ -17,8 +17,6 @@ import Storage_Primitive
 import Tagged_Primitives_Standard_Library_Integration
 import Testing
 
-// The column-keyed set suite: the ordered hashed column direct + Shared-wrapped.
-
 private typealias HeapStorage<E: ~Copyable> =
     Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>
 
@@ -29,8 +27,6 @@ private typealias MoveSet<E: Hash.Key & ~Copyable> = Set<E>
 private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<
     Ownership.Shared<E, OrderedColumn<E>>
 >
-
-// MARK: - [DS-024] + coherence (the Shared composite is this family's NEW column)
 
 @Suite
 struct `Set Column Law Tests` {
@@ -66,8 +62,6 @@ extension Hash.Indexed<Buffer<HeapStorage<Int>>.Linear> {
         Hash.Coherence.violations(self)
     }
 }
-
-// MARK: - Core membership (both columns)
 
 @Suite(.serialized)
 struct `Set Core Tests` {
@@ -129,8 +123,6 @@ struct `Set Core Tests` {
     }
 }
 
-// MARK: - CoW value semantics (the Shared composite column)
-
 @Suite(.serialized)
 struct `Set CoW Tests` {
 
@@ -138,8 +130,8 @@ struct `Set CoW Tests` {
     func `copies share until mutation; inserts detach through the box`() {
         var a = CoWSet<Int>(minimumCapacity: 4)
         a.insert(1)
-        let b = a  // S5: Set is Copyable because S is
-        a.insert(2)  // withUnique(consuming:) detaches first
+        let b = a
+        a.insert(2)
         let mine = a.count
         let theirs = b.count
         #expect(mine == Index<Int>.Count(2))
@@ -182,8 +174,6 @@ struct `Set CoW Tests` {
     }
 }
 
-// MARK: - Move-only members + teardown
-
 @Suite(.serialized)
 struct `Set Teardown Tests` {
 
@@ -205,7 +195,7 @@ struct `Set Teardown Tests` {
         }
         let all = SetProbe.destroyedSorted
         let twos = all.filter { $0 == 2 }.count
-        #expect(twos == 2)  // the live member + the contains() probe argument
+        #expect(twos == 2)
     }
 
     @Test
@@ -272,8 +262,6 @@ extension SetProbe2 {
     static func recordDestroy(_ id: Int) { unsafe _destroyed.append(id) }
     static var destroyedSorted: [Int] { unsafe _destroyed.sorted() }
 }
-
-// MARK: - Sendable smoke
 
 @Suite
 struct `Set Sendable Tests` {

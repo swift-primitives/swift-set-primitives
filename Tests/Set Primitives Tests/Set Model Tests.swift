@@ -14,20 +14,6 @@ import Storage_Primitive
 import Tagged_Primitives_Standard_Library_Integration
 import Testing
 
-// The W3 set model suite (arc-2): seeded op streams through the ADT's lawful
-// surface on BOTH columns, against an insertion-ordered reference. The bare
-// set's only read doors are membership and iteration, so `forEach` order
-// equivalence IS the per-slot oracle. The Shared lane runs the sibling fleet
-// (forks copy the model; every sibling audits against its own fork — CoW leaks
-// fail at the op) with REFCOUNTED censused members: deaths are refcount-final,
-// so exactness is asserted as the end-of-scope birth/death multiset. The direct
-// lane uses the move-only fixture; teardown exactness is the end multiset
-// (probes, hand-backs, removals, wipes, dense-growth relocations, and the final
-// drop all account identically).
-//
-// Determinism: generation reads MODEL state only. Shape constraint: B10 — each
-// op is its own small method on a stream struct.
-
 private typealias HeapStorage<E: ~Copyable> =
     Storage<Memory.Allocator<Memory.Heap>>.Contiguous<E>
 
@@ -39,17 +25,12 @@ private typealias CoWSet<E: Hash.Key & SendableMetatype> = __Set<
     Ownership.Shared<E, OrderedColumn<E>>
 >
 
-// MARK: - Fixtures: the hoisted move-only element gains the hashed key bound
-// (consumer-side conformance; hash binds to `group` — controlled collisions);
-// the fleet member is a refcounted censused class (deaths are refcount-final).
-
 extension Model.Element.Tracked: @retroactive Hash.`Protocol` {
-    /// Hashes the tracked element by its group (controlled collisions for the model).
+
     public borrowing func hash(into hasher: inout Hasher) {
         hasher.combine(group)
     }
 
-    /// Whether two tracked elements are the same instance (compared by id).
     public static func == (
         lhs: borrowing Model.Element.Tracked,
         rhs: borrowing Model.Element.Tracked
@@ -86,8 +67,6 @@ extension Member: Hash.`Protocol` {
     }
 }
 
-// MARK: - The reference model: insertion-ordered membership
-
 private struct Reference {
     var members: [(id: Int, group: Int)] = []
     var ids: Swift.Set<Int> = []
@@ -119,8 +98,6 @@ extension Reference {
         }
     }
 }
-
-// MARK: - The direct move-only stream
 
 private struct DirectStream: ~Copyable {
     var set: MoveSet<Model.Element.Tracked>
@@ -288,7 +265,7 @@ private func runDirectStream(seed: UInt64) -> Model.Verdict {
     let census = Model.Census()
     var stream = DirectStream(seed: seed, census: census)
     stream.run()
-    var verdict = stream.finish()  // the set dies here
+    var verdict = stream.finish()
 
     if !census.isExact {
         verdict.findings.append(
@@ -297,8 +274,6 @@ private func runDirectStream(seed: UInt64) -> Model.Verdict {
     }
     return verdict
 }
-
-// MARK: - The Shared (CoW) sibling fleet
 
 private struct FleetStream {
     var siblings: [CoWSet<Member>]
@@ -475,7 +450,7 @@ private func runFleetStream(seed: UInt64) -> Model.Verdict {
         var stream = FleetStream(seed: seed, census: census)
         stream.run()
         verdict = stream.verdict
-    }  // every sibling dies here; refcounts fall to zero
+    }
 
     if !census.isExact {
         verdict.findings.append(
@@ -484,8 +459,6 @@ private func runFleetStream(seed: UInt64) -> Model.Verdict {
     }
     return verdict
 }
-
-// MARK: - The suites
 
 @Suite
 struct `Set Model` {
@@ -519,8 +492,7 @@ extension `Set Model`.Unit {
         let census = Model.Census()
         set.insert(Model.Element.Tracked(id: 1, group: 0, census: census))
         set.insert(Model.Element.Tracked(id: 2, group: 0, census: census))
-        // The direct clone needs Copyable elements, so the clone check rides the
-        // Copyable fleet member instead.
+
         var original = CoWSet<Member>(minimumCapacity: Index<Member>.Count(4))
         original.insert(Member(id: 10, group: 1, census: census))
         original.insert(Member(id: 11, group: 1, census: census))
@@ -544,8 +516,8 @@ extension `Set Model`.`Edge Case` {
             var set = MoveSet<Model.Element.Tracked>(
                 minimumCapacity: Index<Model.Element.Tracked>.Count(4)
             )
-            set.insert(Model.Element.Tracked(id: 1, group: 0, census: census))  // serial 0
-            // serial 1
+            set.insert(Model.Element.Tracked(id: 1, group: 0, census: census))
+
             if let rejected = set.insert(Model.Element.Tracked(id: 1, group: 0, census: census)) {
                 let serial = rejected.serial
                 #expect(serial == 1)

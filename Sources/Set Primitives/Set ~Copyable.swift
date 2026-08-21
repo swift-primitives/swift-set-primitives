@@ -1,44 +1,22 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-primitives open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-primitives project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// The COLUMN-GENERIC set surface: the count vocabulary rides the seam bound (restated
-// on the extensions now that `__Set` is the bound-free carrier); the membership ops
-// pin per column (`Set+Columns.swift`) — they reach the engine, which only the
-// concrete composite exposes.
 public import Buffer_Protocol_Primitives
 public import Index_Primitives
 public import Set_Primitive
 public import Store_Protocol_Primitives
 
 extension __Set where S: ~Copyable, S: Store.`Protocol` & Buffer.`Protocol` {
-    /// The number of members.
+
     @inlinable
     public var count: Index_Primitives.Index<S.Element>.Count { store.count }
 
-    /// Whether the set is empty.
     @inlinable
     public var isEmpty: Bool { store.isEmpty }
 
-    /// The dense plane's current capacity.
     @inlinable
     public var capacity: Index_Primitives.Index<S.Element>.Count { store.capacity }
 }
 
-// MARK: - Cloning (generic on the CoW column)
-
 extension __Set where S: Copyable, S: Store.`Protocol` {
-    /// Returns an independent copy of this set with its own storage (the mutation gate
-    /// on the fresh copy ALWAYS installs a deep copy).
-    ///
-    /// - Complexity: O(`capacity`)
+
     @inlinable
     public borrowing func clone() -> Self {
         var result = copy self
